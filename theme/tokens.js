@@ -1,0 +1,58 @@
+export const themes = {
+  light: {
+    mode: "light",
+    colors: {
+      background: "#f4f7fc",
+      backgroundAlt: "#edf3fb",
+      surface: "#ffffff",
+      surfaceMuted: "#f7f9fd",
+      surfaceElevated: "#eef4ff",
+      surfaceGlass: "rgba(255,255,255,0.72)",
+      border: "#d7e1ef",
+      borderStrong: "#bed0e7",
+      text: "#0f172a",
+      textMuted: "#475569",
+      textSubtle: "#64748b",
+      brand: "#2563eb",
+      brandStrong: "#1d4ed8",
+      brandSoft: "#60a5fa",
+      brandTint: "#dbeafe",
+      success: "#16a34a",
+      warning: "#d97706",
+      error: "#dc2626",
+      shadow: "rgba(15, 23, 42, 0.08)",
+      shadowStrong: "rgba(15, 23, 42, 0.12)",
+      overlay: "rgba(15, 23, 42, 0.48)",
+    },
+  },
+  dark: {
+    mode: "dark",
+    colors: {
+      background: "#07101b",
+      backgroundAlt: "#0d1724",
+      surface: "#0f1826",
+      surfaceMuted: "#132030",
+      surfaceElevated: "#182536",
+      surfaceGlass: "rgba(15,24,38,0.72)",
+      border: "rgba(148, 163, 184, 0.16)",
+      borderStrong: "rgba(191, 219, 254, 0.22)",
+      text: "#f8fafc",
+      textMuted: "#cbd5e1",
+      textSubtle: "#94a3b8",
+      brand: "#60a5fa",
+      brandStrong: "#3b82f6",
+      brandSoft: "#93c5fd",
+      brandTint: "rgba(96,165,250,0.16)",
+      success: "#4ade80",
+      warning: "#fbbf24",
+      error: "#f87171",
+      shadow: "rgba(0, 0, 0, 0.28)",
+      shadowStrong: "rgba(0, 0, 0, 0.38)",
+      overlay: "rgba(2, 6, 23, 0.7)",
+    },
+  },
+};
+
+export const themeNames = ["light", "dark", "system"];
+export const defaultTheme = "system";
+export const themeStorageKey = "unihub_mobile_theme_mode";
