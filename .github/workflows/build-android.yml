@@ -48,7 +48,13 @@ jobs:
           BUILD_ID="${{ steps.eas-build.outputs.build_id }}"
           echo "Polling build $BUILD_ID..."
           while true; do
-            STATUS=$(npx eas-cli@latest build:view --id "$BUILD_ID" --json | jq -r '.status')
+            STATUS=$(npx eas-cli@latest build:list \
+              --platform android \
+              --status=new,in-queue,in-progress,finished,errored,cancelled \
+              --json \
+              --non-interactive \
+              --limit 10 \
+              | jq -r --arg id "$BUILD_ID" '.[] | select(.id == $id) | .status')
             echo "Status: $STATUS"
             if [ "$STATUS" = "FINISHED" ]; then
               echo "Build complete."
