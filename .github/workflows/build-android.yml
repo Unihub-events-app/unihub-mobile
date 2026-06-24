@@ -70,9 +70,15 @@ jobs:
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
-          npx eas-cli@latest build:download \
-            --id "${{ steps.eas-build.outputs.build_id }}" \
-            --path ./release.apk
+          BUILD_ID="${{ steps.eas-build.outputs.build_id }}"
+          npx eas-cli@latest build:list \
+            --platform android \
+            --json \
+            --non-interactive \
+            --limit 20 2>/dev/null > list_output.json
+          DOWNLOAD_URL=$(jq -r --arg id "$BUILD_ID" '.[] | select(.id == $id) | .artifacts.applicationArchiveUrl' list_output.json)
+          echo "Download URL: $DOWNLOAD_URL"
+          curl -L "$DOWNLOAD_URL" -o release.apk
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
