@@ -78,10 +78,10 @@ jobs:
             --limit 20 2>/dev/null > list_output.json
           DOWNLOAD_URL=$(jq -r --arg id "$BUILD_ID" '.[] | select(.id == $id) | .artifacts.applicationArchiveUrl' list_output.json)
           echo "Download URL: $DOWNLOAD_URL"
-          curl -L "$DOWNLOAD_URL" -o release.apk
+          curl -L "$DOWNLOAD_URL" -o UniHub-events.apk
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: release.apk
+          files: UniHub-events.apk
           generate_release_notes: true

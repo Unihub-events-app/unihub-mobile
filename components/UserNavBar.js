@@ -21,7 +21,6 @@ export function UserNavBar() {
   const { theme } = useTheme();
   const [userData, setUserData] = useState({});
   const [unreadCount, setUnreadCount] = useState(0);
-  const [announcementCount, setAnnouncementCount] = useState(0);
   const [showDropdown, setShowDropdown] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
@@ -58,20 +57,12 @@ export function UserNavBar() {
           setUnreadCount(data.unreadCount || 0);
         }
       } catch {}
-
-      try {
-        const announceRes = await fetch(`${API_URL}/user/announcements`);
-        if (announceRes.ok) {
-          const data = await announceRes.json();
-          setAnnouncementCount(data.length || 0);
-        }
-      } catch {}
     };
 
     fetchData();
   }, [token, pathname]);
 
-  const totalBadge = unreadCount + announcementCount;
+  const totalBadge = unreadCount;
   const displayName = useMemo(
     () => userData?.fullname || userData?.name || userData?.username || "User",
     [userData]
@@ -90,7 +81,7 @@ export function UserNavBar() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={["top"]}>
       <View style={[styles.topNav, { backgroundColor: theme.colors.background }]}>
-        <Pressable onPress={() => router.push("/(app)/dashboard")} style={{ marginLeft: -12 }}>
+        <Pressable onPress={() => { if (!pathname.includes("/dashboard")) router.push("/(app)/dashboard"); }} style={{ marginLeft: -12 }}>
           <Image
             source={theme.colors.mode === "dark" ? require("../assets/images/unihub-logo.png") : require("../assets/images/unihub-logo-blue.png")}
             style={{ height: 28, width: 100 }}
@@ -223,7 +214,7 @@ export function UserBottomNav() {
             <Pressable
               key={item.label}
               style={[styles.navItem, active && { backgroundColor: theme.colors.surfaceElevated }]}
-              onPress={() => router.push(item.path)}
+              onPress={() => { if (!active) router.push(item.path); }}
             >
               <item.icon size={20} color={active ? theme.colors.brand : theme.colors.textSubtle} />
               <Text style={[styles.navLabel, { color: active ? theme.colors.brand : theme.colors.textSubtle }]}>

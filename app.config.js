@@ -3,11 +3,16 @@ module.exports = ({ config }) => ({
   name: "UniHub",
   slug: "unihub-mobile",
   scheme: "UniHub Events",
-  version: "0.1.0",
+  version: "1.1.6",
+  icon: "./assets/images/mobile-logo.png",
   orientation: "default",
   userInterfaceStyle: "automatic",
   android: {
     package: "click.tryunihub.mobile",
+    adaptiveIcon: {
+      foregroundImage: "./assets/images/mobile-logo.png",
+      backgroundColor: "#ffffff",
+    },
   },
   extra: {
     githubRepo: "Unihub-events-app/unihub-mobile",
