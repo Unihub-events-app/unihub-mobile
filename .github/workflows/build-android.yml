@@ -27,14 +27,46 @@ jobs:
         run: npm ci
 
       - name: Build Android APK with EAS
+        id: eas-build
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-        run: npx eas-cli@latest build -p android --profile preview --non-interactive
+        run: |
+          BUILD_JSON=$(npx eas-cli@latest build \
+            -p android \
+            --profile preview \
+            --non-interactive \
+            --json \
+            --no-wait)
+          echo "$BUILD_JSON"
+          BUILD_ID=$(echo "$BUILD_JSON" | jq -r '.[0].id // .id')
+          echo "build_id=$BUILD_ID" >> $GITHUB_OUTPUT
 
-      - name: Download latest APK
+      - name: Wait for build to finish
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-        run: npx eas-cli@latest build:download -p android --latest --output ./release.apk
+        run: |
+          BUILD_ID="${{ steps.eas-build.outputs.build_id }}"
+          echo "Polling build $BUILD_ID..."
+          while true; do
+            STATUS=$(npx eas-cli@latest build:view --id "$BUILD_ID" --json | jq -r '.status')
+            echo "Status: $STATUS"
+            if [ "$STATUS" = "FINISHED" ]; then
+              echo "Build complete."
+              break
+            elif [ "$STATUS" = "ERRORED" ] || [ "$STATUS" = "CANCELLED" ]; then
+              echo "Build failed with status: $STATUS"
+              exit 1
+            fi
+            sleep 30
+          done
+
+      - name: Download APK
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          npx eas-cli@latest build:download \
+            --id "${{ steps.eas-build.outputs.build_id }}" \
+            --path ./release.apk
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
