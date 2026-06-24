@@ -31,14 +31,15 @@ jobs:
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
-          RAW=$(npx eas-cli@latest build \
+          npx eas-cli@latest build \
             -p android \
             --profile preview \
             --non-interactive \
             --json \
-            --no-wait 2>/dev/null)
-          echo "$RAW"
-          BUILD_ID=$(echo "$RAW" | grep '^\[' | jq -r '.[0].id')
+            --no-wait 2>/dev/null > build_output.json
+          cat build_output.json
+          BUILD_ID=$(jq -r '.[0].id' build_output.json)
+          echo "Build ID: $BUILD_ID"
           echo "build_id=$BUILD_ID" >> $GITHUB_OUTPUT
 
       - name: Wait for build to finish
@@ -48,12 +49,12 @@ jobs:
           BUILD_ID="${{ steps.eas-build.outputs.build_id }}"
           echo "Polling build $BUILD_ID..."
           while true; do
-            RAW=$(npx eas-cli@latest build:list \
+            npx eas-cli@latest build:list \
               --platform android \
               --json \
               --non-interactive \
-              --limit 20 2>/dev/null)
-            STATUS=$(echo "$RAW" | grep '^\[' | jq -r --arg id "$BUILD_ID" '.[] | select(.id == $id) | .status')
+              --limit 20 2>/dev/null > list_output.json
+            STATUS=$(jq -r --arg id "$BUILD_ID" '.[] | select(.id == $id) | .status' list_output.json)
             echo "Status: $STATUS"
             if [ "$STATUS" = "FINISHED" ]; then
               echo "Build complete."
