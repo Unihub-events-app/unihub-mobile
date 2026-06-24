@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Read(//c/Users/okata/Documents/Unihub-ios/try-unihub-app/**)",
-      "Bash(npx expo *)"
+      "Bash(npx expo *)",
+      "Bash(npx eas-cli@latest build -p android --profile development)"
     ]
   }
 }

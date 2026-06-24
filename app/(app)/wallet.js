@@ -25,6 +25,7 @@ import {
   NeuCard,
   NeuInset,
   PrimaryButton,
+  PageLoader,
 } from "../../components/index.js";
 import { API_URL } from "../../lib/config.js";
 import { getUserToken } from "../../lib/auth.js";
@@ -268,17 +269,7 @@ export default function WalletScreen() {
   };
 
   if (loading) {
-    return (
-      <Screen padded={false}>
-        <ScrollView contentContainerStyle={styles.scrollContainer}>
-          <Text style={styles.headerTitle}>Wallet</Text>
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={theme.colors.brand} />
-            <Text style={styles.loadingText}>Loading...</Text>
-          </View>
-        </ScrollView>
-      </Screen>
-    );
+    return <PageLoader />;
   }
 
   const allTransactions = [

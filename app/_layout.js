@@ -19,6 +19,7 @@ import {
   SpaceGrotesk_600SemiBold,
   SpaceGrotesk_700Bold,
 } from "@expo-google-fonts/space-grotesk";
+import { Limelight_400Regular } from "@expo-google-fonts/limelight";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { useSessionStore } from "../lib/auth";
 import { ThemeProvider, useTheme } from "../theme/ThemeProvider";
@@ -54,6 +55,7 @@ export default function RootLayout() {
     SpaceGrotesk_500Medium,
     SpaceGrotesk_600SemiBold,
     SpaceGrotesk_700Bold,
+    Limelight_400Regular,
   });
 
   useEffect(() => {

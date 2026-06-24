@@ -23,6 +23,7 @@ import {
   NeuInset,
   EventCard,
   TicketCard,
+  PageLoader,
 } from "../../components/index.js";
 import { useSessionStore } from "../../lib/auth.js";
 import { API_URL } from "../../lib/config.js";
@@ -160,16 +161,7 @@ export default function EventLibrary() {
   }, [tickets, ticketFilter]);
 
   if (loading) {
-    return (
-      <Screen padded={false}>
-        <View style={styles.loadingContainer}>
-          <NeuCard style={styles.loadingCard}>
-            <ActivityIndicator size="large" color={theme.colors.brand} />
-            <Text style={styles.loadingText}>Loading library...</Text>
-          </NeuCard>
-        </View>
-      </Screen>
-    );
+    return <PageLoader />;
   }
 
   return (
@@ -181,53 +173,72 @@ export default function EventLibrary() {
         {/* Page Header */}
         <View style={styles.header}>
           <Text style={styles.headerLabel}>My Collection</Text>
-          <Text style={styles.headerTitle}>Event Library</Text>
-          <Text style={styles.headerSubtitle}>
-            Your personal collection of tickets and memories
-          </Text>
+          <View style={styles.headerTitleRow}>
+            <Text style={styles.headerTitle}>Library</Text>
+            {tickets.length > 0 && (
+              <View style={styles.ticketCountBadge}>
+                <Text style={styles.ticketCountBadgeText}>{tickets.length} tickets</Text>
+              </View>
+            )}
+          </View>
         </View>
 
-        {/* Tabs and View Toggle */}
+        {/* Segment controls */}
         <View style={styles.tabsContainer}>
-          <NeuCard style={styles.tabs}>
-            <TabButton
-              active={activeTab === "upcoming"}
-              icon={Calendar}
-              label="Upcoming"
-              onPress={() => setActiveTab("upcoming")}
-            />
-            <TabButton
-              active={activeTab === "past"}
-              icon={FolderOpen}
-              label="Past Events"
-              onPress={() => setActiveTab("past")}
-            />
-          </NeuCard>
-
-          {activeTab === "upcoming" && (
-            <NeuCard style={styles.viewToggleTabs}>
-              <TabButton
-                active={viewMode === "events"}
-                icon={Layers}
-                label="Events"
-                onPress={() => setViewMode("events")}
-              />
-              <View style={styles.viewToggleRight}>
-                <TabButton
-                  active={viewMode === "tickets"}
-                  icon={Ticket}
-                  label="Tickets"
-                  onPress={() => setViewMode("tickets")}
+          {/* Row 1: Upcoming / Past */}
+          <View style={styles.segmentRow}>
+            {[
+              { key: "upcoming", label: "Upcoming", icon: Calendar },
+              { key: "past", label: "Past", icon: FolderOpen },
+            ].map(({ key, label, icon: Icon }) => (
+              <TouchableOpacity
+                key={key}
+                style={[styles.segmentBtn, activeTab === key && styles.segmentBtnActive]}
+                onPress={() => setActiveTab(key)}
+              >
+                <Icon
+                  size={14}
+                  color={activeTab === key ? theme.colors.brand : theme.colors.textSubtle}
                 />
-                {tickets.length > 0 && (
-                  <View style={styles.ticketCountBadge}>
-                    <Text style={styles.ticketCountBadgeText}>
-                      {tickets.length}
-                    </Text>
-                  </View>
-                )}
-              </View>
-            </NeuCard>
+                <Text
+                  style={[
+                    styles.segmentBtnText,
+                    activeTab === key && styles.segmentBtnTextActive,
+                  ]}
+                >
+                  {label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          {/* Row 2: Events / Tickets (only for upcoming) */}
+          {activeTab === "upcoming" && (
+            <View style={styles.viewToggleRow}>
+              {[
+                { key: "events", label: "Events", icon: Layers },
+                { key: "tickets", label: "My Tickets", icon: Ticket },
+              ].map(({ key, label, icon: Icon }) => (
+                <TouchableOpacity
+                  key={key}
+                  style={[styles.viewToggleBtn, viewMode === key && styles.viewToggleBtnActive]}
+                  onPress={() => setViewMode(key)}
+                >
+                  <Icon
+                    size={13}
+                    color={viewMode === key ? "#1A1A14" : theme.colors.textSubtle}
+                  />
+                  <Text
+                    style={[
+                      styles.viewToggleBtnText,
+                      viewMode === key && styles.viewToggleBtnTextActive,
+                    ]}
+                  >
+                    {label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
           )}
         </View>
 
@@ -417,35 +428,105 @@ const getStyles = (theme) => StyleSheet.create({
     paddingHorizontal: 16,
   },
   header: {
-    marginBottom: 32,
+    marginBottom: 24,
   },
   headerLabel: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "700",
     textTransform: "uppercase",
-    letterSpacing: 0.8,
+    letterSpacing: 1,
     color: theme.colors.brand,
     marginBottom: 4,
   },
+  headerTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
   headerTitle: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: "800",
     fontFamily: "SpaceGrotesk_700Bold",
     color: theme.colors.text,
-    marginBottom: 4,
+    letterSpacing: -0.5,
   },
-  headerSubtitle: {
-    fontSize: 14,
-    color: theme.colors.textSubtle,
+  ticketCountBadge: {
+    backgroundColor: theme.colors.brand,
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 2,
+  },
+  ticketCountBadgeText: {
+    color: "#1A1A14",
+    fontSize: 12,
+    fontWeight: "700",
   },
   tabsContainer: {
-    gap: 12,
-    marginBottom: 32,
+    gap: 10,
+    marginBottom: 28,
   },
-  tabs: {
-    padding: 4,
+  segmentRow: {
     flexDirection: "row",
-    gap: 4,
+    backgroundColor: theme.colors.surfaceMuted,
+    borderRadius: 14,
+    padding: 3,
+    gap: 3,
+  },
+  segmentBtn: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: 10,
+    borderRadius: 11,
+  },
+  segmentBtnActive: {
+    backgroundColor: theme.colors.surface,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  segmentBtnText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: theme.colors.textSubtle,
+  },
+  segmentBtnTextActive: {
+    color: theme.colors.brand,
+    fontWeight: "700",
+  },
+  viewToggleRow: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  viewToggleBtn: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: 9,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    backgroundColor: theme.colors.surfaceMuted,
+  },
+  viewToggleBtnActive: {
+    backgroundColor: theme.colors.brand,
+  },
+  viewToggleBtnText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: theme.colors.textSubtle,
+  },
+  viewToggleBtnTextActive: {
+    color: "#1A1A14",
+    fontWeight: "700",
   },
   tabButton: {
     flex: 1,
@@ -458,45 +539,14 @@ const getStyles = (theme) => StyleSheet.create({
   },
   tabButtonActive: {
     backgroundColor: theme.colors.surface,
-    shadowColor: "#c5cad4",
-    shadowOffset: { width: 2, height: 2 },
-    shadowOpacity: 1,
-    shadowRadius: 4,
-    elevation: 4,
   },
   tabButtonText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "600",
     color: theme.colors.textSubtle,
   },
   tabButtonTextActive: {
     color: theme.colors.brand,
-  },
-  viewToggleTabs: {
-    padding: 4,
-    flexDirection: "row",
-    gap: 4,
-  },
-  viewToggleRight: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    flex: 1,
-    justifyContent: "flex-end",
-  },
-  ticketCountBadge: {
-    backgroundColor: theme.colors.brand,
-    borderRadius: 8,
-    minWidth: 22,
-    height: 22,
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 8,
-  },
-  ticketCountBadgeText: {
-    color: theme.colors.surface,
-    fontSize: 12,
-    fontWeight: "700",
   },
   section: {
     marginBottom: 32,

@@ -46,6 +46,7 @@ export function Screen({
               scrollProps.contentContainerStyle,
             ]}
             showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
             {...scrollProps}
           >
             <View style={styles.contentWrap}>{children}</View>

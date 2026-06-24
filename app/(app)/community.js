@@ -29,6 +29,7 @@ import {
   NeuInset,
   ConfirmModal,
   TextField,
+  PageLoader,
 } from "../../components/index";
 import CommunityAvatar from "../../components/CommunityAvatar";
 import { API_URL } from "../../lib/config";
@@ -75,8 +76,11 @@ const CommunityCard = ({
     onJoin(community._id, isPrivate);
   };
 
+  const memberCount = (community.members || []).length;
+
   return (
     <NeuCard style={styles.communityCard} onPress={handleCardClick}>
+      {/* Top row: avatar + meta badges */}
       <View style={styles.communityCardTop}>
         <CommunityAvatar
           profileImage={community.profileImage}
@@ -84,69 +88,53 @@ const CommunityCard = ({
           style={styles.communityAvatar}
         />
         <View style={styles.communityMeta}>
-          <View style={styles.communityMembers}>
-            <Users size={14} color="#6b7280" style={{ marginRight: 4 }} />
-            <Text style={styles.communityMembersText}>
-              {(community.members || []).length}
-            </Text>
-          </View>
-          {(community.members || []).length > 0 && (
-            <View style={styles.memberAvatars}>
-              {(community.members || []).slice(0, 3).map((member, idx) => (
-                <View
-                  key={idx}
-                  style={[styles.memberAvatar, { left: idx * 16 }]}
-                />
-              ))}
-              {(community.members || []).length > 3 && (
-                <View
-                  style={[
-                    styles.memberAvatar,
-                    styles.memberAvatarMore,
-                    { left: 3 * 16 },
-                  ]}
-                >
-                  <Text style={styles.memberAvatarMoreText}>
-                    +{(community.members || []).length - 3}
-                  </Text>
-                </View>
-              )}
+          {community.isPrivate && (
+            <View style={styles.privateBadge}>
+              <Lock size={9} color={theme.colors.textSubtle} style={{ marginRight: 3 }} />
+              <Text style={styles.privateBadgeText}>Private</Text>
             </View>
           )}
+          <View style={styles.communityMembers}>
+            <Users size={12} color={theme.colors.textSubtle} style={{ marginRight: 4 }} />
+            <Text style={styles.communityMembersText}>
+              {memberCount} {memberCount === 1 ? "member" : "members"}
+            </Text>
+          </View>
         </View>
       </View>
-      <View style={styles.communityTitleRow}>
-        <Text style={styles.communityTitle} numberOfLines={1}>
-          {community.name}
-        </Text>
-        {community.isPrivate && (
-          <View style={styles.privateBadge}>
-            <Lock size={10} color="#a78bfa" style={{ marginRight: 4 }} />
-            <Text style={styles.privateBadgeText}>PRIVATE</Text>
-          </View>
-        )}
-      </View>
+
+      {/* Name */}
+      <Text style={styles.communityTitle} numberOfLines={1}>
+        {community.name}
+      </Text>
+
+      {/* Recent message or description */}
       {isMember && recentMessage ? (
         <View style={styles.recentMessage}>
-          <Text style={styles.recentMessageAuthor}>
-            {recentMessageAuthorName || "Someone"}:
-          </Text>
-          <Text style={styles.recentMessageText} numberOfLines={2}>
-            {recentMessage.image && !recentMessage.content
-              ? "📷 Photo"
-              : recentMessage.content}
-          </Text>
+          <View style={styles.recentMessageBubble}>
+            <Text style={styles.recentMessageAuthor} numberOfLines={1}>
+              {recentMessageAuthorName || "Someone"}
+            </Text>
+            <Text style={styles.recentMessageText} numberOfLines={1}>
+              {recentMessage.image && !recentMessage.content
+                ? "Sent a photo"
+                : recentMessage.content}
+            </Text>
+          </View>
         </View>
       ) : (
         <Text style={styles.communityDescription} numberOfLines={2}>
-          {community.description || "No description provided."}
+          {community.description || "No description yet."}
         </Text>
       )}
+
+      {/* Action row */}
       <View style={styles.communityActions}>
         <TouchableOpacity
           style={[
             styles.actionButton,
             isMember ? styles.ghostButton : styles.primaryButton,
+            isPrivate && !isPrivateJoinable && !isMember && styles.disabledButton,
           ]}
           onPress={(e) => {
             e.stopPropagation();
@@ -157,53 +145,44 @@ const CommunityCard = ({
           disabled={isPrivate && !isPrivateJoinable && !isMember}
         >
           {isMember ? (
-            <>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
               <Text style={styles.ghostButtonText}>Open Chat</Text>
-              <ChevronRight
-                size={16}
-                color={theme.colors.brand}
-                style={{ marginLeft: 4 }}
-              />
-            </>
+              <ChevronRight size={14} color={theme.colors.brand} />
+            </View>
           ) : isPrivate && !isPrivateJoinable ? (
-            <Text style={[styles.primaryButtonText, { opacity: 0.5 }]}>
-              🔒 Private
-            </Text>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+              <Lock size={13} color={theme.colors.textSubtle} />
+              <Text style={[styles.primaryButtonText, { color: theme.colors.textSubtle }]}>
+                Private
+              </Text>
+            </View>
           ) : (
-            <>
-              <Text style={styles.primaryButtonText}>Join Now</Text>
-              <Plus size={16} color="#fff" style={{ marginLeft: 4 }} />
-            </>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+              <Text style={styles.primaryButtonText}>Join</Text>
+              <Plus size={13} color="#1A1A14" />
+            </View>
           )}
         </TouchableOpacity>
         {isCreator ? (
           <TouchableOpacity
-            style={styles.deleteButton}
+            style={styles.iconAction}
             onPress={(e) => {
               e.stopPropagation();
-              onDelete({
-                type: "delete",
-                id: community._id,
-                name: community.name,
-              });
+              onDelete({ type: "delete", id: community._id, name: community.name });
             }}
           >
-            <Delete size={20} color="#ef4444" />
+            <Delete size={17} color="#ef4444" />
           </TouchableOpacity>
         ) : (
           isMember && (
             <TouchableOpacity
-              style={styles.leaveButton}
+              style={styles.iconAction}
               onPress={(e) => {
                 e.stopPropagation();
-                onLeave({
-                  type: "leave",
-                  id: community._id,
-                  name: community.name,
-                });
+                onLeave({ type: "leave", id: community._id, name: community.name });
               }}
             >
-              <LogOut size={20} color="#6b7280" />
+              <LogOut size={17} color={theme.colors.textSubtle} />
             </TouchableOpacity>
           )
         )}
@@ -720,14 +699,7 @@ export default function CommunityScreen() {
   }, [searchTerm, activeTab]);
 
   if (loading) {
-    return (
-      <Screen padded={false}>
-        <ScrollView contentContainerStyle={styles.loadingContainer}>
-          <Text style={styles.headerTitle}>Discover</Text>
-          <ActivityIndicator size="large" color={theme.colors.brand} />
-        </ScrollView>
-      </Screen>
-    );
+    return <PageLoader />;
   }
 
   const isCodeSearch = /^UHB-C-\d{3}-\d{3}-\d{3}$/i.test(searchTerm.trim());
@@ -1411,110 +1383,78 @@ const getStyles = (theme) => StyleSheet.create({
     width: "100%",
   },
   communityCard: {
-    padding: 20,
+    padding: 18,
+    gap: 12,
   },
   communityCardTop: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: 16,
+    alignItems: "center",
   },
   communityAvatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 24,
+    width: 52,
+    height: 52,
+    borderRadius: 16,
   },
   communityMeta: {
     alignItems: "flex-end",
-    gap: 12,
+    gap: 6,
   },
   communityMembers: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: theme.colors.surface,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 12,
+    backgroundColor: theme.colors.surfaceMuted,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderRadius: 10,
   },
   communityMembersText: {
-    fontSize: 14,
-    fontWeight: "700",
+    fontSize: 12,
+    fontWeight: "600",
     color: theme.colors.textSubtle,
-  },
-  memberAvatars: {
-    position: "relative",
-    width: 56,
-    height: 28,
-  },
-  memberAvatar: {
-    position: "absolute",
-    width: 28,
-    height: 28,
-    borderRadius: 999,
-    backgroundColor: theme.colors.brand,
-    borderWidth: 2,
-    borderColor: theme.colors.background,
-  },
-  memberAvatarMore: {
-    backgroundColor: theme.colors.surface,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  memberAvatarMoreText: {
-    fontSize: 10,
-    fontWeight: "800",
-    color: theme.colors.textSubtle,
-  },
-  communityTitleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginBottom: 8,
   },
   communityTitle: {
-    flex: 1,
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: "800",
     color: theme.colors.text,
+    fontFamily: "SpaceGrotesk_700Bold",
   },
   privateBadge: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(139, 139, 250, 0.15)",
-    borderWidth: 1,
-    borderColor: "rgba(139, 139, 250, 0.3)",
-    borderRadius: 999,
+    backgroundColor: theme.colors.surfaceMuted,
+    borderRadius: 8,
     paddingVertical: 4,
     paddingHorizontal: 8,
   },
   privateBadgeText: {
-    fontSize: 10,
-    fontWeight: "800",
-    color: theme.colors.brand,
-    letterSpacing: 1,
+    fontSize: 11,
+    fontWeight: "600",
+    color: theme.colors.textSubtle,
   },
   communityDescription: {
-    fontSize: 14,
+    fontSize: 13,
     color: theme.colors.textSubtle,
-    lineHeight: 20,
-    marginBottom: 16,
+    lineHeight: 19,
   },
   recentMessage: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 4,
-    marginBottom: 16,
+    backgroundColor: theme.colors.surfaceMuted,
+    borderRadius: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  recentMessageBubble: {
+    gap: 2,
   },
   recentMessageAuthor: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "700",
     color: theme.colors.brand,
   },
   recentMessageText: {
-    flex: 1,
     fontSize: 12,
     color: theme.colors.textSubtle,
-    lineHeight: 18,
+    lineHeight: 17,
   },
   communityActions: {
     flexDirection: "row",
@@ -1523,38 +1463,37 @@ const getStyles = (theme) => StyleSheet.create({
   },
   actionButton: {
     flex: 1,
-    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 12,
-    borderRadius: 16,
+    paddingVertical: 10,
+    borderRadius: 12,
   },
   primaryButton: {
     backgroundColor: theme.colors.brand,
   },
   primaryButtonText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "700",
-    color: theme.colors.surface,
+    color: "#1A1A14",
   },
   ghostButton: {
-    borderWidth: 2,
-    borderColor: "#e5e7eb",
+    backgroundColor: theme.colors.surfaceMuted,
   },
   ghostButtonText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "700",
     color: theme.colors.brand,
   },
-  deleteButton: {
-    padding: 12,
-    borderRadius: 16,
-    backgroundColor: "rgba(239, 68, 68, 0.1)",
+  disabledButton: {
+    opacity: 0.5,
   },
-  leaveButton: {
-    padding: 12,
-    borderRadius: 16,
-    backgroundColor: theme.colors.surface,
+  iconAction: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: theme.colors.surfaceMuted,
+    alignItems: "center",
+    justifyContent: "center",
   },
   userCard: {
     padding: 20,

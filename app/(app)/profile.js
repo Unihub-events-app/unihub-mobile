@@ -31,6 +31,7 @@ import {
   NeuInset,
   PrimaryButton,
   InterestsModal,
+  PageLoader,
 } from "../../components/index.js";
 import { useSessionStore } from "../../lib/auth.js";
 import { API_URL } from "../../lib/config.js";
@@ -148,16 +149,7 @@ export default function ProfileScreen() {
   };
 
   if (loading) {
-    return (
-      <Screen padded={false}>
-        <View style={styles.loadingContainer}>
-          <NeuCard style={styles.loadingCard}>
-            <ActivityIndicator size="large" color={theme.colors.brand} />
-            <Text style={styles.loadingText}>Loading profile...</Text>
-          </NeuCard>
-        </View>
-      </Screen>
-    );
+    return <PageLoader />;
   }
 
   const stats = [

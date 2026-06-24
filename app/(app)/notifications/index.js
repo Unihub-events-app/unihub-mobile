@@ -8,7 +8,7 @@ import {
   Pressable,
 } from "react-native";
 import { Bell } from "lucide-react-native";
-import { Screen, NeuCard, NeuInset } from "../../../components/index.js";
+import { Screen, NeuCard, NeuInset, PageLoader } from "../../../components/index.js";
 import { API_URL } from "../../../lib/config.js";
 import { getUserToken } from "../../../lib/auth.js";
 import { useRouter } from "expo-router";
@@ -99,16 +99,7 @@ export default function NotificationsScreen() {
   }, []);
 
   if (loading) {
-    return (
-      <Screen padded={false}>
-        <ScrollView contentContainerStyle={styles.scrollContainer}>
-          <Text style={[styles.headerTitle, { color: theme.colors.text }]}>Notifications</Text>
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={theme.colors.brand} />
-          </View>
-        </ScrollView>
-      </Screen>
-    );
+    return <PageLoader />;
   }
 
   return (

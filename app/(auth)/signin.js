@@ -319,12 +319,6 @@ export default function SignInScreen() {
                 </View>
                 <Pressable
                   style={[styles.socialBtn, { backgroundColor: theme.colors.surfaceMuted, borderColor: theme.colors.border }]}
-                  onPress={() => require("react-native").Alert.alert("Coming soon", "Apple Sign In will be available in a future update.")}
-                >
-                  <Text style={[styles.socialBtnText, { color: theme.colors.text }]}> Continue with Apple</Text>
-                </Pressable>
-                <Pressable
-                  style={[styles.socialBtn, { backgroundColor: theme.colors.surfaceMuted, borderColor: theme.colors.border }]}
                   onPress={() => require("react-native").Alert.alert("Coming soon", "Google Sign In will be available in a future update.")}
                 >
                   <Text style={[styles.socialBtnText, { color: theme.colors.text }]}>G  Continue with Google</Text>

@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import {
   Image,
-  Pressable,
   StyleSheet,
   Text,
+  TouchableOpacity,
   useWindowDimensions,
   View,
 } from "react-native";
@@ -11,15 +11,11 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withSpring,
-  withTiming,
-  Easing,
-  interpolate,
 } from "react-native-reanimated";
 import { useRouter } from "expo-router";
 import { useTheme } from "../theme/ThemeProvider";
 import { CalendarDays, Ticket, Bell } from "lucide-react-native";
 
-// Lottie is optional — user must place JSON files in assets/animations/
 let LottieView = null;
 try {
   LottieView = require("lottie-react-native").default;
@@ -28,87 +24,65 @@ try {
 const SLIDES = [
   {
     title: "Discover Events",
-    body: "Browse campus events, filter by interest,\nfind what moves you.",
+    body: "Browse campus events, filter by interest,\nand find what moves you.",
     icon: CalendarDays,
-    lottie: null, // set to require("../assets/animations/onboarding-discover.json") when file exists
+    lottie: require("../assets/animations/onboarding-discover.json"),
   },
   {
     title: "Get Your Tickets",
     body: "Register in seconds. Your digital\ntickets live right here.",
     icon: Ticket,
-    lottie: null,
+    lottie: require("../assets/animations/onboarding-ticket.json"),
   },
   {
     title: "Stay in the Loop",
     body: "Real-time updates and reminders so you\nnever miss a moment.",
     icon: Bell,
-    lottie: null,
+    lottie: require("../assets/animations/onboarding-notify.json"),
   },
 ];
 
-function SlideIllustration({ slide, theme }) {
+function SlideIllustration({ slide, containerHeight, theme }) {
   const Icon = slide.icon;
-  const scale = useSharedValue(0.88);
-
-  useEffect(() => {
-    scale.value = withSpring(1, { damping: 14, stiffness: 160 });
-  }, []);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-  }));
 
   if (LottieView && slide.lottie) {
     return (
-      <Animated.View style={[styles.illustrationWrap, animatedStyle]}>
-        <LottieView source={slide.lottie} autoPlay loop style={styles.lottie} />
-      </Animated.View>
+      <LottieView
+        source={slide.lottie}
+        autoPlay
+        loop
+        resizeMode="cover"
+        style={{ width: "100%", height: containerHeight }}
+      />
     );
   }
 
-  // Fallback illustration
   return (
-    <Animated.View style={[styles.illustrationWrap, animatedStyle]}>
-      <View style={[styles.illustrationCircle, { backgroundColor: "rgba(26,26,20,0.10)" }]}>
-        <View style={[styles.illustrationInner, { backgroundColor: "rgba(26,26,20,0.12)" }]}>
-          <Icon size={72} color="#1A1A14" strokeWidth={1.5} />
-        </View>
-      </View>
-    </Animated.View>
-  );
-}
-
-function PaginationDot({ active }) {
-  const width = useSharedValue(active ? 24 : 8);
-
-  useEffect(() => {
-    width.value = withSpring(active ? 24 : 8, { damping: 18, stiffness: 200 });
-  }, [active]);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    width: width.value,
-  }));
-
-  return (
-    <Animated.View
-      style={[
-        styles.dot,
-        animatedStyle,
-        active ? styles.dotActive : styles.dotInactive,
-      ]}
-    />
+    <View
+      style={{
+        width: "100%",
+        height: containerHeight,
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <Icon size={100} color="rgba(26,26,20,0.55)" strokeWidth={1.2} />
+    </View>
   );
 }
 
 export function WelcomeScreen() {
   const router = useRouter();
   const { theme } = useTheme();
-  const { width: SCREEN_WIDTH } = useWindowDimensions();
+  const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = useWindowDimensions();
   const [phase, setPhase] = useState("splash");
   const [slideIdx, setSlideIdx] = useState(0);
   const slideOffset = useSharedValue(0);
+  const swipeStartX = useRef(0);
 
-  // Splash → onboarding auto-advance
+  // Illustration takes ~55% of screen height
+  const illustrationH = SCREEN_HEIGHT * 0.55;
+
   useEffect(() => {
     const t = setTimeout(() => setPhase("onboard"), 1800);
     return () => clearTimeout(t);
@@ -118,8 +92,7 @@ export function WelcomeScreen() {
     transform: [{ translateX: slideOffset.value }],
   }));
 
-  const goNext = () => {
-    const next = slideIdx + 1;
+  const goTo = (next) => {
     slideOffset.value = withSpring(-(next * SCREEN_WIDTH), {
       damping: 22,
       stiffness: 200,
@@ -127,103 +100,117 @@ export function WelcomeScreen() {
     setSlideIdx(next);
   };
 
-  const skip = () => {
-    router.push("/(auth)/signin");
+  const goNext = () => {
+    if (slideIdx < SLIDES.length - 1) goTo(slideIdx + 1);
   };
+  const skip = () => router.push("/(auth)/signin");
+  const isLast = slideIdx === SLIDES.length - 1;
 
-  // ─── Splash Screen ───────────────────────────────────────────────────────────
+  // ─── Splash ─────────────────────────────────────────────────────────────
   if (phase === "splash") {
     return (
-      <View style={[styles.splash, { backgroundColor: theme.colors.brand }]}>
+      <View
+        style={[styles.splash, { backgroundColor: theme.colors.background }]}
+      >
         <Image
           source={require("../assets/images/mobile-logo.png")}
-          style={styles.splashLogo}
+          style={[styles.splashLogo, { width: SCREEN_WIDTH * 0.72 }]}
           resizeMode="contain"
         />
-        <Text style={styles.splashTagline}>Campus life, connected.</Text>
+        <Text
+          style={[styles.splashTagline, { color: theme.colors.textSubtle }]}
+        >
+          Campus life, connected.
+        </Text>
       </View>
     );
   }
 
-  // ─── Onboarding ──────────────────────────────────────────────────────────────
+  // ─── Onboarding ─────────────────────────────────────────────────────────
   return (
     <View style={[styles.onboard, { backgroundColor: theme.colors.brand }]}>
-      {/* Sliding panel */}
-      <Animated.View style={[{ width: SCREEN_WIDTH * SLIDES.length, flexDirection: "row" }, slideAnimStyle]}>
-        {SLIDES.map((slide, i) => (
-          <View key={i} style={[styles.slide, { width: SCREEN_WIDTH }]}>
-            <SlideIllustration slide={slide} theme={theme} />
-          </View>
-        ))}
-      </Animated.View>
+      {/* Illustration strip — on green background, slides horizontally */}
+      <View
+        style={[styles.illustrationStrip, { height: illustrationH }]}
+        onTouchStart={(e) => { swipeStartX.current = e.nativeEvent.pageX; }}
+        onTouchEnd={(e) => {
+          const dx = e.nativeEvent.pageX - swipeStartX.current;
+          if (dx < -50 && slideIdx < SLIDES.length - 1) goTo(slideIdx + 1);
+          else if (dx > 50 && slideIdx > 0) goTo(slideIdx - 1);
+        }}
+      >
+        <Animated.View
+          style={[
+            { width: SCREEN_WIDTH * SLIDES.length, flexDirection: "row" },
+            slideAnimStyle,
+          ]}
+        >
+          {SLIDES.map((slide, i) => (
+            <View
+              key={i}
+              style={{
+                width: SCREEN_WIDTH,
+                height: illustrationH,
+                overflow: "hidden",
+                paddingTop: 60,
+              }}
+            >
+              <SlideIllustration
+                slide={slide}
+                containerHeight={illustrationH}
+                theme={theme}
+              />
+            </View>
+          ))}
+        </Animated.View>
+      </View>
 
-      {/* Bottom card */}
-      <View style={[styles.bottomCard, { backgroundColor: theme.colors.background }]}>
-        {/* Slide text */}
-        <View style={styles.slideText} key={slideIdx}>
-          <Animated.Text
-            entering={undefined}
-            style={[styles.slideTitle, { color: theme.colors.text }]}
-          >
-            {SLIDES[slideIdx].title}
-          </Animated.Text>
-          <Text style={[styles.slideBody, { color: theme.colors.textMuted }]}>
-            {SLIDES[slideIdx].body}
-          </Text>
-        </View>
-
-        {/* Pagination */}
-        <View style={styles.pagination}>
+      {/* White CTA panel — rounded top corners, fills rest of screen */}
+      <View style={[styles.ctaPanel, { backgroundColor: "#FFFFFF" }]}>
+        {/* Dot indicators */}
+        <View style={styles.dots}>
           {SLIDES.map((_, i) => (
-            <PaginationDot key={i} active={i === slideIdx} />
+            <View
+              key={i}
+              style={[
+                styles.dot,
+                {
+                  width: i === slideIdx ? 20 : 7,
+                  backgroundColor:
+                    i === slideIdx ? theme.colors.brand : "rgba(0,0,0,0.15)",
+                },
+              ]}
+            />
           ))}
         </View>
 
-        {/* CTAs */}
-        {slideIdx < SLIDES.length - 1 ? (
-          <View style={styles.ctaRow}>
-            <Pressable
-              style={({ pressed }) => [
-                styles.nextBtn,
-                { backgroundColor: theme.colors.brand, opacity: pressed ? 0.9 : 1 },
-              ]}
-              onPress={goNext}
-            >
-              <Text style={styles.nextBtnText}>Next</Text>
-            </Pressable>
-            <Pressable
-              style={({ pressed }) => [styles.skipBtn, { opacity: pressed ? 0.7 : 1 }]}
-              onPress={skip}
-            >
-              <Text style={[styles.skipBtnText, { color: theme.colors.textSubtle }]}>Skip</Text>
-            </Pressable>
-          </View>
-        ) : (
-          <View style={styles.authCtaStack}>
-            <Pressable
-              style={({ pressed }) => [
-                styles.nextBtn,
-                { backgroundColor: theme.colors.brand, opacity: pressed ? 0.9 : 1 },
-              ]}
-              onPress={() => router.push("/(auth)/signup")}
-            >
-              <Text style={styles.nextBtnText}>Create Account</Text>
-            </Pressable>
-            <Pressable
-              style={({ pressed }) => [
-                styles.loginBtn,
-                {
-                  backgroundColor: theme.colors.surfaceMuted,
-                  borderColor: theme.colors.border,
-                  opacity: pressed ? 0.9 : 1,
-                },
-              ]}
-              onPress={() => router.push("/(auth)/signin")}
-            >
-              <Text style={[styles.loginBtnText, { color: theme.colors.text }]}>Log In</Text>
-            </Pressable>
-          </View>
-        )}
+        {/* Title */}
+        <Text style={styles.title}>{SLIDES[slideIdx].title}</Text>
+
+        {/* Body */}
+        <Text style={styles.body}>{SLIDES[slideIdx].body}</Text>
+
+        {/* Primary button */}
+        <TouchableOpacity
+          style={[styles.primaryBtn, { backgroundColor: theme.colors.brand }]}
+          activeOpacity={0.88}
+          onPress={isLast ? () => router.push("/(auth)/signup") : goNext}
+        >
+          <Text style={styles.primaryBtnText}>
+            {isLast ? "Create Account" : "Next"}
+          </Text>
+        </TouchableOpacity>
+
+        {/* Secondary action */}
+        <TouchableOpacity
+          style={styles.secondaryBtn}
+          activeOpacity={0.6}
+          onPress={isLast ? () => router.push("/(auth)/signin") : skip}
+        >
+          <Text style={styles.secondaryBtnText}>
+            {isLast ? "Log In" : "Skip"}
+          </Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -235,135 +222,91 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    gap: 16,
   },
   splashLogo: {
-    width: 140,
-    height: 60,
+    height: 130,
   },
   splashTagline: {
-    fontSize: 18,
-    fontWeight: "500",
-    fontFamily: "PlusJakartaSans_500Medium",
-    color: "rgba(26,26,20,0.65)",
+    fontSize: 16,
+    fontFamily: "PlusJakartaSans_400Regular",
     letterSpacing: 0.2,
+    marginTop: -60,
   },
 
-  // Onboarding
+  // Onboarding shell — green bg shows above the white CTA panel
   onboard: {
     flex: 1,
+  },
+
+  // Illustration strip
+  illustrationStrip: {
     overflow: "hidden",
   },
-  slide: {
+
+  // White CTA panel — flat top
+  ctaPanel: {
     flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingTop: 60,
-    paddingBottom: 20,
-  },
-  illustrationWrap: {
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  lottie: {
-    width: 280,
-    height: 280,
-  },
-  illustrationCircle: {
-    width: 260,
-    height: 260,
-    borderRadius: 130,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  illustrationInner: {
-    width: 180,
-    height: 180,
-    borderRadius: 90,
-    alignItems: "center",
-    justifyContent: "center",
+    paddingHorizontal: 28,
+    paddingTop: 28,
+    paddingBottom: 44,
+    gap: 14,
   },
 
-  // Bottom card
-  bottomCard: {
-    borderTopLeftRadius: 36,
-    borderTopRightRadius: 36,
-    padding: 32,
-    paddingBottom: 48,
-    gap: 28,
-  },
-  slideText: {
-    gap: 10,
-  },
-  slideTitle: {
-    fontSize: 36,
-    fontWeight: "800",
-    fontFamily: "SpaceGrotesk_700Bold",
-    letterSpacing: -1,
-    lineHeight: 40,
-  },
-  slideBody: {
-    fontSize: 16,
-    lineHeight: 24,
-    fontFamily: "PlusJakartaSans_400Regular",
-  },
-
-  // Pagination
-  pagination: {
+  // Dots
+  dots: {
     flexDirection: "row",
     gap: 6,
     alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 6,
   },
   dot: {
-    height: 8,
+    height: 7,
     borderRadius: 4,
   },
-  dotActive: {
-    backgroundColor: "#C8E630",
+
+  // Text
+  title: {
+    fontSize: 46,
+    fontFamily: "Limelight_400Regular",
+    color: "#1A1A14",
+    letterSpacing: -0.4,
+    lineHeight: 42,
+    textAlign: "center",
   },
-  dotInactive: {
-    backgroundColor: "rgba(0,0,0,0.14)",
+  body: {
+    fontSize: 20,
+    fontFamily: "PlusJakartaSans_400Regular",
+    color: "#6B7280",
+    lineHeight: 26,
+    marginTop: 26,
+    marginBottom: 35,
+    textAlign: "center",
   },
 
-  // CTAs
-  ctaRow: {
-    flexDirection: "row",
+  // Primary button — full width, brand bg, light gray text
+  primaryBtn: {
+    paddingVertical: 17,
+    borderRadius: 14,
     alignItems: "center",
-    gap: 12,
+    justifyContent: "center",
   },
-  nextBtn: {
-    flex: 1,
-    paddingVertical: 16,
-    borderRadius: 16,
-    alignItems: "center",
-  },
-  nextBtnText: {
-    fontSize: 16,
+  primaryBtnText: {
+    fontSize: 20,
     fontWeight: "700",
     fontFamily: "PlusJakartaSans_700Bold",
-    color: "#1A1A14",
+    color: "#F2F2F2",
   },
-  skipBtn: {
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-  },
-  skipBtnText: {
-    fontSize: 15,
-    fontWeight: "600",
-    fontFamily: "PlusJakartaSans_600SemiBold",
-  },
-  authCtaStack: {
-    gap: 12,
-  },
-  loginBtn: {
-    paddingVertical: 16,
-    borderRadius: 16,
+
+  // Secondary (Skip / Log In) — centered text only
+  secondaryBtn: {
+    paddingVertical: 10,
     alignItems: "center",
-    borderWidth: 1,
   },
-  loginBtnText: {
-    fontSize: 16,
-    fontWeight: "700",
-    fontFamily: "PlusJakartaSans_700Bold",
+  secondaryBtnText: {
+    fontSize: 20,
+    fontFamily: "PlusJakartaSans_500Medium",
+    fontWeight: "500",
+    color: "#6B7280",
   },
 });

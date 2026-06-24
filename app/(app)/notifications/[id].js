@@ -10,7 +10,7 @@ import {
   Pressable,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { Screen, NeuCard, BackButton } from "../../../components/index.js";
+import { Screen, NeuCard, BackButton, PageLoader } from "../../../components/index.js";
 import { useTheme } from "../../../theme/ThemeProvider.js";
 import { API_URL } from "../../../lib/config.js";
 import { getUserToken } from "../../../lib/auth.js";
@@ -83,14 +83,7 @@ export default function NotificationDetailScreen() {
   };
 
   if (loading) {
-    return (
-      <Screen padded>
-        <BackButton onPress={() => router.back()} />
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color={theme.colors.brand} />
-        </View>
-      </Screen>
-    );
+    return <PageLoader />;
   }
 
   if (notFound || !notification) {

@@ -17,6 +17,7 @@ import {
   NeuCard,
   NeuInset,
   EventCard,
+  PageLoader,
 } from "../../components/index.js";
 import { useSessionStore } from "../../lib/auth.js";
 import { API_URL } from "../../lib/config.js";
@@ -186,34 +187,24 @@ export default function DashboardScreen() {
   const sortedUpcomingEvents = sortEventsByInterests(upcomingEvents);
 
   if (loading) {
-    return (
-      <Screen padded={false}>
-        <View style={styles.loadingContainer}>
-          <NeuCard style={styles.loadingCard}>
-            <ActivityIndicator size="large" color={theme.colors.brand} />
-            <Text style={styles.loadingText}>Loading...</Text>
-          </NeuCard>
-        </View>
-      </Screen>
-    );
+    return <PageLoader />;
   }
 
   return (
     <Screen padded={true}>
-      {/* Header Row */}
+      {/* Header */}
       <View style={styles.headerRow}>
-        <View>
-          <Text style={styles.dateText}>{getDateString()}</Text>
-          <Text style={styles.greetingText}>
-            {getGreeting()}, <Text style={styles.userNameText}>{userName}</Text>
-          </Text>
-        </View>
-        <PrimaryButton
-          label="Create Event"
-          onPress={() => router.push("/(app)/eventform")}
-          icon={<Plus size={16} color="white" />}
-        />
+        <Text style={styles.dateText}>{getDateString()}</Text>
+        <Text style={styles.greetingText}>
+          {getGreeting()}, <Text style={styles.userNameText}>{userName}</Text>
+        </Text>
       </View>
+      <PrimaryButton
+        label="Create Event"
+        icon={<Plus size={16} color="#1A1A14" strokeWidth={2.5} />}
+        onPress={() => router.push("/(app)/eventform")}
+        style={{ marginBottom: 24 }}
+      />
 
       {/* Search & Filter */}
       <View style={styles.searchSection}>
@@ -452,11 +443,7 @@ const getStyles = (theme) => StyleSheet.create({
     paddingHorizontal: 16,
   },
   headerRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: 24,
-    gap: 12,
+    marginBottom: 16,
   },
   dateText: {
     fontSize: 12,
