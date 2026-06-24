@@ -444,7 +444,7 @@ export default function CreateEventForm() {
                   style={styles.iconButton}
                   onPress={lookupAddress}
                 >
-                  <MapPin size={20} color="#3b82f6" />
+                  <MapPin size={20} color="#C8E630" />
                 </TouchableOpacity>
               </View>
               {formData.address && (
@@ -670,7 +670,7 @@ export default function CreateEventForm() {
                 style={styles.addButton}
                 onPress={addTicketType}
               >
-                <Plus size={16} color="#3b82f6" style={{ marginRight: 4 }} />
+                <Plus size={16} color="#C8E630" style={{ marginRight: 4 }} />
                 <Text style={styles.addButtonText}>Add Ticket</Text>
               </TouchableOpacity>
             </View>
@@ -949,7 +949,7 @@ export default function CreateEventForm() {
         >
           <ChevronLeft
             size={20}
-            color={step === 1 ? "#d1d5db" : "#3b82f6"}
+            color={step === 1 ? "#d1d5db" : "#C8E630"}
             style={{ marginRight: 4 }}
           />
           <Text
@@ -1052,7 +1052,7 @@ const styles = StyleSheet.create({
     fontSize: 48,
     fontWeight: "800",
     fontFamily: "SpaceGrotesk_700Bold",
-    color: "#3b82f6",
+    color: "#C8E630",
     lineHeight: 48,
   },
   stepLabel: {
@@ -1082,10 +1082,10 @@ const styles = StyleSheet.create({
   },
   activeStepDot: {
     width: 24,
-    backgroundColor: "#3b82f6",
+    backgroundColor: "#C8E630",
   },
   completedStepDot: {
-    backgroundColor: "#3b82f6",
+    backgroundColor: "#C8E630",
   },
   stepProgressBar: {
     height: 2,
@@ -1094,7 +1094,7 @@ const styles = StyleSheet.create({
   },
   stepProgressFill: {
     height: "100%",
-    backgroundColor: "#3b82f6",
+    backgroundColor: "#C8E630",
     borderRadius: 1,
   },
   formContainer: {
@@ -1179,12 +1179,12 @@ const styles = StyleSheet.create({
     height: 18,
     borderRadius: 4,
     borderWidth: 2,
-    borderColor: "#3b82f6",
+    borderColor: "#C8E630",
     justifyContent: "center",
     alignItems: "center",
   },
   checkedCheckbox: {
-    backgroundColor: "#3b82f6",
+    backgroundColor: "#C8E630",
   },
   checkboxLabel: {
     fontSize: 14,
@@ -1257,7 +1257,7 @@ const styles = StyleSheet.create({
   addButtonText: {
     fontSize: 12,
     fontWeight: "700",
-    color: "#3b82f6",
+    color: "#C8E630",
   },
   ticketTypesContainer: {
     gap: 12,
@@ -1315,7 +1315,7 @@ const styles = StyleSheet.create({
   uploadedText: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#3b82f6",
+    color: "#C8E630",
   },
   navigationContainer: {
     flexDirection: "row",
@@ -1337,10 +1337,10 @@ const styles = StyleSheet.create({
   ghostButtonText: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#3b82f6",
+    color: "#C8E630",
   },
   primaryButton: {
-    backgroundColor: "#3b82f6",
+    backgroundColor: "#C8E630",
   },
   primaryButtonText: {
     color: "#fff",

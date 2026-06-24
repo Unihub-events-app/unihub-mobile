@@ -3,7 +3,7 @@ import { View, Text, Pressable, StyleSheet, Platform, Image, Modal, TouchableOpa
 import { SafeAreaView } from "react-native-safe-area-context";
 import { usePathname, router } from "expo-router";
 import { Home, Users, FolderOpen, Wallet, Bell, User, Calendar, Settings, LogOut } from "lucide-react-native";
-import { NeuCard } from "./index.js";
+import Animated, { useSharedValue, useAnimatedStyle, withSpring } from "react-native-reanimated";
 import { useSessionStore } from "../lib/auth.js";
 import { API_URL } from "../lib/config.js";
 import { useTheme } from "../theme/ThemeProvider.js";
@@ -67,7 +67,7 @@ export function UserNavBar() {
     () => userData?.fullname || userData?.name || userData?.username || "User",
     [userData]
   );
-  
+
   const userInitials = userData?.username
     ? userData.username.charAt(0).toUpperCase()
     : displayName.charAt(0).toUpperCase();
@@ -81,9 +81,16 @@ export function UserNavBar() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={["top"]}>
       <View style={[styles.topNav, { backgroundColor: theme.colors.background }]}>
-        <Pressable onPress={() => { if (!pathname.includes("/dashboard")) router.push("/(app)/dashboard"); }} style={{ marginLeft: -12 }}>
+        <Pressable
+          onPress={() => { if (!pathname.includes("/dashboard")) router.push("/(app)/dashboard"); }}
+          style={{ marginLeft: -12 }}
+        >
           <Image
-            source={theme.colors.mode === "dark" ? require("../assets/images/unihub-logo.png") : require("../assets/images/unihub-logo-blue.png")}
+            source={
+              theme.colors.mode === "dark"
+                ? require("../assets/images/unihub-logo.png")
+                : require("../assets/images/unihub-logo-blue.png")
+            }
             style={{ height: 28, width: 100 }}
             resizeMode="contain"
           />
@@ -95,7 +102,7 @@ export function UserNavBar() {
           >
             <Bell size={22} color={theme.colors.textMuted} />
             {totalBadge > 0 && (
-              <View style={[styles.badge, { backgroundColor: theme.colors.error, borderColor: theme.colors.background }]}>
+              <View style={[styles.badge, { backgroundColor: theme.colors.error }]}>
                 <Text style={styles.badgeText}>{totalBadge > 9 ? "9+" : totalBadge}</Text>
               </View>
             )}
@@ -104,9 +111,9 @@ export function UserNavBar() {
             style={styles.userBtn}
             onPress={() => setShowDropdown(true)}
           >
-            <View style={[styles.avatarPlaceholder, { backgroundColor: theme.colors.surfaceMuted }]}>
+            <View style={[styles.avatarPlaceholder, { backgroundColor: theme.colors.brandTint }]}>
               {userData?.avatar ? (
-                 <Image source={{ uri: userData.avatar }} style={styles.avatarImage} />
+                <Image source={{ uri: userData.avatar }} style={styles.avatarImage} />
               ) : (
                 <Text style={[styles.avatarText, { color: theme.colors.brand }]}>{userInitials}</Text>
               )}
@@ -122,7 +129,7 @@ export function UserNavBar() {
             <TouchableWithoutFeedback>
               <View style={[styles.dropdownMenu, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
                 <View style={[styles.dropdownHeader, { borderBottomColor: theme.colors.border }]}>
-                  <View style={[styles.dropdownAvatar, { backgroundColor: theme.colors.surfaceMuted }]}>
+                  <View style={[styles.dropdownAvatar, { backgroundColor: theme.colors.brandTint }]}>
                     {userData?.avatar ? (
                       <Image source={{ uri: userData.avatar }} style={styles.avatarImage} />
                     ) : (
@@ -150,7 +157,10 @@ export function UserNavBar() {
                   <Text style={[styles.dropdownItemText, { color: theme.colors.text }]}>Settings</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity style={[styles.dropdownItem, { marginTop: 8, borderTopWidth: 1, borderTopColor: theme.colors.border }]} onPress={() => { setShowDropdown(false); setShowLogoutModal(true); }}>
+                <TouchableOpacity
+                  style={[styles.dropdownItem, { marginTop: 8, borderTopWidth: 1, borderTopColor: theme.colors.border }]}
+                  onPress={() => { setShowDropdown(false); setShowLogoutModal(true); }}
+                >
                   <LogOut size={18} color={theme.colors.error} />
                   <Text style={[styles.dropdownItemText, { color: theme.colors.error }]}>Logout</Text>
                 </TouchableOpacity>
@@ -165,19 +175,25 @@ export function UserNavBar() {
         <TouchableWithoutFeedback onPress={() => setShowLogoutModal(false)}>
           <View style={[styles.modalOverlay, { backgroundColor: theme.colors.overlay }]}>
             <TouchableWithoutFeedback>
-            <View style={[styles.modalContent, { backgroundColor: theme.colors.surface }]}>
-                <View style={[styles.logoutIconContainer, { backgroundColor: theme.mode === "dark" ? "rgba(248, 113, 113, 0.12)" : "#fef2f2" }]}>
-                  <LogOut size={32} color="#ef4444" />
+              <View style={[styles.modalContent, { backgroundColor: theme.colors.surface }]}>
+                <View style={[styles.logoutIconContainer, { backgroundColor: "rgba(220,38,38,0.10)" }]}>
+                  <LogOut size={32} color={theme.colors.error} />
                 </View>
                 <Text style={[styles.modalTitle, { color: theme.colors.text }]}>Logout</Text>
                 <Text style={[styles.modalMessage, { color: theme.colors.textSubtle }]}>
                   Are you sure you want to logout? You'll need to sign in again to access your account.
                 </Text>
                 <View style={styles.modalButtons}>
-                  <TouchableOpacity style={[styles.modalButton, { backgroundColor: theme.colors.surfaceMuted }]} onPress={() => setShowLogoutModal(false)}>
+                  <TouchableOpacity
+                    style={[styles.modalButton, { backgroundColor: theme.colors.surfaceMuted }]}
+                    onPress={() => setShowLogoutModal(false)}
+                  >
                     <Text style={[styles.modalButtonText, { color: theme.colors.text }]}>Cancel</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={[styles.modalButton, { backgroundColor: "#ef4444" }]} onPress={handleLogout}>
+                  <TouchableOpacity
+                    style={[styles.modalButton, { backgroundColor: theme.colors.error }]}
+                    onPress={handleLogout}
+                  >
                     <Text style={[styles.modalButtonText, { color: "#fff" }]}>Logout</Text>
                   </TouchableOpacity>
                 </View>
@@ -186,8 +202,44 @@ export function UserNavBar() {
           </View>
         </TouchableWithoutFeedback>
       </Modal>
-
     </SafeAreaView>
+  );
+}
+
+function NavItem({ item, active, theme }) {
+  const scale = useSharedValue(1);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  const handlePressIn = () => {
+    scale.value = withSpring(0.90, { damping: 15, stiffness: 300 });
+  };
+  const handlePressOut = () => {
+    scale.value = withSpring(1, { damping: 18, stiffness: 280 });
+  };
+
+  return (
+    <Pressable
+      onPress={() => { if (!active) router.push(item.path); }}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
+    >
+      <Animated.View
+        style={[
+          styles.navItem,
+          active && { backgroundColor: theme.colors.navActive },
+          animatedStyle,
+        ]}
+      >
+        <item.icon
+          size={22}
+          color={active ? theme.colors.navSurface : "rgba(255,255,255,0.50)"}
+          strokeWidth={active ? 2.5 : 2}
+        />
+      </Animated.View>
+    </Pressable>
   );
 }
 
@@ -199,31 +251,19 @@ export function UserBottomNav() {
 
   return (
     <SafeAreaView style={styles.bottomNavContainer} edges={["bottom"]}>
-      <NeuCard
+      <View
         style={[
           styles.bottomNav,
-          {
-            backgroundColor: theme.colors.surface,
-            borderColor: theme.colors.border,
-          },
+          { backgroundColor: theme.colors.navSurface },
         ]}
       >
         {NAV_ITEMS.map((item) => {
           const active = isActive(item.match);
           return (
-            <Pressable
-              key={item.label}
-              style={[styles.navItem, active && { backgroundColor: theme.colors.surfaceElevated }]}
-              onPress={() => { if (!active) router.push(item.path); }}
-            >
-              <item.icon size={20} color={active ? theme.colors.brand : theme.colors.textSubtle} />
-              <Text style={[styles.navLabel, { color: active ? theme.colors.brand : theme.colors.textSubtle }]}>
-                {item.label}
-              </Text>
-            </Pressable>
+            <NavItem key={item.label} item={item} active={active} theme={theme} />
           );
         })}
-      </NeuCard>
+      </View>
     </SafeAreaView>
   );
 }
@@ -263,7 +303,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 2,
   },
   badgeText: {
     fontSize: 9,
@@ -303,10 +342,10 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 8,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.16,
+    shadowRadius: 20,
+    elevation: 10,
     borderWidth: 1,
   },
   dropdownHeader: {
@@ -350,7 +389,6 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
     alignItems: "center",
     justifyContent: "center",
     padding: 24,
@@ -358,7 +396,7 @@ const styles = StyleSheet.create({
   modalContent: {
     width: "100%",
     maxWidth: 320,
-    borderRadius: 28,
+    borderRadius: 24,
     padding: 24,
     alignItems: "center",
   },
@@ -366,7 +404,6 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: "#fef2f2",
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 16,
@@ -400,26 +437,27 @@ const styles = StyleSheet.create({
   },
   bottomNavContainer: {
     paddingHorizontal: 18,
-    paddingBottom: 18,
+    paddingBottom: 12,
     width: "100%",
   },
   bottomNav: {
-    paddingVertical: 10,
-    paddingHorizontal: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 8,
     flexDirection: "row",
     justifyContent: "space-around",
     alignItems: "center",
-    borderRadius: 26,
+    borderRadius: 32,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.22,
+    shadowRadius: 20,
+    elevation: 12,
   },
   navItem: {
     alignItems: "center",
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderRadius: 18,
-  },
-  navLabel: {
-    fontSize: 10,
-    fontWeight: "700",
-    marginTop: 4,
+    justifyContent: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 22,
   },
 });

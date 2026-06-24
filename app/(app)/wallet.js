@@ -273,7 +273,7 @@ export default function WalletScreen() {
         <ScrollView contentContainerStyle={styles.scrollContainer}>
           <Text style={styles.headerTitle}>Wallet</Text>
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#3b82f6" />
+            <ActivityIndicator size="large" color={theme.colors.brand} />
             <Text style={styles.loadingText}>Loading...</Text>
           </View>
         </ScrollView>
@@ -382,7 +382,7 @@ export default function WalletScreen() {
             <NeuInset style={styles.statItem}>
               <View style={styles.statHeader}>
                 <View
-                  style={[styles.statDot, { backgroundColor: "#3b82f6" }]}
+                  style={[styles.statDot, { backgroundColor: theme.colors.brand }]}
                 />
                 <Text style={styles.statLabel}>Total Earned</Text>
               </View>
@@ -479,7 +479,7 @@ export default function WalletScreen() {
                 onPress={() => setEditingBankDetails(true)}
                 style={styles.editButton}
               >
-                <Edit size={16} color="#3b82f6" style={{ marginRight: 4 }} />
+                <Edit size={16} color={theme.colors.brand} style={{ marginRight: 4 }} />
                 <Text style={styles.editButtonText}>Edit</Text>
               </TouchableOpacity>
             )}

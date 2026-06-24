@@ -161,7 +161,7 @@ const CommunityCard = ({
               <Text style={styles.ghostButtonText}>Open Chat</Text>
               <ChevronRight
                 size={16}
-                color="#3b82f6"
+                color={theme.colors.brand}
                 style={{ marginLeft: 4 }}
               />
             </>
@@ -265,7 +265,7 @@ const UserCard = ({
           </>
         ) : isFollowing ? (
           <>
-            <CheckSquare size={16} color="#3b82f6" style={{ marginRight: 4 }} />
+            <CheckSquare size={16} color={theme.colors.brand} style={{ marginRight: 4 }} />
             <Text style={styles.followingButtonText}>Following</Text>
           </>
         ) : (
@@ -724,7 +724,7 @@ export default function CommunityScreen() {
       <Screen padded={false}>
         <ScrollView contentContainerStyle={styles.loadingContainer}>
           <Text style={styles.headerTitle}>Discover</Text>
-          <ActivityIndicator size="large" color="#3b82f6" />
+          <ActivityIndicator size="large" color={theme.colors.brand} />
         </ScrollView>
       </Screen>
     );
@@ -1088,7 +1088,7 @@ export default function CommunityScreen() {
                   >
                     <ChevronRight
                       size={20}
-                      color="#3b82f6"
+                      color={theme.colors.brand}
                       style={{
                         transform: [{ rotate: "180deg" }],
                         marginRight: 4,
@@ -1142,7 +1142,7 @@ export default function CommunityScreen() {
                 >
                   <Upload
                     size={20}
-                    color="#3b82f6"
+                    color={theme.colors.brand}
                     style={{ marginRight: 8 }}
                   />
                   <Text style={styles.uploadButtonText}>
@@ -1156,7 +1156,7 @@ export default function CommunityScreen() {
                   >
                     <ChevronRight
                       size={20}
-                      color="#3b82f6"
+                      color={theme.colors.brand}
                       style={{
                         transform: [{ rotate: "180deg" }],
                         marginRight: 4,

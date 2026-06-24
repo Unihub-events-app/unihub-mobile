@@ -50,7 +50,7 @@ const styles = StyleSheet.create({
   card: {
     width: "100%",
     padding: 20,
-    borderRadius: 28,
+    borderRadius: 24,
     maxHeight: "88%",
   },
   header: {

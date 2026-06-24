@@ -138,7 +138,7 @@ const ShareToCommunityModal = ({ isOpen, onClose, eventData }) => {
           <View style={styles.content}>
             {loading ? (
               <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#3b82f6" />
+                <ActivityIndicator size="large" color="#C8E630" />
                 <Text style={styles.loadingText}>Loading communities...</Text>
               </View>
             ) : communities.length === 0 ? (
@@ -161,7 +161,7 @@ const ShareToCommunityModal = ({ isOpen, onClose, eventData }) => {
                         style={[
                           styles.communityItem,
                           {
-                            borderColor: isSelected ? "#3b82f6" : "#e5e7eb",
+                            borderColor: isSelected ? "#C8E630" : "rgba(0,0,0,0.10)",
                             backgroundColor: isSelected ? "#eff6ff" : "#fff",
                           },
                         ]}
@@ -276,7 +276,7 @@ const styles = StyleSheet.create({
   },
   header: {
     padding: 24,
-    backgroundColor: "#3b82f6",
+    backgroundColor: "#C8E630",
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
@@ -348,7 +348,7 @@ const styles = StyleSheet.create({
   communityAvatarContainer: {
     width: 48,
     height: 48,
-    backgroundColor: "#3b82f6",
+    backgroundColor: "#C8E630",
     borderRadius: 12,
     overflow: "hidden",
     justifyContent: "center",
@@ -377,7 +377,7 @@ const styles = StyleSheet.create({
   checkContainer: {
     width: 24,
     height: 24,
-    backgroundColor: "#3b82f6",
+    backgroundColor: "#C8E630",
     borderRadius: 999,
     justifyContent: "center",
     alignItems: "center",
@@ -414,7 +414,7 @@ const styles = StyleSheet.create({
   shareButton: {
     flex: 1,
     paddingVertical: 12,
-    backgroundColor: "#3b82f6",
+    backgroundColor: "#C8E630",
     borderRadius: 12,
     alignItems: "center",
   },

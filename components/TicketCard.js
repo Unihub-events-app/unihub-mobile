@@ -1,31 +1,32 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
-  Image,
 } from "react-native";
 import { Calendar, Clock, MapPin, Download, CheckCircle2 } from "lucide-react-native";
 import { NeuCard } from "./NeuCard";
 import { LinearGradient } from "expo-linear-gradient";
 import { Image as ExpoImage } from "expo-image";
+import { useTheme } from "../theme/ThemeProvider";
 
 export function TicketCard({ ticket, event }) {
+  const { theme } = useTheme();
   const [showQR, setShowQR] = useState(false);
 
   const getStatusIcon = () => {
     if (ticket.entry) {
-      return <CheckCircle2 size={18} color="#16a34a" />;
+      return <CheckCircle2 size={18} color={theme.colors.success} />;
     }
-    return <Clock size={18} color="#6b7280" />;
+    return <Clock size={18} color={theme.colors.textSubtle} />;
   };
 
   const getStatusText = () => {
     if (ticket.entry) {
-      return <Text style={styles.checkedInText}>Checked In</Text>;
+      return <Text style={[styles.checkedInText, { color: theme.colors.success }]}>Checked In</Text>;
     }
-    return <Text style={styles.notCheckedInText}>Not Checked In</Text>;
+    return <Text style={[styles.notCheckedInText, { color: theme.colors.textSubtle }]}>Not Checked In</Text>;
   };
 
   const ticketId = ticket.ticketId || ticket._id || "N/A";
@@ -33,10 +34,7 @@ export function TicketCard({ ticket, event }) {
   return (
     <NeuCard style={styles.container}>
       {/* Event Header */}
-      <LinearGradient
-        colors={["#667eea", "#764ba2"]}
-        style={styles.header}
-      >
+      <LinearGradient colors={["#2A2A22", "#1C1C18"]} style={styles.header}>
         {event.profile && (
           <ExpoImage
             source={{ uri: event.profile }}
@@ -46,40 +44,36 @@ export function TicketCard({ ticket, event }) {
         )}
         <View style={styles.headerOverlay} />
         <View style={styles.headerContent}>
-          <Text style={styles.eventName} numberOfLines={1}>
-            {event.name}
-          </Text>
-          <Text style={styles.ticketIdText}>
-            Ticket ID: {ticketId.substring(0, 12)}...
-          </Text>
+          <Text style={styles.eventName} numberOfLines={1}>{event.name}</Text>
+          <Text style={styles.ticketIdText}>Ticket ID: {ticketId.substring(0, 12)}...</Text>
         </View>
       </LinearGradient>
 
       {/* Ticket Body */}
-      <View style={styles.body}>
+      <View style={[styles.body, { backgroundColor: theme.colors.surface }]}>
         {/* Event Details */}
         <View style={styles.details}>
           <View style={styles.detailRow}>
-            <Calendar size={18} color="#6b7280" />
-            <Text style={styles.detailText}>{event.date}</Text>
+            <Calendar size={18} color={theme.colors.textSubtle} />
+            <Text style={[styles.detailText, { color: theme.colors.textMuted }]}>{event.date}</Text>
           </View>
           <View style={styles.detailRow}>
-            <Clock size={18} color="#6b7280" />
-            <Text style={styles.detailText}>{event.time}</Text>
+            <Clock size={18} color={theme.colors.textSubtle} />
+            <Text style={[styles.detailText, { color: theme.colors.textMuted }]}>{event.time}</Text>
           </View>
           <View style={styles.detailRow}>
-            <MapPin size={18} color="#6b7280" />
-            <Text style={styles.detailText} numberOfLines={1}>
+            <MapPin size={18} color={theme.colors.textSubtle} />
+            <Text style={[styles.detailText, { color: theme.colors.textMuted }]} numberOfLines={1}>
               {event.venue}
             </Text>
           </View>
         </View>
 
         {/* Ticket Type & Status */}
-        <View style={styles.statusContainer}>
+        <View style={[styles.statusContainer, { backgroundColor: theme.colors.surfaceMuted, borderColor: theme.colors.border }]}>
           <View>
-            <Text style={styles.ticketTypeLabel}>Ticket Type</Text>
-            <Text style={styles.ticketType}>
+            <Text style={[styles.ticketTypeLabel, { color: theme.colors.textSubtle }]}>Ticket Type</Text>
+            <Text style={[styles.ticketType, { color: theme.colors.text }]}>
               {ticket.ticketType || "General Admission"}
             </Text>
           </View>
@@ -91,23 +85,20 @@ export function TicketCard({ ticket, event }) {
 
         {/* QR Code Section */}
         {showQR ? (
-          <View style={styles.qrContainer}>
-            <View style={styles.qrPlaceholder}>
-              <Text style={styles.qrPlaceholderText}>QR Code</Text>
+          <View style={[styles.qrContainer, { backgroundColor: theme.colors.surfaceMuted }]}>
+            <View style={[styles.qrPlaceholder, { backgroundColor: theme.colors.surface }]}>
+              <Text style={[styles.qrPlaceholderText, { color: theme.colors.textSubtle }]}>QR Code</Text>
             </View>
-            <Text style={styles.qrNote}>
+            <Text style={[styles.qrNote, { color: theme.colors.textSubtle }]}>
               Show this QR code at the event entrance
             </Text>
-            <TouchableOpacity
-              style={styles.hideQrButton}
-              onPress={() => setShowQR(false)}
-            >
-              <Text style={styles.hideQrText}>Hide QR Code</Text>
+            <TouchableOpacity style={styles.hideQrButton} onPress={() => setShowQR(false)}>
+              <Text style={[styles.hideQrText, { color: theme.colors.brand }]}>Hide QR Code</Text>
             </TouchableOpacity>
           </View>
         ) : (
           <TouchableOpacity
-            style={styles.showQrButton}
+            style={[styles.showQrButton, { backgroundColor: theme.colors.brand }]}
             onPress={() => setShowQR(true)}
           >
             <Text style={styles.showQrText}>Show QR Code</Text>
@@ -115,9 +106,9 @@ export function TicketCard({ ticket, event }) {
         )}
 
         {/* Download Button */}
-        <TouchableOpacity style={styles.downloadButton}>
-          <Download size={18} color="#4b5563" />
-          <Text style={styles.downloadText}>Download Ticket</Text>
+        <TouchableOpacity style={[styles.downloadButton, { backgroundColor: theme.colors.surfaceMuted, borderColor: theme.colors.border }]}>
+          <Download size={18} color={theme.colors.textMuted} />
+          <Text style={[styles.downloadText, { color: theme.colors.textMuted }]}>Download Ticket</Text>
         </TouchableOpacity>
       </View>
     </NeuCard>
@@ -138,7 +129,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    opacity: 0.3,
+    opacity: 0.35,
   },
   headerOverlay: {
     position: "absolute",
@@ -146,7 +137,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: "rgba(0,0,0,0.25)",
+    backgroundColor: "rgba(0,0,0,0.20)",
   },
   headerContent: {
     position: "absolute",
@@ -157,12 +148,14 @@ const styles = StyleSheet.create({
   eventName: {
     fontSize: 18,
     fontWeight: "700",
+    fontFamily: "SpaceGrotesk_700Bold",
     color: "white",
   },
   ticketIdText: {
     fontSize: 12,
-    color: "rgba(255,255,255,0.8)",
+    color: "rgba(255,255,255,0.75)",
     marginTop: 4,
+    fontFamily: "PlusJakartaSans_400Regular",
   },
   body: {
     padding: 16,
@@ -178,25 +171,25 @@ const styles = StyleSheet.create({
   },
   detailText: {
     fontSize: 14,
-    color: "#4b5563",
+    fontFamily: "PlusJakartaSans_400Regular",
   },
   statusContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     padding: 12,
-    backgroundColor: "#f3f4f6",
     borderRadius: 12,
+    borderWidth: 1,
     marginBottom: 16,
   },
   ticketTypeLabel: {
     fontSize: 12,
-    color: "#6b7280",
+    fontFamily: "PlusJakartaSans_400Regular",
   },
   ticketType: {
     fontSize: 14,
     fontWeight: "700",
-    color: "#111827",
+    fontFamily: "PlusJakartaSans_700Bold",
   },
   statusRow: {
     flexDirection: "row",
@@ -206,14 +199,13 @@ const styles = StyleSheet.create({
   checkedInText: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#16a34a",
+    fontFamily: "PlusJakartaSans_600SemiBold",
   },
   notCheckedInText: {
     fontSize: 14,
-    color: "#6b7280",
+    fontFamily: "PlusJakartaSans_400Regular",
   },
   qrContainer: {
-    backgroundColor: "#f3f4f6",
     borderRadius: 12,
     padding: 16,
     alignItems: "center",
@@ -222,7 +214,6 @@ const styles = StyleSheet.create({
   qrPlaceholder: {
     width: 224,
     height: 224,
-    backgroundColor: "white",
     borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
@@ -234,46 +225,46 @@ const styles = StyleSheet.create({
   },
   qrPlaceholderText: {
     fontSize: 16,
-    color: "#6b7280",
+    fontFamily: "PlusJakartaSans_400Regular",
   },
   qrNote: {
     fontSize: 12,
-    color: "#6b7280",
     marginTop: 12,
     fontWeight: "500",
+    fontFamily: "PlusJakartaSans_500Medium",
   },
   hideQrButton: {
     marginTop: 12,
   },
   hideQrText: {
     fontSize: 14,
-    color: "#667eea",
     fontWeight: "600",
+    fontFamily: "PlusJakartaSans_600SemiBold",
   },
   showQrButton: {
-    backgroundColor: "#667eea",
     paddingVertical: 12,
     borderRadius: 12,
     alignItems: "center",
     marginBottom: 12,
   },
   showQrText: {
-    color: "white",
+    color: "#1A1A14",
     fontSize: 14,
     fontWeight: "700",
+    fontFamily: "PlusJakartaSans_700Bold",
   },
   downloadButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    backgroundColor: "#f3f4f6",
     paddingVertical: 12,
     borderRadius: 12,
+    borderWidth: 1,
   },
   downloadText: {
     fontSize: 14,
     fontWeight: "700",
-    color: "#4b5563",
+    fontFamily: "PlusJakartaSans_700Bold",
   },
 });

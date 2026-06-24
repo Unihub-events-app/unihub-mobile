@@ -190,7 +190,7 @@ export default function DashboardScreen() {
       <Screen padded={false}>
         <View style={styles.loadingContainer}>
           <NeuCard style={styles.loadingCard}>
-            <ActivityIndicator size="large" color="#3b82f6" />
+            <ActivityIndicator size="large" color={theme.colors.brand} />
             <Text style={styles.loadingText}>Loading...</Text>
           </NeuCard>
         </View>
@@ -272,7 +272,7 @@ export default function DashboardScreen() {
       <View style={styles.section}>
         <NeuCard style={styles.accessCard}>
           <View style={styles.accessHeader}>
-            <Lock size={18} color="#3b82f6" />
+            <Lock size={18} color={theme.colors.brand} />
             <Text style={styles.accessTitle}>Have a Private Event Code?</Text>
           </View>
           <TextField

@@ -14,7 +14,6 @@ export function NeuCard({ children, style, small = false, elevated = false, ...p
           backgroundColor,
           borderColor: theme.colors.border,
           shadowColor: theme.colors.shadow,
-          overflow: "hidden",
         },
         style,
       ]}
@@ -27,19 +26,19 @@ export function NeuCard({ children, style, small = false, elevated = false, ...p
 
 const styles = StyleSheet.create({
   base: {
-    borderRadius: 24,
+    borderRadius: 20,
     borderWidth: 1,
-    shadowOffset: { width: 0, height: 14 },
-    shadowOpacity: 0.1,
-    shadowRadius: 28,
-    elevation: 5,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 3,
   },
   small: {
-    borderRadius: 18,
+    borderRadius: 16,
     borderWidth: 1,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
 });

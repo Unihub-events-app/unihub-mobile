@@ -1,5 +1,5 @@
 import { Pressable, Text, StyleSheet } from "react-native";
-import Animated, { useSharedValue, useAnimatedStyle, withTiming } from "react-native-reanimated";
+import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing } from "react-native-reanimated";
 import { useTheme } from "../theme/ThemeProvider";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -13,10 +13,10 @@ export function NeuButton({ children, onPress, style, textStyle, disabled = fals
   });
 
   const handlePressIn = () => {
-    if (!disabled) scale.value = withTiming(0.96, { duration: 140 });
+    if (!disabled) scale.value = withTiming(0.97, { duration: 120, easing: Easing.out(Easing.cubic) });
   };
   const handlePressOut = () => {
-    if (!disabled) scale.value = withTiming(1, { duration: 140 });
+    if (!disabled) scale.value = withTiming(1, { duration: 120, easing: Easing.out(Easing.cubic) });
   };
 
   const buttonStyle = small ? styles.neuButtonSmall : styles.neuButton;
@@ -52,39 +52,39 @@ export function NeuButton({ children, onPress, style, textStyle, disabled = fals
 
 const styles = StyleSheet.create({
   neuButton: {
-    borderRadius: 18,
+    borderRadius: 14,
     paddingHorizontal: 20,
     paddingVertical: 12,
-    shadowOffset: { width: 4, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
     borderWidth: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
   },
   neuButtonSmall: {
-    borderRadius: 16,
+    borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 8,
-    shadowOffset: { width: 4, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 2,
     borderWidth: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
   },
   neuButtonText: {
-    fontFamily: 'PlusJakartaSans_600SemiBold',
+    fontFamily: "PlusJakartaSans_600SemiBold",
     fontSize: 14,
   },
   neuButtonTextSmall: {
-    fontFamily: 'PlusJakartaSans_600SemiBold',
+    fontFamily: "PlusJakartaSans_600SemiBold",
     fontSize: 13,
-  }
+  },
 });

@@ -5,27 +5,12 @@ import {
   Pressable,
   Image,
   StyleSheet,
-  Dimensions,
 } from "react-native";
 import { router } from "expo-router";
 import { Calendar, MapPin } from "lucide-react-native";
-import Animated from "react-native-reanimated";
+import { LinearGradient } from "expo-linear-gradient";
 
-const MONTHS = [
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
-  "May",
-  "Jun",
-  "Jul",
-  "Aug",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Dec",
-];
-const { width: SCREEN_WIDTH } = Dimensions.get("window");
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 export const EventCard = ({
   title = "Untitled Event",
@@ -39,15 +24,13 @@ export const EventCard = ({
   isPremium = false,
 }) => {
   const handleCardClick = () => {
-    if (eventId) {
-      router.push(`/event/${eventId}`);
-    }
+    if (eventId) router.push(`/event/${eventId}`);
   };
 
-  const formattedPrice =
-    price === 0 || price === "0"
-      ? "Free"
-      : price !== undefined && price !== null
+  const isFree = price === 0 || price === "0";
+  const formattedPrice = isFree
+    ? "Free"
+    : price !== undefined && price !== null
       ? `₦${parseInt(price).toLocaleString()}`
       : null;
 
@@ -68,17 +51,17 @@ export const EventCard = ({
     <Pressable style={styles.card} onPress={handleCardClick}>
       {/* Background Image */}
       {imageSrc ? (
-        <Image
-          source={{ uri: imageSrc }}
-          style={styles.image}
-          resizeMode="cover"
-        />
+        <Image source={{ uri: imageSrc }} style={styles.image} resizeMode="cover" />
       ) : (
         <View style={styles.placeholder} />
       )}
 
-      {/* Dark Gradient Overlay */}
-      <View style={styles.gradientOverlay} />
+      {/* Dark gradient overlay using LinearGradient */}
+      <LinearGradient
+        colors={["transparent", "rgba(0,0,0,0.30)", "rgba(0,0,0,0.82)"]}
+        locations={[0, 0.4, 1]}
+        style={StyleSheet.absoluteFillObject}
+      />
 
       {/* Date Badge (Top Left) */}
       {day && monthName && (
@@ -101,22 +84,20 @@ export const EventCard = ({
           </View>
         )}
         {formattedPrice && (
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>{formattedPrice}</Text>
+          <View style={[styles.badge, !isFree && styles.priceBadgePaid]}>
+            <Text style={[styles.badgeText, !isFree && styles.priceBadgePaidText]}>
+              {formattedPrice}
+            </Text>
           </View>
         )}
       </View>
 
       {/* Bottom Content */}
       <View style={styles.bottomContent}>
-        <Text style={styles.title} numberOfLines={2}>
-          {title}
-        </Text>
+        <Text style={styles.title} numberOfLines={2}>{title}</Text>
         <View style={styles.locationRow}>
           <MapPin size={14} color="rgba(255,255,255,0.75)" />
-          <Text style={styles.locationText} numberOfLines={1}>
-            {location}
-          </Text>
+          <Text style={styles.locationText} numberOfLines={1}>{location}</Text>
         </View>
         <View style={styles.bottomRow}>
           {time && (
@@ -127,13 +108,10 @@ export const EventCard = ({
           )}
           <Pressable
             style={styles.addButton}
-            onPress={(e) => {
-              e.stopPropagation();
-              handleCardClick();
-            }}
+            onPress={(e) => { e.stopPropagation(); handleCardClick(); }}
           >
             <Calendar size={14} color="white" />
-            <Text style={styles.addButtonText}>Add</Text>
+            <Text style={styles.addButtonText}>View</Text>
           </Pressable>
         </View>
       </View>
@@ -148,29 +126,25 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     overflow: "hidden",
     position: "relative",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.08)",
   },
   image: {
     ...StyleSheet.absoluteFillObject,
   },
   placeholder: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(75,85,99,1)",
-  },
-  gradientOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "transparent",
-    backgroundImage:
-      "linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.25) 50%, transparent 100%)",
+    backgroundColor: "#2A2A22",
   },
   dateBadge: {
     position: "absolute",
     top: 16,
     left: 16,
     zIndex: 10,
-    backgroundColor: "rgba(255,255,255,0.2)",
+    backgroundColor: "rgba(0,0,0,0.44)",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.3)",
-    borderRadius: 16,
+    borderColor: "rgba(255,255,255,0.16)",
+    borderRadius: 14,
     paddingHorizontal: 12,
     paddingVertical: 8,
     alignItems: "center",
@@ -185,7 +159,7 @@ const styles = StyleSheet.create({
   dateMonth: {
     fontSize: 10,
     fontWeight: "600",
-    color: "rgba(255,255,255,0.9)",
+    color: "rgba(255,255,255,0.85)",
     marginTop: 2,
     letterSpacing: 0.8,
     textTransform: "uppercase",
@@ -200,15 +174,15 @@ const styles = StyleSheet.create({
     alignItems: "flex-end",
   },
   badge: {
-    backgroundColor: "rgba(255,255,255,0.2)",
+    backgroundColor: "rgba(0,0,0,0.55)",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.3)",
+    borderColor: "rgba(255,255,255,0.16)",
     borderRadius: 100,
     paddingHorizontal: 10,
     paddingVertical: 4,
   },
   premiumBadge: {
-    backgroundColor: "rgba(245,158,11,0.9)",
+    backgroundColor: "rgba(245,158,11,0.90)",
     borderColor: "rgba(252,211,77,0.4)",
   },
   badgeText: {
@@ -219,8 +193,15 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
   },
   premiumBadgeText: {
-    color: "black",
+    color: "#1A1A14",
     fontWeight: "900",
+  },
+  priceBadgePaid: {
+    backgroundColor: "#C8E630",
+    borderColor: "rgba(200,230,48,0.4)",
+  },
+  priceBadgePaidText: {
+    color: "#1A1A14",
   },
   bottomContent: {
     position: "absolute",
@@ -267,9 +248,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    backgroundColor: "rgba(255,255,255,0.2)",
+    backgroundColor: "rgba(200,230,48,0.20)",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.3)",
+    borderColor: "rgba(200,230,48,0.40)",
     borderRadius: 100,
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -281,4 +262,3 @@ const styles = StyleSheet.create({
     color: "white",
   },
 });
-

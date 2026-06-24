@@ -1,6 +1,5 @@
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
-import { LinearGradient } from "expo-linear-gradient";
 import { useTheme } from "../theme/ThemeProvider";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -27,21 +26,24 @@ export function PrimaryButton({
   const isDestructive = variant === "destructive";
   const isGhost = variant === "ghost";
   const isSubtle = variant === "subtle" || variant === "secondary";
-  const backgroundColor =
-    isPrimary
-      ? theme.colors.brand
-      : isDestructive
-        ? theme.colors.error
-        : isSubtle
-          ? theme.colors.surfaceElevated
-          : "transparent";
-  const textColor =
-    isPrimary || isDestructive
+
+  const backgroundColor = isPrimary
+    ? theme.colors.brand
+    : isDestructive
+      ? theme.colors.error
+      : isSubtle
+        ? theme.colors.surfaceElevated
+        : "transparent";
+
+  // Lime is a light color — dark text on primary, white on destructive
+  const textColor = isPrimary
+    ? "#1A1A14"
+    : isDestructive
       ? "#ffffff"
       : theme.colors.text;
 
   const handlePressIn = () => {
-    scale.value = withTiming(0.98, { duration: 120, easing: Easing.out(Easing.cubic) });
+    scale.value = withTiming(0.97, { duration: 120, easing: Easing.out(Easing.cubic) });
   };
 
   const handlePressOut = () => {
@@ -68,14 +70,6 @@ export function PrimaryButton({
         style,
       ]}
     >
-      {isPrimary ? (
-        <LinearGradient
-          colors={[theme.colors.brandSoft, theme.colors.brandStrong]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={StyleSheet.absoluteFillObject}
-        />
-      ) : null}
       <View style={styles.content}>
         {loading ? (
           <ActivityIndicator color={textColor} />
@@ -93,13 +87,13 @@ export function PrimaryButton({
 const styles = StyleSheet.create({
   button: {
     minHeight: 52,
-    borderRadius: 18,
+    borderRadius: 16,
     overflow: "hidden",
     borderWidth: 1,
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.18,
-    shadowRadius: 22,
-    elevation: 6,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.22,
+    shadowRadius: 16,
+    elevation: 5,
   },
   fullWidth: {
     width: "100%",
@@ -124,5 +118,6 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 15,
     fontWeight: "700",
+    fontFamily: "PlusJakartaSans_700Bold",
   },
 });

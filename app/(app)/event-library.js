@@ -65,7 +65,7 @@ function TabButton({ active, icon: Icon, label, onPress }) {
       style={[styles.tabButton, active && styles.tabButtonActive]}
       onPress={onPress}
     >
-      <Icon size={16} color={active ? "#3b82f6" : "#6b7280"} />
+      <Icon size={16} color={active ? theme.colors.brand : theme.colors.textSubtle} />
       <Text
         style={[styles.tabButtonText, active && styles.tabButtonTextActive]}
       >
@@ -164,7 +164,7 @@ export default function EventLibrary() {
       <Screen padded={false}>
         <View style={styles.loadingContainer}>
           <NeuCard style={styles.loadingCard}>
-            <ActivityIndicator size="large" color="#3b82f6" />
+            <ActivityIndicator size="large" color={theme.colors.brand} />
             <Text style={styles.loadingText}>Loading library...</Text>
           </NeuCard>
         </View>
@@ -238,7 +238,7 @@ export default function EventLibrary() {
               <View style={styles.sectionHeader}>
                 <View style={styles.sectionHeaderLeft}>
                   <View
-                    style={[styles.sectionDot, { backgroundColor: "#3b82f6" }]}
+                    style={[styles.sectionDot, { backgroundColor: theme.colors.brand }]}
                   />
                   <Text style={styles.sectionTitle}>Your Tickets</Text>
                 </View>
@@ -335,7 +335,7 @@ export default function EventLibrary() {
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
                   <View
-                    style={[styles.sectionDot, { backgroundColor: "#3b82f6" }]}
+                    style={[styles.sectionDot, { backgroundColor: theme.colors.brand }]}
                   />
                   <Text style={styles.sectionTitle}>Upcoming</Text>
                 </View>

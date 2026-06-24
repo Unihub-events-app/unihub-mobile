@@ -152,7 +152,7 @@ export default function ProfileScreen() {
       <Screen padded={false}>
         <View style={styles.loadingContainer}>
           <NeuCard style={styles.loadingCard}>
-            <ActivityIndicator size="large" color="#3b82f6" />
+            <ActivityIndicator size="large" color={theme.colors.brand} />
             <Text style={styles.loadingText}>Loading profile...</Text>
           </NeuCard>
         </View>

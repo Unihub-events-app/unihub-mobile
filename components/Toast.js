@@ -17,35 +17,16 @@ export function Toast({ message, type = "info", onDismiss, visible }) {
   useEffect(() => {
     if (visible) {
       Animated.parallel([
-        Animated.timing(opacity, {
-          toValue: 1,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-        Animated.timing(translateY, {
-          toValue: 0,
-          duration: 300,
-          useNativeDriver: true,
-        }),
+        Animated.timing(opacity, { toValue: 1, duration: 250, useNativeDriver: true }),
+        Animated.timing(translateY, { toValue: 0, duration: 250, useNativeDriver: true }),
       ]).start();
 
-      const timer = setTimeout(() => {
-        onDismiss?.();
-      }, 4000);
-
+      const timer = setTimeout(() => { onDismiss?.(); }, 4000);
       return () => clearTimeout(timer);
     } else {
       Animated.parallel([
-        Animated.timing(opacity, {
-          toValue: 0,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-        Animated.timing(translateY, {
-          toValue: 20,
-          duration: 200,
-          useNativeDriver: true,
-        }),
+        Animated.timing(opacity, { toValue: 0, duration: 180, useNativeDriver: true }),
+        Animated.timing(translateY, { toValue: 20, duration: 180, useNativeDriver: true }),
       ]).start();
     }
   }, [visible]);
@@ -54,25 +35,17 @@ export function Toast({ message, type = "info", onDismiss, visible }) {
 
   const getIcon = () => {
     switch (type) {
-      case "success":
-        return <CheckCircle2 size={20} color={theme.colors.success} />;
-      case "error":
-        return <XCircle size={20} color={theme.colors.error} />;
-      case "info":
-      default:
-        return <AlertCircle size={20} color={theme.colors.brand} />;
+      case "success": return <CheckCircle2 size={20} color={theme.colors.success} />;
+      case "error":   return <XCircle size={20} color={theme.colors.error} />;
+      default:        return <AlertCircle size={20} color={theme.colors.brand} />;
     }
   };
 
   const getBackgroundColor = () => {
     switch (type) {
-      case "success":
-        return theme.mode === "dark" ? "rgba(74, 222, 128, 0.12)" : "rgba(240, 253, 244, 0.96)";
-      case "error":
-        return theme.mode === "dark" ? "rgba(248, 113, 113, 0.12)" : "rgba(254, 242, 242, 0.96)";
-      case "info":
-      default:
-        return theme.mode === "dark" ? "rgba(96, 165, 250, 0.14)" : "rgba(239, 246, 255, 0.96)";
+      case "success": return theme.mode === "dark" ? "rgba(61,158,74,0.16)" : "rgba(240,253,244,0.97)";
+      case "error":   return theme.mode === "dark" ? "rgba(220,38,38,0.16)" : "rgba(254,242,242,0.97)";
+      default:        return theme.colors.surface;
     }
   };
 
@@ -81,7 +54,12 @@ export function Toast({ message, type = "info", onDismiss, visible }) {
       <Animated.View
         style={[
           styles.toast,
-          { backgroundColor: getBackgroundColor(), opacity, transform: [{ translateY }] },
+          {
+            backgroundColor: getBackgroundColor(),
+            borderColor: theme.colors.border,
+            opacity,
+            transform: [{ translateY }],
+          },
         ]}
       >
         <View style={styles.iconContainer}>{getIcon()}</View>
@@ -109,24 +87,22 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 16,
-    shadowColor: "rgba(15, 23, 42, 0.24)",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
+    borderWidth: 1,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.10,
+    shadowRadius: 12,
     elevation: 8,
     marginHorizontal: 16,
     width: "100%",
     maxWidth: 400,
   },
-  iconContainer: {
-    marginRight: 12,
-  },
+  iconContainer: { marginRight: 12 },
   message: {
     flex: 1,
     fontSize: 14,
     fontWeight: "500",
+    fontFamily: "PlusJakartaSans_500Medium",
   },
-  closeBtn: {
-    marginLeft: 8,
-  },
+  closeBtn: { marginLeft: 8 },
 });

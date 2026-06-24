@@ -24,11 +24,11 @@ export function NeuInset({ children, style, ...props }) {
 
 const styles = StyleSheet.create({
   neuInset: {
-    borderRadius: 18,
+    borderRadius: 14,
     borderWidth: 1,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 1,
   },
 });

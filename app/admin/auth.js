@@ -67,7 +67,7 @@ export default function AdminAuthScreen() {
         <View className="mt-8 rounded-[28px] bg-white p-5 shadow-sm">
           <View className="items-center">
             <View className="mb-4 rounded-full bg-brand-50 p-4">
-              <ShieldCheck size={32} color="#2563eb" />
+              <ShieldCheck size={32} color="#C8E630" />
             </View>
             <Text className="text-3xl font-bold text-slate-950">UniHub Admin</Text>
             <Text className="mt-2 text-center text-sm leading-5 text-slate-500">

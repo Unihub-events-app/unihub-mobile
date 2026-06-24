@@ -14,44 +14,46 @@ export const TextField = forwardRef(function TextField(
 ) {
   const { theme } = useTheme();
   const [isFocused, setIsFocused] = useState(false);
-  const borderProgress = useSharedValue(0);
+  const borderColorProgress = useSharedValue(0);
 
-  const surfaceStyles = useMemo(
-    () => ({
-      backgroundColor: theme.colors.surfaceMuted,
-      borderColor: error
-        ? theme.colors.error
-        : isFocused
-          ? theme.colors.brand
-          : theme.colors.border,
-      shadowColor: theme.colors.shadow,
-    }),
-    [theme, error, isFocused]
-  );
+  const borderColor = error
+    ? theme.colors.error
+    : isFocused
+      ? theme.colors.brand
+      : theme.colors.border;
 
   const animatedStyle = useAnimatedStyle(() => ({
-    borderWidth: 1,
-    transform: [{ translateY: borderProgress.value * -1 }],
+    borderWidth: 1.5,
   }));
 
   const handleFocus = (event) => {
     setIsFocused(true);
-    borderProgress.value = withTiming(1, { duration: 180, easing: Easing.out(Easing.cubic) });
+    borderColorProgress.value = withTiming(1, { duration: 150, easing: Easing.out(Easing.cubic) });
     onFocus?.(event);
   };
 
   const handleBlur = (event) => {
     setIsFocused(false);
-    borderProgress.value = withTiming(0, { duration: 180, easing: Easing.out(Easing.cubic) });
+    borderColorProgress.value = withTiming(0, { duration: 150, easing: Easing.out(Easing.cubic) });
     onBlur?.(event);
   };
 
   return (
     <View style={containerStyle}>
       {label ? (
-        <Text style={[styles.label, { color: theme.colors.text }]}>{label}</Text>
+        <Text style={[styles.label, { color: theme.colors.textMuted }]}>{label}</Text>
       ) : null}
-      <Animated.View style={[styles.field, surfaceStyles, animatedStyle]}>
+      <Animated.View
+        style={[
+          styles.field,
+          {
+            backgroundColor: theme.colors.surfaceMuted,
+            borderColor,
+            shadowColor: theme.colors.shadow,
+          },
+          animatedStyle,
+        ]}
+      >
         {leftIcon ? <View style={styles.iconLeft}>{leftIcon}</View> : null}
         <TextInput
           ref={ref}
@@ -80,25 +82,26 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 13,
     fontWeight: "600",
+    fontFamily: "PlusJakartaSans_600SemiBold",
     marginBottom: 8,
     letterSpacing: 0.2,
   },
   field: {
-    minHeight: 56,
-    borderRadius: 18,
+    minHeight: 52,
+    borderRadius: 14,
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 16,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.08,
-    shadowRadius: 24,
-    elevation: 2,
-    borderWidth: 1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 1,
   },
   input: {
     flex: 1,
     fontSize: 16,
     paddingVertical: 14,
+    fontFamily: "PlusJakartaSans_400Regular",
   },
   iconLeft: {
     marginRight: 12,
@@ -109,5 +112,6 @@ const styles = StyleSheet.create({
   meta: {
     fontSize: 12,
     marginTop: 6,
+    fontFamily: "PlusJakartaSans_400Regular",
   },
 });
