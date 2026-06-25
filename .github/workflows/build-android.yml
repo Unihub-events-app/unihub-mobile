@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -23,65 +24,39 @@ jobs:
           cache: npm
           cache-dependency-path: package-lock.json
 
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
       - name: Install dependencies
         run: npm ci
 
-      - name: Build Android APK with EAS
-        id: eas-build
-        env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-        run: |
-          npx eas-cli@latest build \
-            -p android \
-            --profile preview \
-            --non-interactive \
-            --json \
-            --no-wait 2>/dev/null > build_output.json
-          cat build_output.json
-          BUILD_ID=$(jq -r '.[0].id' build_output.json)
-          echo "Build ID: $BUILD_ID"
-          echo "build_id=$BUILD_ID" >> $GITHUB_OUTPUT
+      - name: Expo Prebuild (generate native Android project)
+        run: npx expo prebuild --platform android --no-install
 
-      - name: Wait for build to finish
-        env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-        run: |
-          BUILD_ID="${{ steps.eas-build.outputs.build_id }}"
-          echo "Polling build $BUILD_ID..."
-          while true; do
-            npx eas-cli@latest build:list \
-              --platform android \
-              --json \
-              --non-interactive \
-              --limit 20 2>/dev/null > list_output.json
-            STATUS=$(jq -r --arg id "$BUILD_ID" '.[] | select(.id == $id) | .status' list_output.json)
-            echo "Status: $STATUS"
-            if [ "$STATUS" = "FINISHED" ]; then
-              echo "Build complete."
-              break
-            elif [ "$STATUS" = "ERRORED" ] || [ "$STATUS" = "CANCELLED" ]; then
-              echo "Build failed with status: $STATUS"
-              exit 1
-            fi
-            sleep 30
-          done
+      - name: Make gradlew executable
+        run: chmod +x android/gradlew
 
-      - name: Download APK
-        env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-        run: |
-          BUILD_ID="${{ steps.eas-build.outputs.build_id }}"
-          npx eas-cli@latest build:list \
-            --platform android \
-            --json \
-            --non-interactive \
-            --limit 20 2>/dev/null > list_output.json
-          DOWNLOAD_URL=$(jq -r --arg id "$BUILD_ID" '.[] | select(.id == $id) | .artifacts.applicationArchiveUrl' list_output.json)
-          echo "Download URL: $DOWNLOAD_URL"
-          curl -L "$DOWNLOAD_URL" -o UniHub-events.apk
+      - name: Build Debug APK
+        run: cd android && ./gradlew assembleDebug --no-daemon
+
+      - name: Rename APK
+        run: cp android/app/build/outputs/apk/debug/app-debug.apk UniHub-android-${{ github.ref_name }}.apk
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: UniHub-events.apk
+          files: UniHub-android-${{ github.ref_name }}.apk
           generate_release_notes: true
+          name: UniHub Android ${{ github.ref_name }}
+          body: |
+            ## UniHub Android APK
+
+            **Installation:**
+            1. Download the APK file below
+            2. On your Android device, enable "Install from unknown sources" in Settings → Security
+            3. Open the downloaded APK and install
+
+            > This is a debug build for internal testing.
