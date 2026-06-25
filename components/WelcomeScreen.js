@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import {
   Image,
   StyleSheet,
@@ -74,6 +74,7 @@ function SlideIllustration({ slide, containerHeight, theme }) {
 export function WelcomeScreen() {
   const router = useRouter();
   const { theme } = useTheme();
+  const styles = useMemo(() => getStyles(theme), [theme]);
   const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = useWindowDimensions();
   const [phase, setPhase] = useState("splash");
   const [slideIdx, setSlideIdx] = useState(0);
@@ -165,8 +166,8 @@ export function WelcomeScreen() {
         </Animated.View>
       </View>
 
-      {/* White CTA panel — rounded top corners, fills rest of screen */}
-      <View style={[styles.ctaPanel, { backgroundColor: "#FFFFFF" }]}>
+      {/* CTA panel — fills rest of screen */}
+      <View style={styles.ctaPanel}>
         {/* Dot indicators */}
         <View style={styles.dots}>
           {SLIDES.map((_, i) => (
@@ -177,7 +178,7 @@ export function WelcomeScreen() {
                 {
                   width: i === slideIdx ? 20 : 7,
                   backgroundColor:
-                    i === slideIdx ? theme.colors.brand : "rgba(0,0,0,0.15)",
+                    i === slideIdx ? theme.colors.brand : theme.colors.border,
                 },
               ]}
             />
@@ -216,8 +217,7 @@ export function WelcomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  // Splash
+const getStyles = (theme) => StyleSheet.create({
   splash: {
     flex: 1,
     alignItems: "center",
@@ -230,29 +230,22 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: "PlusJakartaSans_400Regular",
     letterSpacing: 0.2,
-    marginTop: -60,
+    marginTop: 12,
   },
-
-  // Onboarding shell — green bg shows above the white CTA panel
   onboard: {
     flex: 1,
   },
-
-  // Illustration strip
   illustrationStrip: {
     overflow: "hidden",
   },
-
-  // White CTA panel — flat top
   ctaPanel: {
     flex: 1,
+    backgroundColor: theme.colors.surface,
     paddingHorizontal: 28,
     paddingTop: 28,
     paddingBottom: 44,
     gap: 14,
   },
-
-  // Dots
   dots: {
     flexDirection: "row",
     gap: 6,
@@ -264,12 +257,10 @@ const styles = StyleSheet.create({
     height: 7,
     borderRadius: 4,
   },
-
-  // Text
   title: {
     fontSize: 46,
     fontFamily: "Limelight_400Regular",
-    color: "#1A1A14",
+    color: theme.colors.text,
     letterSpacing: -0.4,
     lineHeight: 42,
     textAlign: "center",
@@ -277,14 +268,12 @@ const styles = StyleSheet.create({
   body: {
     fontSize: 20,
     fontFamily: "PlusJakartaSans_400Regular",
-    color: "#6B7280",
+    color: theme.colors.textSubtle,
     lineHeight: 26,
     marginTop: 26,
     marginBottom: 35,
     textAlign: "center",
   },
-
-  // Primary button — full width, brand bg, light gray text
   primaryBtn: {
     paddingVertical: 17,
     borderRadius: 14,
@@ -295,10 +284,8 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "700",
     fontFamily: "PlusJakartaSans_700Bold",
-    color: "#F2F2F2",
+    color: "#1A1A14",
   },
-
-  // Secondary (Skip / Log In) — centered text only
   secondaryBtn: {
     paddingVertical: 10,
     alignItems: "center",
@@ -307,6 +294,6 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontFamily: "PlusJakartaSans_500Medium",
     fontWeight: "500",
-    color: "#6B7280",
+    color: theme.colors.textSubtle,
   },
 });

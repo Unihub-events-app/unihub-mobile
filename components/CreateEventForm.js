@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   View,
   Text,
@@ -18,7 +18,17 @@ try {
 } catch (e) {
   console.log("DateTimePicker not installed yet!");
 }
+
+// Fallback: import ImagePicker when installed
+let ImagePicker = null;
+try {
+  ImagePicker = require("expo-image-picker");
+} catch (e) {
+  console.log("ImagePicker not available");
+}
+
 import { useRouter } from "expo-router";
+import { Image } from "react-native";
 import {
   Upload,
   MapPin,
@@ -35,11 +45,14 @@ import { API_URL } from "../lib/config";
 import { getUserToken, getAdminToken } from "../lib/auth";
 import { authenticatedFetch } from "../lib/api";
 import { NeuCard, NeuInset } from "./index";
+import { useTheme } from "../theme/ThemeProvider";
 import { supportedCountries } from "../data/countries";
 
 const STEP_NAMES = ["Basics", "Schedule", "Tickets & Access", "Media"];
 
 export default function CreateEventForm() {
+  const { theme } = useTheme();
+  const styles = useMemo(() => getStyles(theme), [theme]);
   const router = useRouter();
   const admin_id = getAdminToken();
   const user_id = getUserToken();
@@ -131,9 +144,65 @@ export default function CreateEventForm() {
     fetchUserCountry();
   }, [user_id]);
 
-  const uploadImage = async (field, uri) => {
-    // TODO: Implement image upload for mobile
-    alert("Image upload coming soon!");
+  const uploadImage = async (field) => {
+    if (!ImagePicker) {
+      alert("Image picker not available on this device.");
+      return;
+    }
+
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      alert("Permission to access photos is required.");
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: field === "profile" ? [1, 1] : [16, 9],
+      quality: 0.8,
+    });
+
+    if (result.canceled) return;
+
+    const asset = result.assets[0];
+    setUploading((prev) => ({ ...prev, [field]: true }));
+
+    try {
+      const token = await getUserToken();
+      const formData = new FormData();
+      formData.append("file", {
+        uri: asset.uri,
+        name: `${field}_${Date.now()}.jpg`,
+        type: asset.mimeType || "image/jpeg",
+      });
+
+      const res = await fetch(`${API_URL}/upload/image`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "multipart/form-data",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: formData,
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        const url = data.url || data.secure_url || data.imageUrl;
+        if (url) {
+          setFormData((prev) => ({ ...prev, [field]: url }));
+        } else {
+          alert("Upload succeeded but no URL returned.");
+        }
+      } else {
+        alert("Image upload failed. Please try again.");
+      }
+    } catch (e) {
+      console.error("Upload error:", e);
+      alert("Upload error. Check your connection.");
+    } finally {
+      setUploading((prev) => ({ ...prev, [field]: false }));
+    }
   };
 
   const addTicketType = () =>
@@ -261,28 +330,21 @@ export default function CreateEventForm() {
     <View style={styles.container}>
       {/* Step indicator */}
       <View style={styles.stepIndicatorContainer}>
-        <View style={styles.stepHeader}>
-          <View style={styles.stepHeaderLeft}>
-            <Text style={styles.stepNumber}>
-              {String(step).padStart(2, "0")}
-            </Text>
-            <View>
-              <Text style={styles.stepLabel}>Step {step} of 4</Text>
-              <Text style={styles.stepName}>{STEP_NAMES[step - 1]}</Text>
-            </View>
+        <View style={styles.stepTopRow}>
+          <View>
+            <Text style={styles.stepLabel}>Step {step} of 4</Text>
+            <Text style={styles.stepName}>{STEP_NAMES[step - 1]}</Text>
           </View>
-          <View style={styles.stepDots}>
+          <View style={styles.stepPills}>
             {[1, 2, 3, 4].map((s) => (
               <TouchableOpacity
                 key={s}
                 onPress={() => s < step && setStep(s)}
                 style={[
-                  styles.stepDot,
-                  s === step
-                    ? styles.activeStepDot
-                    : s <= step
-                      ? styles.completedStepDot
-                      : null,
+                  styles.stepPill,
+                  s === step ? styles.stepPillActive
+                    : s < step ? styles.stepPillDone
+                    : styles.stepPillTodo,
                 ]}
                 disabled={s > step}
               />
@@ -293,7 +355,7 @@ export default function CreateEventForm() {
           <View
             style={[
               styles.stepProgressFill,
-              { width: `${((step - 1) / 3) * 100}%` },
+              { width: `${(step / 4) * 100}%` },
             ]}
           />
         </View>
@@ -342,7 +404,7 @@ export default function CreateEventForm() {
                   </Text>
                   <ChevronRight
                     size={16}
-                    color="#6b7280"
+                    color={theme.colors.textSubtle}
                     style={{ transform: [{ rotate: "90deg" }] }}
                   />
                 </TouchableOpacity>
@@ -398,7 +460,7 @@ export default function CreateEventForm() {
                   </Text>
                   <ChevronRight
                     size={16}
-                    color="#6b7280"
+                    color={theme.colors.textSubtle}
                     style={{ transform: [{ rotate: "90deg" }] }}
                   />
                 </TouchableOpacity>
@@ -444,14 +506,14 @@ export default function CreateEventForm() {
                   style={styles.iconButton}
                   onPress={lookupAddress}
                 >
-                  <MapPin size={20} color="#C8E630" />
+                  <MapPin size={20} color={theme.colors.brand} />
                 </TouchableOpacity>
               </View>
               {formData.address && (
                 <View style={styles.addressRow}>
                   <MapPin
                     size={14}
-                    color="#6b7280"
+                    color={theme.colors.textSubtle}
                     style={{ marginRight: 4 }}
                   />
                   <Text style={styles.helperText}>{formData.address}</Text>
@@ -475,7 +537,7 @@ export default function CreateEventForm() {
                 ]}
               >
                 {formData.hideLocation && (
-                  <CheckSquare size={12} color="#fff" />
+                  <CheckSquare size={12} color="#1A1A14" />
                 )}
               </View>
               <Text style={styles.checkboxLabel}>
@@ -587,7 +649,7 @@ export default function CreateEventForm() {
               <View style={styles.settingsHeader}>
                 <Settings
                   size={16}
-                  color="#111827"
+                  color={theme.colors.text}
                   style={{ marginRight: 8 }}
                 />
                 <Text style={styles.settingsTitle}>Recurring Settings</Text>
@@ -612,7 +674,7 @@ export default function CreateEventForm() {
                     </Text>
                     <ChevronRight
                       size={16}
-                      color="#6b7280"
+                      color={theme.colors.textSubtle}
                       style={{ transform: [{ rotate: "90deg" }] }}
                     />
                   </TouchableOpacity>
@@ -670,7 +732,7 @@ export default function CreateEventForm() {
                 style={styles.addButton}
                 onPress={addTicketType}
               >
-                <Plus size={16} color="#C8E630" style={{ marginRight: 4 }} />
+                <Plus size={16} color={theme.colors.brand} style={{ marginRight: 4 }} />
                 <Text style={styles.addButtonText}>Add Ticket</Text>
               </TouchableOpacity>
             </View>
@@ -734,7 +796,7 @@ export default function CreateEventForm() {
                         style={styles.deleteButton}
                         onPress={() => removeTicketType(idx)}
                       >
-                        <Delete size={20} color="#ef4444" />
+                        <Delete size={20} color={theme.colors.error} />
                       </TouchableOpacity>
                     )}
                   </View>
@@ -763,7 +825,7 @@ export default function CreateEventForm() {
                     </Text>
                     <ChevronRight
                       size={16}
-                      color="#6b7280"
+                      color={theme.colors.textSubtle}
                       style={{ transform: [{ rotate: "90deg" }] }}
                     />
                   </TouchableOpacity>
@@ -815,7 +877,7 @@ export default function CreateEventForm() {
                       />
                       <Lock
                         size={16}
-                        color="#6b7280"
+                        color={theme.colors.textSubtle}
                         style={{ position: "absolute", right: 12 }}
                       />
                     </View>
@@ -841,7 +903,7 @@ export default function CreateEventForm() {
                   ]}
                 >
                   {formData.requiresApproval && (
-                    <CheckSquare size={12} color="#fff" />
+                    <CheckSquare size={12} color="#1A1A14" />
                   )}
                 </View>
                 <Text style={styles.checkboxLabel}>
@@ -864,7 +926,7 @@ export default function CreateEventForm() {
                   ]}
                 >
                   {formData.waitlistEnabled && (
-                    <CheckSquare size={12} color="#fff" />
+                    <CheckSquare size={12} color="#1A1A14" />
                   )}
                 </View>
                 <Text style={styles.checkboxLabel}>
@@ -884,18 +946,17 @@ export default function CreateEventForm() {
                 <TouchableOpacity
                   style={styles.uploadContainer}
                   onPress={() => uploadImage("profile")}
+                  disabled={uploading.profile}
                 >
-                  {formData.profile ? (
-                    <Text style={styles.uploadedText}>Image uploaded</Text>
+                  {uploading.profile ? (
+                    <ActivityIndicator size="large" color={theme.colors.brand} />
+                  ) : formData.profile ? (
+                    <Image source={{ uri: formData.profile }} style={styles.uploadPreview} />
                   ) : (
                     <View style={styles.uploadPlaceholder}>
-                      <Upload
-                        size={32}
-                        color="#6b7280"
-                        style={{ marginBottom: 8 }}
-                      />
-                      <Text style={styles.uploadLabel}>Click to upload</Text>
-                      <Text style={styles.uploadSubLabel}>Max 3MB</Text>
+                      <Upload size={32} color={theme.colors.textSubtle} style={{ marginBottom: 8 }} />
+                      <Text style={styles.uploadLabel}>Tap to upload</Text>
+                      <Text style={styles.uploadSubLabel}>Square image</Text>
                     </View>
                   )}
                 </TouchableOpacity>
@@ -905,18 +966,21 @@ export default function CreateEventForm() {
                 <TouchableOpacity
                   style={styles.uploadContainer}
                   onPress={() => uploadImage("cover")}
+                  disabled={uploading.cover}
                 >
-                  {formData.cover ? (
-                    <Text style={styles.uploadedText}>Image uploaded</Text>
+                  {uploading.cover ? (
+                    <ActivityIndicator size="large" color={theme.colors.brand} />
+                  ) : formData.cover ? (
+                    <Image source={{ uri: formData.cover }} style={styles.uploadPreview} />
                   ) : (
                     <View style={styles.uploadPlaceholder}>
                       <Upload
                         size={32}
-                        color="#6b7280"
+                        color={theme.colors.textSubtle}
                         style={{ marginBottom: 8 }}
                       />
-                      <Text style={styles.uploadLabel}>Click to upload</Text>
-                      <Text style={styles.uploadSubLabel}>Max 3MB</Text>
+                      <Text style={styles.uploadLabel}>Tap to upload</Text>
+                      <Text style={styles.uploadSubLabel}>16:9 ratio</Text>
                     </View>
                   )}
                 </TouchableOpacity>
@@ -949,7 +1013,7 @@ export default function CreateEventForm() {
         >
           <ChevronLeft
             size={20}
-            color={step === 1 ? "#d1d5db" : "#C8E630"}
+            color={step === 1 ? theme.colors.border : theme.colors.brand}
             style={{ marginRight: 4 }}
           />
           <Text
@@ -965,7 +1029,7 @@ export default function CreateEventForm() {
             onPress={() => setStep((s) => Math.min(4, s + 1))}
           >
             <Text style={styles.primaryButtonText}>Next Step</Text>
-            <ChevronRight size={20} color="#fff" style={{ marginLeft: 4 }} />
+            <ChevronRight size={20} color="#1A1A14" style={{ marginLeft: 4 }} />
           </TouchableOpacity>
         ) : (
           <TouchableOpacity
@@ -981,7 +1045,7 @@ export default function CreateEventForm() {
               <>
                 <ActivityIndicator
                   size="small"
-                  color="#fff"
+                  color="#1A1A14"
                   style={{ marginRight: 8 }}
                 />
                 <Text style={styles.submitButtonText}>Creating...</Text>
@@ -989,7 +1053,7 @@ export default function CreateEventForm() {
             ) : (
               <>
                 <Text style={styles.submitButtonText}>Create Event</Text>
-                <CheckSquare size={20} color="#fff" style={{ marginLeft: 4 }} />
+                <CheckSquare size={20} color="#1A1A14" style={{ marginLeft: 4 }} />
               </>
             )}
           </TouchableOpacity>
@@ -1029,7 +1093,7 @@ export default function CreateEventForm() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (theme) => StyleSheet.create({
   container: {
     flex: 1,
     paddingBottom: 16,
@@ -1037,65 +1101,59 @@ const styles = StyleSheet.create({
   stepIndicatorContainer: {
     marginBottom: 24,
   },
-  stepHeader: {
+  stepTopRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "flex-start",
+    alignItems: "center",
     marginBottom: 12,
   },
-  stepHeaderLeft: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 12,
-  },
-  stepNumber: {
-    fontSize: 48,
-    fontWeight: "800",
-    fontFamily: "SpaceGrotesk_700Bold",
-    color: "#C8E630",
-    lineHeight: 48,
-  },
   stepLabel: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "700",
+    fontFamily: "PlusJakartaSans_700Bold",
     textTransform: "uppercase",
     letterSpacing: 1,
-    color: "#6b7280",
+    color: theme.colors.brand,
     marginBottom: 2,
   },
   stepName: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#111827",
+    fontSize: 20,
+    fontWeight: "800",
+    fontFamily: "SpaceGrotesk_700Bold",
+    color: theme.colors.text,
+    letterSpacing: -0.3,
   },
-  stepDots: {
+  stepPills: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    marginTop: 12,
+    gap: 5,
   },
-  stepDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: "#e5e7eb",
+  stepPill: {
+    height: 8,
+    borderRadius: 4,
   },
-  activeStepDot: {
-    width: 24,
-    backgroundColor: "#C8E630",
+  stepPillActive: {
+    width: 28,
+    backgroundColor: theme.colors.brand,
   },
-  completedStepDot: {
-    backgroundColor: "#C8E630",
+  stepPillDone: {
+    width: 16,
+    backgroundColor: theme.colors.brand,
+    opacity: 0.5,
+  },
+  stepPillTodo: {
+    width: 16,
+    backgroundColor: theme.colors.border,
   },
   stepProgressBar: {
-    height: 2,
-    backgroundColor: "#e5e7eb",
-    borderRadius: 1,
+    height: 3,
+    backgroundColor: theme.colors.border,
+    borderRadius: 2,
   },
   stepProgressFill: {
     height: "100%",
-    backgroundColor: "#C8E630",
-    borderRadius: 1,
+    backgroundColor: theme.colors.brand,
+    borderRadius: 2,
   },
   formContainer: {
     flex: 1,
@@ -1109,37 +1167,37 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#4b5563",
+    color: theme.colors.textMuted,
   },
   smallLabel: {
     fontSize: 12,
     fontWeight: "600",
-    color: "#6b7280",
+    color: theme.colors.textSubtle,
     textTransform: "uppercase",
     letterSpacing: 0.5,
   },
   optionalLabel: {
     fontSize: 12,
     fontWeight: "400",
-    color: "#6b7280",
+    color: theme.colors.textSubtle,
   },
   input: {
     width: "100%",
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: "#f3f4f6",
-    borderWidth: 2,
-    borderColor: "#e5e7eb",
+    backgroundColor: theme.colors.surfaceMuted,
+    borderWidth: 1.5,
+    borderColor: theme.colors.border,
     borderRadius: 16,
     fontSize: 16,
-    color: "#111827",
+    color: theme.colors.text,
   },
   inputText: {
     fontSize: 16,
-    color: "#111827",
+    color: theme.colors.text,
   },
   placeholderText: {
-    color: "#9ca3af",
+    color: theme.colors.textSubtle,
   },
   textArea: {
     height: 120,
@@ -1156,11 +1214,11 @@ const styles = StyleSheet.create({
   iconButton: {
     padding: 12,
     borderRadius: 16,
-    backgroundColor: "#eff6ff",
+    backgroundColor: theme.colors.brandTint,
   },
   helperText: {
     fontSize: 12,
-    color: "#6b7280",
+    color: theme.colors.textSubtle,
     marginTop: 4,
   },
   addressRow: {
@@ -1179,16 +1237,16 @@ const styles = StyleSheet.create({
     height: 18,
     borderRadius: 4,
     borderWidth: 2,
-    borderColor: "#C8E630",
+    borderColor: theme.colors.brand,
     justifyContent: "center",
     alignItems: "center",
   },
   checkedCheckbox: {
-    backgroundColor: "#C8E630",
+    backgroundColor: theme.colors.brand,
   },
   checkboxLabel: {
     fontSize: 14,
-    color: "#4b5563",
+    color: theme.colors.textMuted,
   },
   dropdownButton: {
     flexDirection: "row",
@@ -1196,18 +1254,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: "#f3f4f6",
-    borderWidth: 2,
-    borderColor: "#e5e7eb",
+    backgroundColor: theme.colors.surfaceMuted,
+    borderWidth: 1.5,
+    borderColor: theme.colors.border,
     borderRadius: 16,
   },
   dropdownText: {
     fontSize: 16,
-    color: "#111827",
+    color: theme.colors.text,
   },
   dropdownPlaceholder: {
     fontSize: 16,
-    color: "#9ca3af",
+    color: theme.colors.textSubtle,
   },
   dropdown: {
     marginTop: 8,
@@ -1218,10 +1276,13 @@ const styles = StyleSheet.create({
   dropdownItem: {
     paddingHorizontal: 16,
     paddingVertical: 12,
+    backgroundColor: theme.colors.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border,
   },
   dropdownItemText: {
     fontSize: 14,
-    color: "#111827",
+    color: theme.colors.text,
   },
   settingsContainer: {
     marginTop: 4,
@@ -1235,7 +1296,7 @@ const styles = StyleSheet.create({
   settingsTitle: {
     fontSize: 14,
     fontWeight: "700",
-    color: "#111827",
+    color: theme.colors.text,
   },
   ticketTypesHeader: {
     flexDirection: "row",
@@ -1246,7 +1307,7 @@ const styles = StyleSheet.create({
   ticketTypesTitle: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#111827",
+    color: theme.colors.text,
   },
   addButton: {
     flexDirection: "row",
@@ -1257,7 +1318,7 @@ const styles = StyleSheet.create({
   addButtonText: {
     fontSize: 12,
     fontWeight: "700",
-    color: "#C8E630",
+    color: theme.colors.brand,
   },
   ticketTypesContainer: {
     gap: 12,
@@ -1278,7 +1339,7 @@ const styles = StyleSheet.create({
     top: 14,
     fontSize: 14,
     fontWeight: "700",
-    color: "#6b7280",
+    color: theme.colors.textSubtle,
   },
   deleteButton: {
     padding: 8,
@@ -1292,12 +1353,17 @@ const styles = StyleSheet.create({
   uploadContainer: {
     height: 140,
     borderRadius: 16,
-    borderWidth: 2,
-    borderColor: "#e5e7eb",
+    borderWidth: 1.5,
+    borderColor: theme.colors.border,
     borderStyle: "dashed",
-    backgroundColor: "#f3f4f6",
+    backgroundColor: theme.colors.surfaceMuted,
     justifyContent: "center",
     alignItems: "center",
+  },
+  uploadPreview: {
+    width: "100%",
+    height: "100%",
+    borderRadius: 14,
   },
   uploadPlaceholder: {
     alignItems: "center",
@@ -1305,17 +1371,17 @@ const styles = StyleSheet.create({
   uploadLabel: {
     fontSize: 12,
     fontWeight: "600",
-    color: "#6b7280",
+    color: theme.colors.textSubtle,
   },
   uploadSubLabel: {
     fontSize: 10,
-    color: "#9ca3af",
+    color: theme.colors.textSubtle,
     marginTop: 2,
   },
   uploadedText: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#C8E630",
+    color: theme.colors.brand,
   },
   navigationContainer: {
     flexDirection: "row",
@@ -1324,7 +1390,7 @@ const styles = StyleSheet.create({
     marginTop: 24,
     paddingTop: 20,
     borderTopWidth: 1,
-    borderTopColor: "#e5e7eb",
+    borderTopColor: theme.colors.border,
   },
   navButton: {
     flexDirection: "row",
@@ -1337,29 +1403,31 @@ const styles = StyleSheet.create({
   ghostButtonText: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#C8E630",
+    color: theme.colors.brand,
   },
   primaryButton: {
-    backgroundColor: "#C8E630",
+    backgroundColor: theme.colors.brand,
   },
   primaryButtonText: {
-    color: "#fff",
+    color: "#1A1A14",
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: "700",
+    fontFamily: "PlusJakartaSans_700Bold",
   },
   submitButton: {
-    backgroundColor: "#10b981",
+    backgroundColor: theme.colors.brand,
   },
   submitButtonText: {
-    color: "#fff",
+    color: "#1A1A14",
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: "700",
+    fontFamily: "PlusJakartaSans_700Bold",
   },
   disabledButton: {
     opacity: 0.5,
   },
   disabledText: {
-    color: "#d1d5db",
+    color: theme.colors.textSubtle,
   },
 });
 

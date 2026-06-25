@@ -5,11 +5,12 @@ import {
   StyleSheet,
   TouchableOpacity,
 } from "react-native";
-import { Calendar, Clock, MapPin, Download, CheckCircle2 } from "lucide-react-native";
+import { Calendar, Clock, MapPin, Download, CheckCircle2, QrCode } from "lucide-react-native";
 import { NeuCard } from "./NeuCard";
 import { LinearGradient } from "expo-linear-gradient";
 import { Image as ExpoImage } from "expo-image";
 import { useTheme } from "../theme/ThemeProvider";
+import QRCode from "react-native-qrcode-svg";
 
 export function TicketCard({ ticket, event }) {
   const { theme } = useTheme();
@@ -85,15 +86,21 @@ export function TicketCard({ ticket, event }) {
 
         {/* QR Code Section */}
         {showQR ? (
-          <View style={[styles.qrContainer, { backgroundColor: theme.colors.surfaceMuted }]}>
-            <View style={[styles.qrPlaceholder, { backgroundColor: theme.colors.surface }]}>
-              <Text style={[styles.qrPlaceholderText, { color: theme.colors.textSubtle }]}>QR Code</Text>
-            </View>
-            <Text style={[styles.qrNote, { color: theme.colors.textSubtle }]}>
+          <View style={[styles.qrContainer, { backgroundColor: "#fff" }]}>
+            <QRCode
+              value={JSON.stringify({ ticketId, eventId: ticket.eventId || ticket.event_id || "" })}
+              size={200}
+              color="#1A1A14"
+              backgroundColor="#fff"
+            />
+            <Text style={styles.qrIdText}>
+              {ticketId.substring(0, 16)}…
+            </Text>
+            <Text style={styles.qrNote}>
               Show this QR code at the event entrance
             </Text>
             <TouchableOpacity style={styles.hideQrButton} onPress={() => setShowQR(false)}>
-              <Text style={[styles.hideQrText, { color: theme.colors.brand }]}>Hide QR Code</Text>
+              <Text style={[styles.hideQrText, { color: "#6366f1" }]}>Hide QR Code</Text>
             </TouchableOpacity>
           </View>
         ) : (
@@ -101,6 +108,7 @@ export function TicketCard({ ticket, event }) {
             style={[styles.showQrButton, { backgroundColor: theme.colors.brand }]}
             onPress={() => setShowQR(true)}
           >
+            <QrCode size={16} color="#1A1A14" />
             <Text style={styles.showQrText}>Show QR Code</Text>
           </TouchableOpacity>
         )}
@@ -206,26 +214,18 @@ const styles = StyleSheet.create({
     fontFamily: "PlusJakartaSans_400Regular",
   },
   qrContainer: {
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 16,
+    padding: 20,
     alignItems: "center",
     marginBottom: 12,
+    gap: 10,
   },
-  qrPlaceholder: {
-    width: 224,
-    height: 224,
-    borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  qrPlaceholderText: {
-    fontSize: 16,
+  qrIdText: {
+    fontSize: 11,
     fontFamily: "PlusJakartaSans_400Regular",
+    letterSpacing: 1,
+    textAlign: "center",
+    color: "#4A4A3A",
   },
   qrNote: {
     fontSize: 12,
@@ -242,9 +242,12 @@ const styles = StyleSheet.create({
     fontFamily: "PlusJakartaSans_600SemiBold",
   },
   showQrButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
     paddingVertical: 12,
     borderRadius: 12,
-    alignItems: "center",
     marginBottom: 12,
   },
   showQrText: {

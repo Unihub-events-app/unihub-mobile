@@ -6,7 +6,8 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  ActivityIndicator,
+  Pressable,
+  Image,
 } from "react-native";
 import { router } from "expo-router";
 import {
@@ -14,65 +15,104 @@ import {
   FolderOpen,
   Layers,
   Ticket,
-  MapPin,
-  Clock,
+  Bookmark,
 } from "lucide-react-native";
 import {
   Screen,
-  NeuCard,
-  NeuInset,
-  EventCard,
   TicketCard,
   PageLoader,
 } from "../../components/index.js";
 import { useSessionStore } from "../../lib/auth.js";
 import { API_URL } from "../../lib/config.js";
+import { getBookmarks } from "../../lib/bookmarks.js";
 
-function EmptyState({ type }) {
+const MONTHS_SHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+function parseEventDate(dateStr) {
+  if (!dateStr) return null;
+  const parts = dateStr.split("/");
+  if (parts.length < 2) return null;
+  return { day: parts[0], month: MONTHS_SHORT[parseInt(parts[1]) - 1] || "" };
+}
+
+function EventRow({ event, dim }) {
   const { theme } = useTheme();
-  const styles = getStyles(theme);
+  const dm = parseEventDate(event.date);
+  const isFree = event.price === 0 || event.price === "0";
   return (
-    <NeuInset style={styles.emptyState}>
-      <NeuCard style={styles.emptyIconContainer}>
-        {type === "past" ? (
-          <FolderOpen size={32} color="#9ca3af" />
+    <Pressable
+      onPress={() => router.push(`/event/${event.event_id}`)}
+      style={({ pressed }) => [{
+        flexDirection: "row", alignItems: "center", gap: 14,
+        padding: 12, borderRadius: 20, marginBottom: 10,
+        backgroundColor: theme.colors.surface,
+        borderWidth: 1, borderColor: theme.colors.border,
+        opacity: pressed ? 0.85 : dim ? 0.65 : 1,
+      }]}
+    >
+      <View style={{ width: 72, height: 72, borderRadius: 14, overflow: "hidden", flexShrink: 0 }}>
+        {event.profile ? (
+          <Image source={{ uri: event.profile }} style={{ width: "100%", height: "100%" }} resizeMode="cover" />
         ) : (
-          <Calendar size={32} color="#9ca3af" />
+          <View style={{ width: "100%", height: "100%", backgroundColor: theme.colors.navSurface, alignItems: "center", justifyContent: "center" }}>
+            <Text style={{ fontSize: 24 }}>🎉</Text>
+          </View>
         )}
-      </NeuCard>
-      <Text style={styles.emptyTitle}>No {type} events</Text>
-      <Text style={styles.emptyText}>
-        {type === "past"
-          ? "Your attended events will show up here."
-          : "Register for events to see them here."}
-      </Text>
-      {type !== "past" && (
-        <TouchableOpacity
-          style={styles.exploreButton}
-          onPress={() => router.push("/(app)/dashboard")}
-        >
-          <Text style={styles.exploreButtonText}>Explore Events</Text>
-        </TouchableOpacity>
-      )}
-    </NeuInset>
+      </View>
+      <View style={{ flex: 1, minWidth: 0 }}>
+        <Text style={{ fontSize: 15, fontWeight: "700", fontFamily: "SpaceGrotesk_700Bold", color: theme.colors.text, marginBottom: 3 }} numberOfLines={1}>
+          {event.name}
+        </Text>
+        <Text style={{ fontSize: 12, color: theme.colors.textSubtle, fontFamily: "PlusJakartaSans_400Regular", marginBottom: 6 }} numberOfLines={1}>
+          {event.venue}
+        </Text>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+          {dm && (
+            <Text style={{ fontSize: 11, fontWeight: "700", color: theme.colors.brand, fontFamily: "PlusJakartaSans_700Bold" }}>
+              {dm.day} {dm.month}
+            </Text>
+          )}
+          {event.time && <Text style={{ fontSize: 11, color: theme.colors.textSubtle }}>· {event.time}</Text>}
+        </View>
+      </View>
+      <View style={{ paddingVertical: 5, paddingHorizontal: 10, borderRadius: 10, backgroundColor: isFree ? theme.colors.brandTint : theme.colors.navSurface }}>
+        <Text style={{ fontSize: 11, fontWeight: "800", fontFamily: "PlusJakartaSans_700Bold", color: isFree ? theme.colors.brand : "#F0EFE0" }}>
+          {isFree ? "Free" : `₦${parseInt(event.price || 0).toLocaleString()}`}
+        </Text>
+      </View>
+    </Pressable>
   );
 }
 
-function TabButton({ active, icon: Icon, label, onPress }) {
+function EmptyState({ type }) {
   const { theme } = useTheme();
-  const styles = getStyles(theme);
+  const emoji = type === "past" ? "🗓️" : type === "tickets" ? "🎟️" : "📅";
+  const title = type === "past" ? "No past events yet" : type === "tickets" ? "No tickets yet" : "Nothing upcoming";
+  const body = type === "past"
+    ? "Events you've attended will appear here."
+    : type === "tickets"
+    ? "Register for events to collect your tickets."
+    : "Events you've signed up for will show here.";
   return (
-    <TouchableOpacity
-      style={[styles.tabButton, active && styles.tabButtonActive]}
-      onPress={onPress}
-    >
-      <Icon size={16} color={active ? theme.colors.brand : theme.colors.textSubtle} />
-      <Text
-        style={[styles.tabButtonText, active && styles.tabButtonTextActive]}
-      >
-        {label}
+    <View style={{ alignItems: "center", paddingVertical: 52, paddingHorizontal: 28 }}>
+      <Text style={{ fontSize: 52, marginBottom: 20 }}>{emoji}</Text>
+      <Text style={{ fontSize: 20, fontWeight: "800", fontFamily: "SpaceGrotesk_700Bold", color: theme.colors.text, marginBottom: 10, textAlign: "center" }}>
+        {title}
       </Text>
-    </TouchableOpacity>
+      <Text style={{ fontSize: 14, color: theme.colors.textSubtle, textAlign: "center", lineHeight: 22, marginBottom: 28, fontFamily: "PlusJakartaSans_400Regular" }}>
+        {body}
+      </Text>
+      {type !== "past" && (
+        <TouchableOpacity
+          style={{ backgroundColor: theme.colors.brand, paddingVertical: 13, paddingHorizontal: 32, borderRadius: 99 }}
+          onPress={() => router.push("/(app)/dashboard")}
+        >
+          <Text style={{ fontSize: 15, fontWeight: "700", fontFamily: "PlusJakartaSans_700Bold", color: "#1A1A14" }}>
+            Explore Events
+          </Text>
+        </TouchableOpacity>
+      )}
+    </View>
   );
 }
 
@@ -85,8 +125,9 @@ export default function EventLibrary() {
   const [events, setEvents] = useState({ upcoming: [], live: [], past: [] });
   const [tickets, setTickets] = useState([]);
   const [filteredTickets, setFilteredTickets] = useState([]);
-  const [ticketFilter, setTicketFilter] = useState("all");
   const [loading, setLoading] = useState(true);
+  const [savedEvents, setSavedEvents] = useState([]);
+  const [savedLoading, setSavedLoading] = useState(false);
 
   useEffect(() => {
     if (!token) {
@@ -106,27 +147,13 @@ export default function EventLibrary() {
         if (res.ok) {
           const data = await res.json();
           setEvents(data);
-
-          const allUpcomingEvents = [
-            ...(data.live || []),
-            ...(data.upcoming || []),
-          ];
+          const allUpcomingEvents = [...(data.live || []), ...(data.upcoming || [])];
           setTickets(
-            allUpcomingEvents
-              .map((event) => {
-                const participant = event.participants?.find(
-                  (p) => p.id === token,
-                );
-                if (participant) {
-                  return {
-                    ...participant,
-                    event: event,
-                    eventId: event.event_id,
-                  };
-                }
-                return null;
-              })
-              .filter(Boolean),
+            allUpcomingEvents.map((event) => {
+              const participant = event.participants?.find((p) => p.id === token);
+              if (participant) return { ...participant, event, eventId: event.event_id };
+              return null;
+            }).filter(Boolean)
           );
         }
       } catch (error) {
@@ -135,269 +162,170 @@ export default function EventLibrary() {
         setLoading(false);
       }
     };
-
     fetchEvents();
   }, [token]);
 
-  useEffect(() => {
-    if (ticketFilter === "all") {
-      setFilteredTickets(tickets);
-    } else {
-      setFilteredTickets(
-        tickets.filter((ticket) => {
-          if (ticketFilter === "free") {
-            return (
-              ticket.event.price === 0 ||
-              ticket.ticketType?.toLowerCase().includes("free")
-            );
-          } else if (ticketFilter === "paid") {
-            return ticket.event.price > 0;
-          } else {
-            return ticket.ticketType === ticketFilter;
-          }
-        }),
-      );
-    }
-  }, [tickets, ticketFilter]);
+  const fetchSaved = async () => {
+    setSavedLoading(true);
+    try {
+      const bookmarkIds = await getBookmarks();
+      if (bookmarkIds.length === 0) { setSavedEvents([]); return; }
+      const res = await fetch(`${API_URL}/event/getallevents`);
+      if (res.ok) {
+        const data = await res.json();
+        setSavedEvents(data.filter((e) => bookmarkIds.includes(e.event_id)));
+      }
+    } catch {}
+    finally { setSavedLoading(false); }
+  };
 
-  if (loading) {
-    return <PageLoader />;
-  }
+  useEffect(() => {
+    if (activeTab === "saved") fetchSaved();
+  }, [activeTab]);
+
+  useEffect(() => {
+    setFilteredTickets(tickets);
+  }, [tickets]);
+
+  if (loading) return <PageLoader />;
 
   return (
     <Screen padded={false}>
-      <ScrollView
-        contentContainerStyle={styles.scrollContainer}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Page Header */}
+      <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+
+        {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.headerLabel}>My Collection</Text>
-          <View style={styles.headerTitleRow}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.headerSuper}>My Collection</Text>
             <Text style={styles.headerTitle}>Library</Text>
-            {tickets.length > 0 && (
-              <View style={styles.ticketCountBadge}>
-                <Text style={styles.ticketCountBadgeText}>{tickets.length} tickets</Text>
-              </View>
-            )}
           </View>
-        </View>
-
-        {/* Segment controls */}
-        <View style={styles.tabsContainer}>
-          {/* Row 1: Upcoming / Past */}
-          <View style={styles.segmentRow}>
-            {[
-              { key: "upcoming", label: "Upcoming", icon: Calendar },
-              { key: "past", label: "Past", icon: FolderOpen },
-            ].map(({ key, label, icon: Icon }) => (
-              <TouchableOpacity
-                key={key}
-                style={[styles.segmentBtn, activeTab === key && styles.segmentBtnActive]}
-                onPress={() => setActiveTab(key)}
-              >
-                <Icon
-                  size={14}
-                  color={activeTab === key ? theme.colors.brand : theme.colors.textSubtle}
-                />
-                <Text
-                  style={[
-                    styles.segmentBtnText,
-                    activeTab === key && styles.segmentBtnTextActive,
-                  ]}
-                >
-                  {label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          {/* Row 2: Events / Tickets (only for upcoming) */}
-          {activeTab === "upcoming" && (
-            <View style={styles.viewToggleRow}>
-              {[
-                { key: "events", label: "Events", icon: Layers },
-                { key: "tickets", label: "My Tickets", icon: Ticket },
-              ].map(({ key, label, icon: Icon }) => (
-                <TouchableOpacity
-                  key={key}
-                  style={[styles.viewToggleBtn, viewMode === key && styles.viewToggleBtnActive]}
-                  onPress={() => setViewMode(key)}
-                >
-                  <Icon
-                    size={13}
-                    color={viewMode === key ? "#1A1A14" : theme.colors.textSubtle}
-                  />
-                  <Text
-                    style={[
-                      styles.viewToggleBtnText,
-                      viewMode === key && styles.viewToggleBtnTextActive,
-                    ]}
-                  >
-                    {label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+          {tickets.length > 0 && (
+            <View style={styles.ticketBadge}>
+              <Ticket size={11} color="#1A1A14" />
+              <Text style={styles.ticketBadgeText}>
+                {tickets.length} ticket{tickets.length !== 1 ? "s" : ""}
+              </Text>
             </View>
           )}
         </View>
 
-        {/* Content */}
-        {activeTab === "upcoming" ? (
-          viewMode === "tickets" ? (
-            <View style={styles.section}>
-              <View style={styles.sectionHeader}>
-                <View style={styles.sectionHeaderLeft}>
-                  <View
-                    style={[styles.sectionDot, { backgroundColor: theme.colors.brand }]}
-                  />
-                  <Text style={styles.sectionTitle}>Your Tickets</Text>
-                </View>
-                {tickets.length > 0 && (
-                  <TouchableOpacity
-                    style={styles.filterButton}
-                    onPress={() => {}}
-                  >
-                    <Text style={styles.filterButtonText}>Filter</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
+        {/* Underline Tab Bar */}
+        <View style={styles.tabBar}>
+          {[
+            { key: "upcoming", label: "Upcoming" },
+            { key: "past", label: "Past" },
+            { key: "saved", label: "Saved" },
+          ].map((t) => (
+            <TouchableOpacity
+              key={t.key}
+              style={[styles.tab, activeTab === t.key && styles.tabActive]}
+              onPress={() => {
+                setActiveTab(t.key);
+                if (t.key !== "upcoming") setViewMode("events");
+              }}
+            >
+              <Text style={[styles.tabText, activeTab === t.key && styles.tabTextActive]}>
+                {t.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
 
-              {filteredTickets.length > 0 ? (
-                <View style={styles.grid}>
-                  {filteredTickets.map((ticket, index) => (
-                    <TicketCard
-                      key={`${ticket.eventId}-${index}`}
-                      ticket={ticket}
-                      event={ticket.event}
-                    />
-                  ))}
-                </View>
-              ) : tickets.length > 0 ? (
-                <NeuInset style={styles.emptyFilterState}>
-                  <NeuCard style={styles.emptyFilterIconContainer}>
-                    <Ticket size={32} color="#9ca3af" />
-                  </NeuCard>
-                  <Text style={styles.emptyFilterTitle}>
-                    No tickets match this filter
-                  </Text>
-                  <Text style={styles.emptyFilterText}>
-                    Try a different filter to see your tickets
-                  </Text>
+        {/* Content */}
+        <View style={styles.content}>
+          {activeTab === "upcoming" && (
+            <>
+              {/* Sub-toggle: Events vs Tickets */}
+              <View style={styles.subRow}>
+                {[
+                  { key: "events", label: "Events", icon: Layers },
+                  { key: "tickets", label: "My Tickets", icon: Ticket },
+                ].map((m) => (
                   <TouchableOpacity
-                    style={styles.showAllButton}
-                    onPress={() => setTicketFilter("all")}
+                    key={m.key}
+                    style={[styles.subBtn, viewMode === m.key && styles.subBtnActive]}
+                    onPress={() => setViewMode(m.key)}
                   >
-                    <Text style={styles.showAllButtonText}>
-                      Show All Tickets
+                    <m.icon size={13} color={viewMode === m.key ? "#1A1A14" : theme.colors.textSubtle} />
+                    <Text style={[styles.subBtnText, viewMode === m.key && styles.subBtnTextActive]}>
+                      {m.label}
                     </Text>
                   </TouchableOpacity>
-                </NeuInset>
-              ) : (
-                <NeuInset style={styles.emptyState}>
-                  <NeuCard style={styles.emptyIconContainer}>
-                    <Ticket size={32} color="#9ca3af" />
-                  </NeuCard>
-                  <Text style={styles.emptyTitle}>No Tickets Yet</Text>
-                  <Text style={styles.emptyText}>
-                    Register for events to get your tickets here
-                  </Text>
-                  <TouchableOpacity
-                    style={styles.exploreButton}
-                    onPress={() => router.push("/(app)/dashboard")}
-                  >
-                    <Text style={styles.exploreButtonText}>Explore Events</Text>
-                  </TouchableOpacity>
-                </NeuInset>
-              )}
-            </View>
-          ) : (
-            <View style={styles.eventsContent}>
-              {/* Live Events */}
-              {events.live && events.live.length > 0 && (
-                <View style={styles.section}>
-                  <View style={styles.sectionHeader}>
-                    <View style={styles.liveDotContainer}>
-                      <View style={styles.liveDotOuter} />
-                      <View style={styles.liveDot} />
-                    </View>
-                    <Text style={styles.sectionTitle}>Happening Now</Text>
-                  </View>
-                  <View style={styles.grid}>
-                    {events.live.map((event) => (
-                      <EventCard
-                        key={event.event_id}
-                        title={event.name}
-                        date={event.date}
-                        time={event.time}
-                        location={event.venue}
-                        imageSrc={event.profile}
-                        eventId={event.event_id}
-                        price={event.price}
-                        category={event.category}
-                        isPremium={event.isPremium}
-                      />
-                    ))}
-                  </View>
-                </View>
-              )}
+                ))}
+              </View>
 
-              {/* Upcoming Events */}
-              <View style={styles.section}>
-                <View style={styles.sectionHeader}>
-                  <View
-                    style={[styles.sectionDot, { backgroundColor: theme.colors.brand }]}
-                  />
-                  <Text style={styles.sectionTitle}>Upcoming</Text>
-                </View>
-                {events.upcoming.length > 0 ? (
-                  <View style={styles.grid}>
-                    {events.upcoming.map((event) => (
-                      <EventCard
-                        key={event.event_id}
-                        title={event.name}
-                        date={event.date}
-                        time={event.time}
-                        location={event.venue}
-                        imageSrc={event.profile}
-                        eventId={event.event_id}
-                        price={event.price}
-                        category={event.category}
-                        isPremium={event.isPremium}
-                      />
+              {viewMode === "tickets" ? (
+                filteredTickets.length > 0 ? (
+                  <View style={{ gap: 12 }}>
+                    {filteredTickets.map((ticket, i) => (
+                      <TicketCard key={`${ticket.eventId}-${i}`} ticket={ticket} event={ticket.event} />
                     ))}
                   </View>
                 ) : (
-                  !events.live?.length && <EmptyState type="upcoming" />
-                )}
-              </View>
-            </View>
-          )
-        ) : (
-          <View style={styles.section}>
-            {events.past.length > 0 ? (
-              <View style={styles.grid}>
-                {events.past.map((event) => (
-                  <View key={event.event_id} style={{ opacity: 0.8 }}>
-                    <EventCard
-                      title={event.name}
-                      date={event.date}
-                      time={event.time}
-                      location={event.venue}
-                      imageSrc={event.profile}
-                      eventId={event.event_id}
-                      price={event.price}
-                      category={event.category}
-                      isPremium={event.isPremium}
-                    />
+                  <EmptyState type="tickets" />
+                )
+              ) : (
+                <>
+                  {events.live && events.live.length > 0 && (
+                    <View style={styles.section}>
+                      <View style={styles.sectionHead}>
+                        <View style={styles.livePulse} />
+                        <Text style={styles.sectionTitle}>Happening Now</Text>
+                      </View>
+                      {events.live.map((event) => (
+                        <EventRow key={event.event_id} event={event} />
+                      ))}
+                    </View>
+                  )}
+                  <View style={styles.section}>
+                    {events.upcoming.length > 0 ? (
+                      <>
+                        <Text style={styles.sectionTitle}>Upcoming</Text>
+                        {events.upcoming.map((event) => (
+                          <EventRow key={event.event_id} event={event} />
+                        ))}
+                      </>
+                    ) : (
+                      !events.live?.length && <EmptyState type="upcoming" />
+                    )}
                   </View>
-                ))}
-              </View>
+                </>
+              )}
+            </>
+          )}
+
+          {activeTab === "past" && (
+            events.past.length > 0 ? (
+              events.past.map((event) => (
+                <EventRow key={event.event_id} event={event} dim />
+              ))
             ) : (
               <EmptyState type="past" />
-            )}
-          </View>
-        )}
+            )
+          )}
+
+          {activeTab === "saved" && (
+            savedLoading ? (
+              <View style={{ alignItems: "center", paddingVertical: 52 }}>
+                <Calendar size={36} color={theme.colors.textSubtle} />
+              </View>
+            ) : savedEvents.length > 0 ? (
+              savedEvents.map((event) => (
+                <EventRow key={event.event_id} event={event} />
+              ))
+            ) : (
+              <View style={{ alignItems: "center", paddingVertical: 52, paddingHorizontal: 28 }}>
+                <Text style={{ fontSize: 48, marginBottom: 20 }}>🔖</Text>
+                <Text style={{ fontSize: 20, fontWeight: "800", fontFamily: "SpaceGrotesk_700Bold", color: theme.colors.text, marginBottom: 10, textAlign: "center" }}>
+                  No saved events
+                </Text>
+                <Text style={{ fontSize: 14, color: theme.colors.textSubtle, textAlign: "center", lineHeight: 22, fontFamily: "PlusJakartaSans_400Regular" }}>
+                  Tap the bookmark icon on any event to save it here.
+                </Text>
+              </View>
+            )
+          )}
+        </View>
 
         <View style={{ height: 120 }} />
       </ScrollView>
@@ -406,42 +334,24 @@ export default function EventLibrary() {
 }
 
 const getStyles = (theme) => StyleSheet.create({
-  loadingContainer: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: theme.colors.background,
-  },
-  loadingCard: {
-    padding: 40,
-    alignItems: "center",
-    gap: 16,
-  },
-  loadingText: {
-    fontSize: 14,
-    fontWeight: "500",
-    color: theme.colors.textSubtle,
-  },
   scrollContainer: {
     paddingTop: 24,
     paddingBottom: 24,
     paddingHorizontal: 16,
   },
   header: {
+    flexDirection: "row",
+    alignItems: "flex-end",
     marginBottom: 24,
   },
-  headerLabel: {
+  headerSuper: {
     fontSize: 11,
     fontWeight: "700",
     textTransform: "uppercase",
     letterSpacing: 1,
     color: theme.colors.brand,
     marginBottom: 4,
-  },
-  headerTitleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
+    fontFamily: "PlusJakartaSans_700Bold",
   },
   headerTitle: {
     fontSize: 32,
@@ -450,236 +360,106 @@ const getStyles = (theme) => StyleSheet.create({
     color: theme.colors.text,
     letterSpacing: -0.5,
   },
-  ticketCountBadge: {
-    backgroundColor: theme.colors.brand,
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+  ticketBadge: {
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    marginTop: 2,
+    gap: 5,
+    backgroundColor: theme.colors.brand,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 99,
+    marginBottom: 4,
   },
-  ticketCountBadgeText: {
-    color: "#1A1A14",
+  ticketBadgeText: {
     fontSize: 12,
     fontWeight: "700",
+    fontFamily: "PlusJakartaSans_700Bold",
+    color: "#1A1A14",
   },
-  tabsContainer: {
-    gap: 10,
-    marginBottom: 28,
-  },
-  segmentRow: {
+  tabBar: {
     flexDirection: "row",
-    backgroundColor: theme.colors.surfaceMuted,
-    borderRadius: 14,
-    padding: 3,
-    gap: 3,
+    borderBottomWidth: 1.5,
+    borderBottomColor: theme.colors.border,
+    marginBottom: 24,
   },
-  segmentBtn: {
+  tab: {
     flex: 1,
-    flexDirection: "row",
+    paddingVertical: 14,
     alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    paddingVertical: 10,
-    borderRadius: 11,
+    borderBottomWidth: 2.5,
+    borderBottomColor: "transparent",
+    marginBottom: -1.5,
   },
-  segmentBtnActive: {
-    backgroundColor: theme.colors.surface,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 2,
+  tabActive: {
+    borderBottomColor: theme.colors.brand,
   },
-  segmentBtnText: {
-    fontSize: 13,
+  tabText: {
+    fontSize: 15,
     fontWeight: "600",
-    color: theme.colors.textSubtle,
+    color: theme.colors.textMuted,
+    fontFamily: "PlusJakartaSans_600SemiBold",
   },
-  segmentBtnTextActive: {
+  tabTextActive: {
     color: theme.colors.brand,
     fontWeight: "700",
+    fontFamily: "PlusJakartaSans_700Bold",
   },
-  viewToggleRow: {
+  content: {
+    flex: 1,
+  },
+  subRow: {
     flexDirection: "row",
     gap: 8,
+    marginBottom: 22,
   },
-  viewToggleBtn: {
+  subBtn: {
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 6,
-    paddingVertical: 9,
-    paddingHorizontal: 14,
-    borderRadius: 12,
+    paddingVertical: 11,
+    borderRadius: 14,
     backgroundColor: theme.colors.surfaceMuted,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
   },
-  viewToggleBtnActive: {
+  subBtnActive: {
     backgroundColor: theme.colors.brand,
+    borderColor: theme.colors.brand,
   },
-  viewToggleBtnText: {
+  subBtnText: {
     fontSize: 13,
     fontWeight: "600",
     color: theme.colors.textSubtle,
+    fontFamily: "PlusJakartaSans_600SemiBold",
   },
-  viewToggleBtnTextActive: {
+  subBtnTextActive: {
     color: "#1A1A14",
     fontWeight: "700",
-  },
-  tabButton: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    paddingVertical: 10,
-    borderRadius: 12,
-  },
-  tabButtonActive: {
-    backgroundColor: theme.colors.surface,
-  },
-  tabButtonText: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: theme.colors.textSubtle,
-  },
-  tabButtonTextActive: {
-    color: theme.colors.brand,
+    fontFamily: "PlusJakartaSans_700Bold",
   },
   section: {
-    marginBottom: 32,
+    marginBottom: 28,
   },
-  sectionHeader: {
+  sectionHead: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 16,
+    gap: 8,
+    marginBottom: 14,
   },
-  sectionHeaderLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  sectionDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  liveDotContainer: {
-    position: "relative",
-    width: 12,
-    height: 12,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  liveDot: {
+  livePulse: {
     width: 10,
     height: 10,
     borderRadius: 5,
     backgroundColor: theme.colors.error,
   },
-  liveDotOuter: {
-    position: "absolute",
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    backgroundColor: "rgba(190, 18, 60, 0.3)",
-  },
   sectionTitle: {
-    fontSize: 12,
-    fontWeight: "700",
-    textTransform: "uppercase",
-    letterSpacing: 0.8,
-    color: theme.colors.textSubtle,
-  },
-  filterButton: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    backgroundColor: theme.colors.surface,
-    borderRadius: 10,
-  },
-  filterButtonText: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: theme.colors.textMuted,
-  },
-  grid: {
-    gap: 16,
-  },
-  emptyState: {
-    padding: 32,
-    alignItems: "center",
-    borderRadius: 24,
-    gap: 16,
-  },
-  emptyIconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  emptyTitle: {
-    fontSize: 20,
-    fontWeight: "700",
+    fontSize: 17,
+    fontWeight: "800",
     fontFamily: "SpaceGrotesk_700Bold",
     color: theme.colors.text,
-  },
-  emptyText: {
-    fontSize: 14,
-    color: theme.colors.textSubtle,
-    textAlign: "center",
-    marginBottom: 12,
-  },
-  exploreButton: {
-    backgroundColor: theme.colors.brand,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 12,
-  },
-  exploreButtonText: {
-    color: theme.colors.surface,
-    fontSize: 14,
-    fontWeight: "700",
-  },
-  emptyFilterState: {
-    padding: 32,
-    alignItems: "center",
-    borderRadius: 24,
-    gap: 16,
-  },
-  emptyFilterIconContainer: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  emptyFilterTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: theme.colors.text,
-  },
-  emptyFilterText: {
-    fontSize: 14,
-    color: theme.colors.textSubtle,
-    textAlign: "center",
-    marginBottom: 12,
-  },
-  showAllButton: {
-    backgroundColor: theme.colors.surface,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 10,
-  },
-  showAllButtonText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: theme.colors.brand,
-  },
-  eventsContent: {
-    gap: 32,
+    letterSpacing: -0.3,
+    marginBottom: 14,
   },
 });

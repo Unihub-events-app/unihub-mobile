@@ -1,6 +1,14 @@
 import { useTheme } from "../../theme/ThemeProvider.js";
-import React from "react";
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from "react-native";
+import React, { useRef } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Pressable,
+  Animated,
+  Linking,
+} from "react-native";
 import { router } from "expo-router";
 import {
   User,
@@ -9,24 +17,51 @@ import {
   LogOut,
   ChevronRight,
   RefreshCw,
+  FileText,
+  Shield,
+  Info,
 } from "lucide-react-native";
 import { Screen, NeuCard, PrimaryButton } from "../../components/index.js";
 import { useSessionStore } from "../../lib/auth.js";
+import Constants from "expo-constants";
 
-function SettingsItem({ icon: Icon, title, onPress, subtitle }) {
+function SettingsItem({ icon: Icon, title, onPress, subtitle, iconColor }) {
   const { theme } = useTheme();
   const styles = getStyles(theme);
+  const scale = useRef(new Animated.Value(1)).current;
+  const opacity = useRef(new Animated.Value(1)).current;
+
+  const pressIn = () => {
+    Animated.parallel([
+      Animated.spring(scale, { toValue: 0.97, useNativeDriver: true, speed: 40 }),
+      Animated.timing(opacity, { toValue: 0.7, duration: 80, useNativeDriver: true }),
+    ]).start();
+  };
+  const pressOut = () => {
+    Animated.parallel([
+      Animated.spring(scale, { toValue: 1, useNativeDriver: true, speed: 25 }),
+      Animated.timing(opacity, { toValue: 1, duration: 150, useNativeDriver: true }),
+    ]).start();
+  };
+
   return (
-    <TouchableOpacity style={styles.settingsItem} onPress={onPress}>
-      <View style={styles.settingsIconContainer}>
-        <Icon size={20} color={theme.colors.brand} />
-      </View>
-      <View style={styles.settingsTextContainer}>
-        <Text style={styles.settingsTitle}>{title}</Text>
-        {subtitle && <Text style={styles.settingsSubtitle}>{subtitle}</Text>}
-      </View>
-      <ChevronRight size={20} color={theme.colors.textSubtle} />
-    </TouchableOpacity>
+    <Pressable onPress={onPress} onPressIn={pressIn} onPressOut={pressOut} disabled={!onPress}>
+      <Animated.View
+        style={[
+          styles.settingsItem,
+          { transform: [{ scale }], opacity },
+        ]}
+      >
+        <View style={[styles.settingsIconContainer, iconColor && { backgroundColor: iconColor + "18" }]}>
+          <Icon size={20} color={iconColor || theme.colors.brand} />
+        </View>
+        <View style={styles.settingsTextContainer}>
+          <Text style={styles.settingsTitle}>{title}</Text>
+          {subtitle && <Text style={styles.settingsSubtitle}>{subtitle}</Text>}
+        </View>
+        {onPress && <ChevronRight size={20} color={theme.colors.textSubtle} />}
+      </Animated.View>
+    </Pressable>
   );
 }
 
@@ -64,12 +99,14 @@ export default function SettingsScreen() {
             icon={User}
             title="Edit Profile"
             subtitle="Update your name, bio, and photo"
+            onPress={() => router.push("/users/profile-edit")}
           />
           <View style={styles.divider} />
           <SettingsItem
             icon={Bell}
             title="Notifications"
-            subtitle="Manage your notification preferences"
+            subtitle="Manage notification preferences"
+            onPress={() => router.push("/users/notification-settings")}
           />
         </SettingsSection>
 
@@ -78,6 +115,8 @@ export default function SettingsScreen() {
             icon={Lock}
             title="Privacy & Security"
             subtitle="Password, two-factor, and more"
+            onPress={() => router.push("/users/privacy-settings")}
+            iconColor="#6366f1"
           />
           <View style={styles.divider} />
           <SettingsItem
@@ -85,6 +124,33 @@ export default function SettingsScreen() {
             title="App Updates"
             subtitle="Check GitHub Releases for the latest APK"
             onPress={() => router.push("/(app)/updates")}
+          />
+        </SettingsSection>
+
+        <SettingsSection title="Legal">
+          <SettingsItem
+            icon={FileText}
+            title="Terms of Service"
+            subtitle="Read our terms and conditions"
+            onPress={() => Linking.openURL("https://tryunihub.click/terms")}
+            iconColor="#0ea5e9"
+          />
+          <View style={styles.divider} />
+          <SettingsItem
+            icon={Shield}
+            title="Privacy Policy"
+            subtitle="How we handle your data"
+            onPress={() => Linking.openURL("https://tryunihub.click/privacy")}
+            iconColor="#10b981"
+          />
+        </SettingsSection>
+
+        <SettingsSection title="About">
+          <SettingsItem
+            icon={Info}
+            title="App Version"
+            subtitle={`v${Constants.expoConfig?.version || Constants.manifest?.version || "1.0.0"}`}
+            iconColor={theme.colors.textSubtle}
           />
         </SettingsSection>
 
@@ -114,34 +180,39 @@ const getStyles = (theme) => StyleSheet.create({
     fontWeight: "800",
     fontFamily: "SpaceGrotesk_700Bold",
     color: theme.colors.text,
+    letterSpacing: -0.5,
     marginBottom: 24,
   },
   sectionContainer: {
     marginBottom: 20,
   },
   sectionTitle: {
-    fontSize: 12,
-    fontWeight: "700",
+    fontSize: 11,
+    fontWeight: "800",
+    fontFamily: "PlusJakartaSans_700Bold",
     textTransform: "uppercase",
-    letterSpacing: 0.8,
+    letterSpacing: 1.2,
     color: theme.colors.textSubtle,
     marginBottom: 8,
+    paddingHorizontal: 4,
   },
   sectionCard: {
     paddingVertical: 4,
+    borderRadius: 20,
   },
   settingsItem: {
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: 14,
     paddingHorizontal: 16,
-    gap: 12,
+    gap: 14,
+    borderRadius: 16,
   },
   settingsIconContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: theme.colors.surfaceMuted,
+    width: 40,
+    height: 40,
+    borderRadius: 14,
+    backgroundColor: theme.colors.brandTint,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -151,10 +222,12 @@ const getStyles = (theme) => StyleSheet.create({
   settingsTitle: {
     fontSize: 15,
     fontWeight: "600",
+    fontFamily: "PlusJakartaSans_600SemiBold",
     color: theme.colors.text,
   },
   settingsSubtitle: {
-    fontSize: 13,
+    fontSize: 12,
+    fontFamily: "PlusJakartaSans_400Regular",
     color: theme.colors.textSubtle,
     marginTop: 2,
   },

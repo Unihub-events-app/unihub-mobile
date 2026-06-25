@@ -1,11 +1,15 @@
 import React, { useEffect, useState } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Image, Pressable, Linking } from "react-native";
-import { User, MapPin, Link as LinkIcon, Calendar, Clock, AlertCircle } from "lucide-react-native";
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Image, Pressable, Linking, Alert } from "react-native";
+import { User, MapPin, Link as LinkIcon, Calendar, Clock, AlertCircle, MoreVertical } from "lucide-react-native";
 import { Screen, BackButton, NeuCard, PrimaryButton } from "../../../components";
 import { useTheme } from "../../../theme/ThemeProvider";
 import { getUserToken } from "../../../lib/auth";
 import { API_URL } from "../../../lib/config";
+import { ReportModal } from "../../../components/ReportModal";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
+const BLOCKED_KEY = "unihub_blocked_users";
 
 export default function PublicProfileScreen() {
   const { id } = useLocalSearchParams();
@@ -16,6 +20,8 @@ export default function PublicProfileScreen() {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [localTime, setLocalTime] = useState("");
+  const [reportVisible, setReportVisible] = useState(false);
+  const [isBlocked, setIsBlocked] = useState(false);
 
   const fetchProfile = async () => {
     try {
@@ -53,8 +59,39 @@ export default function PublicProfileScreen() {
     if (id) {
       fetchProfile();
       fetchCurrentUser();
+      AsyncStorage.getItem(BLOCKED_KEY).then((raw) => {
+        const list = raw ? JSON.parse(raw) : [];
+        setIsBlocked(list.includes(id));
+      });
     }
   }, [id]);
+
+  const handleBlockUser = async () => {
+    const raw = await AsyncStorage.getItem(BLOCKED_KEY);
+    const list = raw ? JSON.parse(raw) : [];
+    if (isBlocked) {
+      const updated = list.filter((uid) => uid !== id);
+      await AsyncStorage.setItem(BLOCKED_KEY, JSON.stringify(updated));
+      setIsBlocked(false);
+      Alert.alert("Unblocked", `You have unblocked @${profile?.username}.`);
+    } else {
+      await AsyncStorage.setItem(BLOCKED_KEY, JSON.stringify([...list, id]));
+      setIsBlocked(true);
+      Alert.alert("Blocked", `@${profile?.username} has been blocked.`);
+    }
+  };
+
+  const handleMoreMenu = () => {
+    Alert.alert(
+      profile?.username ? `@${profile.username}` : "Options",
+      "",
+      [
+        { text: isBlocked ? "Unblock User" : "Block User", onPress: handleBlockUser },
+        { text: "Report User", style: "destructive", onPress: () => setReportVisible(true) },
+        { text: "Cancel", style: "cancel" },
+      ]
+    );
+  };
 
   useEffect(() => {
     if (!profile?.timezone) return;
@@ -147,6 +184,11 @@ export default function PublicProfileScreen() {
       <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
         <View style={styles.header}>
           <BackButton label="Back" />
+          {!isMe && (
+            <Pressable onPress={handleMoreMenu} hitSlop={8} style={styles.moreBtn}>
+              <MoreVertical size={20} color={theme.colors.textSubtle} />
+            </Pressable>
+          )}
         </View>
 
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -248,6 +290,15 @@ export default function PublicProfileScreen() {
             </View>
           </NeuCard>
         </ScrollView>
+      {profile && (
+        <ReportModal
+          visible={reportVisible}
+          onClose={() => setReportVisible(false)}
+          targetId={profile._id}
+          targetType="user"
+          targetName={profile.username}
+        />
+      )}
       </View>
     </Screen>
   );
@@ -265,6 +316,10 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-between",
+  },
+  moreBtn: {
+    padding: 8,
   },
   scrollContent: {
     padding: 16,

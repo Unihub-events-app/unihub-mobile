@@ -6,10 +6,15 @@ import {
   Pressable,
   TextInput,
   StyleSheet,
+  Image,
+  useWindowDimensions,
 } from "react-native";
 import Animated, { FadeInUp } from "react-native-reanimated";
-import { Mail, Lock, Eye, EyeOff, ArrowRight, CheckCircle2, AlertCircle, Bell, TrendingUp, CalendarDays } from "lucide-react-native";
-import { Screen, TextField, PrimaryButton, BackButton } from "../../components";
+import {
+  Mail, Lock, Eye, EyeOff, ArrowRight, CheckCircle2, AlertCircle,
+  Bell, TrendingUp, CalendarDays,
+} from "lucide-react-native";
+import { Screen, TextField, PrimaryButton } from "../../components";
 import { useTheme } from "../../theme/ThemeProvider";
 import { useSessionStore } from "../../lib/auth";
 import { API_URL } from "../../lib/config";
@@ -20,7 +25,7 @@ const SLIDES = [
   { icon: TrendingUp, title: "Track Everything", desc: "Monitor your registrations and ticket sales from one place." },
 ];
 
-const STEP_TITLES = ["", "Welcome Back", "Enter Password", "Verify Login", "You're in!"];
+const STEP_TITLES = ["", "Sign In", "Enter Password", "Verify Login", "You're in!"];
 const STEP_DESCS = [
   "",
   "Enter your email or username to continue.",
@@ -31,6 +36,7 @@ const STEP_DESCS = [
 
 export default function SignInScreen() {
   const { theme } = useTheme();
+  const { height: SCREEN_HEIGHT } = useWindowDimensions();
   const userToken = useSessionStore((state) => state.userToken);
   const setUserToken = useSessionStore((state) => state.setUserToken);
   const [step, setStep] = useState(1);
@@ -98,7 +104,7 @@ export default function SignInScreen() {
         setMessage({ error: data.msg || "Failed to verify user", success: "" });
         if (data.msg?.toLowerCase().includes("not found") || data.msg?.toLowerCase().includes("not registered")) {
           setTimeout(() => setMessage({ error: "Redirecting you to sign up…", success: "" }), 1500);
-          setTimeout(() => router.push("/users/signup"), 2500);
+          setTimeout(() => router.push("/(auth)/signup"), 2500);
         }
       }
     } catch {
@@ -197,289 +203,280 @@ export default function SignInScreen() {
   }
 
   const CurrentSlideIcon = SLIDES[activeSlide].icon;
+  const topH = SCREEN_HEIGHT * 0.42;
 
   return (
-    <Screen padded={false}>
-      <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
-        {/* Top section — feature slide */}
-        <View style={styles.topSection}>
-          <View style={styles.topBar}>
-            <BackButton
-              onPress={() => (step === 2 || step === 3 ? setStep(1) : router.push("/"))}
-              label={step === 2 || step === 3 ? "Back" : "Home"}
-            />
-            <Text style={[styles.stepCounter, { color: theme.colors.textSubtle }]}>
-              {step < 4 ? `${step} of 3` : "Done"}
-            </Text>
-          </View>
-
-          <View style={styles.slideContent} key={activeSlide}>
-            <Animated.View
-              entering={FadeInUp.duration(400)}
-              style={[styles.slideIconWrap, { backgroundColor: theme.colors.brandTint }]}
-            >
-              <CurrentSlideIcon color={theme.colors.brand} size={36} />
-            </Animated.View>
-            <Animated.Text
-              entering={FadeInUp.delay(60).duration(400)}
-              style={[styles.slideTitle, { color: theme.colors.text }]}
-            >
-              {SLIDES[activeSlide].title}
-            </Animated.Text>
-            <Text style={[styles.slideDesc, { color: theme.colors.textMuted }]}>
-              {SLIDES[activeSlide].desc}
-            </Text>
-
-            <View style={styles.pagination}>
-              {SLIDES.map((_, i) => (
-                <Pressable key={i} onPress={() => setActiveSlide(i)}>
-                  <View
-                    style={[
-                      styles.paginationDot,
-                      {
-                        width: i === activeSlide ? 28 : 6,
-                        backgroundColor: i === activeSlide ? theme.colors.brand : theme.colors.border,
-                      },
-                    ]}
-                  />
-                </Pressable>
-              ))}
-            </View>
-          </View>
+    <View style={{ flex: 1, backgroundColor: theme.colors.brand }}>
+      {/* Brand top section */}
+      <View style={[styles.topSection, { height: topH }]}>
+        {/* Logo */}
+        <View style={styles.logoRow}>
+          <Pressable
+            style={styles.backPill}
+            onPress={() => (step === 2 || step === 3 ? setStep(1) : router.push("/"))}
+          >
+            <Text style={styles.backPillText}>{step === 2 || step === 3 ? "← Back" : "← Home"}</Text>
+          </Pressable>
+          <Text style={[styles.stepBadge]}>
+            {step < 4 ? `${step} / 3` : "✓"}
+          </Text>
         </View>
 
-        {/* Bottom section — tab + form */}
-        <View style={styles.bottomSection}>
-          {/* Tab switcher */}
-          <View style={[styles.tabRow, { borderBottomColor: theme.colors.border }]}>
-            <View style={styles.tabActive}>
-              <Text style={[styles.tabActiveText, { color: theme.colors.text }]}>Log In</Text>
-              <View style={[styles.tabIndicator, { backgroundColor: theme.colors.brand }]} />
-            </View>
-            <Pressable onPress={() => router.replace("/(auth)/signup")}>
-              <Text style={[styles.tabInactiveText, { color: theme.colors.textSubtle }]}>Sign Up</Text>
-            </Pressable>
+        {/* Feature slide */}
+        <Animated.View
+          entering={FadeInUp.duration(400)}
+          style={styles.slideContent}
+          key={activeSlide}
+        >
+          <View style={styles.slideIconWrap}>
+            <CurrentSlideIcon color="#1A1A14" size={32} />
           </View>
+          <Text style={styles.slideTitle}>{SLIDES[activeSlide].title}</Text>
+          <Text style={styles.slideDesc}>{SLIDES[activeSlide].desc}</Text>
+        </Animated.View>
 
-          {/* Form card */}
-          <Animated.View
-            entering={FadeInUp.duration(400)}
-            style={[
-              styles.formCard,
-              {
-                backgroundColor: theme.colors.surface,
-                borderColor: theme.colors.border,
-                shadowColor: theme.colors.shadow,
-              },
-            ]}
-          >
-            <Text style={[styles.formTitle, { color: theme.colors.text }]}>
-              {STEP_TITLES[step]}
-            </Text>
-            <Text style={[styles.formSubtitle, { color: theme.colors.textMuted }]}>
-              {step === 2 ? `Signing in as ${email}.` : STEP_DESCS[step]}
-            </Text>
-
-            {/* Alerts */}
-            {message.error ? (
-              <View style={[styles.alertBox, { backgroundColor: theme.colors.mode === "dark" ? "rgba(220,38,38,0.12)" : "#fff1f2", borderColor: theme.colors.error }]}>
-                <AlertCircle size={16} color={theme.colors.error} />
-                <Text style={[styles.alertText, { color: theme.colors.error }]}>{message.error}</Text>
-              </View>
-            ) : null}
-            {message.success ? (
-              <View style={[styles.alertBox, { backgroundColor: theme.colors.mode === "dark" ? "rgba(22,163,74,0.12)" : "#f0fdf4", borderColor: theme.colors.success }]}>
-                <CheckCircle2 size={16} color={theme.colors.success} />
-                <Text style={[styles.alertText, { color: theme.colors.success }]}>{message.success}</Text>
-              </View>
-            ) : null}
-
-            {/* Step 1 — identifier */}
-            {step === 1 && (
-              <View style={{ gap: 16 }}>
-                <TextField
-                  label="Email or Username"
-                  value={emailOrUsername}
-                  onChangeText={setEmailOrUsername}
-                  placeholder="janedoe@mail.com or @username"
-                  autoCapitalize="none"
-                  leftIcon={<Mail size={20} color={theme.colors.textSubtle} />}
-                />
-                <PrimaryButton
-                  label={loading ? "Checking…" : "Continue"}
-                  onPress={handleVerifyEmail}
-                  loading={loading}
-                  icon={!loading ? <ArrowRight size={18} color="#1A1A14" /> : null}
-                />
-                {/* Social login */}
-                <View style={styles.dividerRow}>
-                  <View style={[styles.dividerLine, { backgroundColor: theme.colors.border }]} />
-                  <Text style={[styles.dividerText, { color: theme.colors.textSubtle }]}>or</Text>
-                  <View style={[styles.dividerLine, { backgroundColor: theme.colors.border }]} />
-                </View>
-                <Pressable
-                  style={[styles.socialBtn, { backgroundColor: theme.colors.surfaceMuted, borderColor: theme.colors.border }]}
-                  onPress={() => require("react-native").Alert.alert("Coming soon", "Google Sign In will be available in a future update.")}
-                >
-                  <Text style={[styles.socialBtnText, { color: theme.colors.text }]}>G  Continue with Google</Text>
-                </Pressable>
-                <Pressable onPress={() => router.push("/users/signup")}>
-                  <Text style={[styles.switchText, { color: theme.colors.textMuted }]}>
-                    No account? <Text style={{ color: theme.colors.brand, fontWeight: "700" }}>Create one</Text>
-                  </Text>
-                </Pressable>
-              </View>
-            )}
-
-            {/* Step 2 — password */}
-            {step === 2 && (
-              <View style={{ gap: 16 }}>
-                <TextField
-                  label="Password"
-                  value={password}
-                  onChangeText={setPassword}
-                  placeholder="Your password"
-                  secureTextEntry={!showPassword}
-                  leftIcon={<Lock size={20} color={theme.colors.textSubtle} />}
-                  rightIcon={
-                    <Pressable onPress={() => setShowPassword((v) => !v)}>
-                      {showPassword ? <EyeOff size={20} color={theme.colors.textSubtle} /> : <Eye size={20} color={theme.colors.textSubtle} />}
-                    </Pressable>
-                  }
-                />
-                <Pressable onPress={() => handleSendOTP()}>
-                  <Text style={[styles.linkText, { color: theme.colors.brand }]}>Use OTP instead</Text>
-                </Pressable>
-                <PrimaryButton label={loading ? "Signing in…" : "Sign In"} onPress={handlePasswordSubmit} loading={loading} />
-              </View>
-            )}
-
-            {/* Step 3 — OTP boxes */}
-            {step === 3 && (
-              <View style={{ gap: 16 }}>
-                <View style={styles.otpHeader}>
-                  <Text style={[styles.otpLabel, { color: theme.colors.text }]}>Verification Code</Text>
-                  <Pressable onPress={() => handleSendOTP()}>
-                    <Text style={[styles.linkText, { color: theme.colors.brand }]}>Resend</Text>
-                  </Pressable>
-                </View>
-                <View style={styles.otpRow}>
-                  {otpDigits.map((digit, i) => (
-                    <TextInput
-                      key={i}
-                      ref={(r) => (otpRefs.current[i] = r)}
-                      value={digit}
-                      onChangeText={(v) => handleOtpChange(v, i)}
-                      onKeyPress={(e) => handleOtpKeyPress(e, i)}
-                      keyboardType="number-pad"
-                      maxLength={1}
-                      style={[
-                        styles.otpBox,
-                        {
-                          backgroundColor: theme.colors.surfaceMuted,
-                          borderColor: digit ? theme.colors.brand : theme.colors.border,
-                          color: theme.colors.text,
-                        },
-                      ]}
-                      textAlign="center"
-                      selectTextOnFocus
-                    />
-                  ))}
-                </View>
-                <PrimaryButton
-                  label={loading ? "Verifying…" : "Verify & Sign In"}
-                  onPress={handleOTPSubmit}
-                  loading={loading}
-                />
-              </View>
-            )}
-
-            {/* Step 4 — success */}
-            {step === 4 && (
-              <View style={styles.successState}>
-                <View style={[styles.successIcon, { backgroundColor: theme.colors.surfaceMuted, borderColor: theme.colors.border }]}>
-                  <CheckCircle2 size={40} color={theme.colors.success} />
-                </View>
-                <Text style={[styles.successTitle, { color: theme.colors.text }]}>You're in!</Text>
-                <Text style={[styles.successSub, { color: theme.colors.textMuted }]}>Taking you to your dashboard…</Text>
-              </View>
-            )}
-          </Animated.View>
+        {/* Pagination dots */}
+        <View style={styles.pagination}>
+          {SLIDES.map((_, i) => (
+            <Pressable key={i} onPress={() => setActiveSlide(i)}>
+              <View
+                style={[
+                  styles.paginationDot,
+                  { width: i === activeSlide ? 24 : 6, backgroundColor: i === activeSlide ? "#1A1A14" : "rgba(26,26,20,0.3)" },
+                ]}
+              />
+            </Pressable>
+          ))}
         </View>
       </View>
-    </Screen>
+
+      {/* White bottom panel */}
+      <View style={[styles.bottomPanel, { backgroundColor: theme.colors.background }]}>
+        {/* Tab row */}
+        <View style={[styles.tabRow, { borderBottomColor: theme.colors.border }]}>
+          <View style={styles.tabActive}>
+            <Text style={[styles.tabActiveText, { color: theme.colors.text }]}>Log In</Text>
+            <View style={[styles.tabIndicator, { backgroundColor: theme.colors.brand }]} />
+          </View>
+          <Pressable onPress={() => router.replace("/(auth)/signup")}>
+            <Text style={[styles.tabInactiveText, { color: theme.colors.textSubtle }]}>Sign Up</Text>
+          </Pressable>
+        </View>
+
+        {/* Form */}
+        <Animated.View
+          entering={FadeInUp.duration(400)}
+          style={[styles.formCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
+        >
+          <Text style={[styles.formTitle, { color: theme.colors.text }]}>
+            {STEP_TITLES[step]}
+          </Text>
+          <Text style={[styles.formSubtitle, { color: theme.colors.textMuted }]}>
+            {step === 2 ? `Signing in as ${email}.` : STEP_DESCS[step]}
+          </Text>
+
+          {message.error ? (
+            <View style={[styles.alertBox, { backgroundColor: "rgba(220,38,38,0.08)", borderColor: theme.colors.error }]}>
+              <AlertCircle size={15} color={theme.colors.error} />
+              <Text style={[styles.alertText, { color: theme.colors.error }]}>{message.error}</Text>
+            </View>
+          ) : null}
+          {message.success ? (
+            <View style={[styles.alertBox, { backgroundColor: "rgba(61,158,74,0.08)", borderColor: theme.colors.success }]}>
+              <CheckCircle2 size={15} color={theme.colors.success} />
+              <Text style={[styles.alertText, { color: theme.colors.success }]}>{message.success}</Text>
+            </View>
+          ) : null}
+
+          {step === 1 && (
+            <View style={{ gap: 14 }}>
+              <TextField
+                label="Email or Username"
+                value={emailOrUsername}
+                onChangeText={setEmailOrUsername}
+                placeholder="janedoe@mail.com or @username"
+                autoCapitalize="none"
+                leftIcon={<Mail size={18} color={theme.colors.textSubtle} />}
+              />
+              <PrimaryButton
+                label={loading ? "Checking…" : "Continue"}
+                onPress={handleVerifyEmail}
+                loading={loading}
+                icon={!loading ? <ArrowRight size={17} color="#1A1A14" /> : null}
+              />
+              <View style={styles.dividerRow}>
+                <View style={[styles.dividerLine, { backgroundColor: theme.colors.border }]} />
+                <Text style={[styles.dividerText, { color: theme.colors.textSubtle }]}>or</Text>
+                <View style={[styles.dividerLine, { backgroundColor: theme.colors.border }]} />
+              </View>
+              <Pressable
+                style={[styles.socialBtn, { backgroundColor: theme.colors.surfaceMuted, borderColor: theme.colors.border }]}
+                onPress={() => require("react-native").Alert.alert("Coming soon", "Google Sign In will be available in a future update.")}
+              >
+                <Text style={[styles.socialBtnText, { color: theme.colors.text }]}>G  Continue with Google</Text>
+              </Pressable>
+              <Pressable onPress={() => router.push("/(auth)/signup")}>
+                <Text style={[styles.switchText, { color: theme.colors.textMuted }]}>
+                  No account?{" "}
+                  <Text style={{ color: theme.colors.brand, fontWeight: "700" }}>Create one</Text>
+                </Text>
+              </Pressable>
+            </View>
+          )}
+
+          {step === 2 && (
+            <View style={{ gap: 14 }}>
+              <TextField
+                label="Password"
+                value={password}
+                onChangeText={setPassword}
+                placeholder="Your password"
+                secureTextEntry={!showPassword}
+                leftIcon={<Lock size={18} color={theme.colors.textSubtle} />}
+                rightIcon={
+                  <Pressable onPress={() => setShowPassword((v) => !v)}>
+                    {showPassword
+                      ? <EyeOff size={18} color={theme.colors.textSubtle} />
+                      : <Eye size={18} color={theme.colors.textSubtle} />}
+                  </Pressable>
+                }
+              />
+              <Pressable onPress={() => handleSendOTP()}>
+                <Text style={[styles.linkText, { color: theme.colors.brand }]}>Use OTP instead</Text>
+              </Pressable>
+              <PrimaryButton label={loading ? "Signing in…" : "Sign In"} onPress={handlePasswordSubmit} loading={loading} />
+            </View>
+          )}
+
+          {step === 3 && (
+            <View style={{ gap: 14 }}>
+              <View style={styles.otpHeader}>
+                <Text style={[styles.otpLabel, { color: theme.colors.text }]}>Verification Code</Text>
+                <Pressable onPress={() => handleSendOTP()}>
+                  <Text style={[styles.linkText, { color: theme.colors.brand }]}>Resend</Text>
+                </Pressable>
+              </View>
+              <View style={styles.otpRow}>
+                {otpDigits.map((digit, i) => (
+                  <TextInput
+                    key={i}
+                    ref={(r) => (otpRefs.current[i] = r)}
+                    value={digit}
+                    onChangeText={(v) => handleOtpChange(v, i)}
+                    onKeyPress={(e) => handleOtpKeyPress(e, i)}
+                    keyboardType="number-pad"
+                    maxLength={1}
+                    style={[styles.otpBox, {
+                      backgroundColor: theme.colors.surfaceMuted,
+                      borderColor: digit ? theme.colors.brand : theme.colors.border,
+                      color: theme.colors.text,
+                    }]}
+                    textAlign="center"
+                    selectTextOnFocus
+                  />
+                ))}
+              </View>
+              <PrimaryButton
+                label={loading ? "Verifying…" : "Verify & Sign In"}
+                onPress={handleOTPSubmit}
+                loading={loading}
+              />
+            </View>
+          )}
+
+          {step === 4 && (
+            <View style={styles.successState}>
+              <View style={[styles.successIcon, { backgroundColor: theme.colors.brandTint }]}>
+                <CheckCircle2 size={36} color={theme.colors.brand} />
+              </View>
+              <Text style={[styles.successTitle, { color: theme.colors.text }]}>You're in!</Text>
+              <Text style={[styles.successSub, { color: theme.colors.textMuted }]}>Taking you to your dashboard…</Text>
+            </View>
+          )}
+        </Animated.View>
+      </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   topSection: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
     paddingHorizontal: 24,
-  },
-  topBar: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    flexDirection: "row",
-    alignItems: "center",
+    paddingTop: 52,
     justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingTop: 10,
-    zIndex: 20,
+    paddingBottom: 28,
   },
-  stepCounter: {
-    fontSize: 12,
+  logoRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  backPill: {
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    backgroundColor: "rgba(26,26,20,0.14)",
+    borderRadius: 99,
+  },
+  backPillText: {
+    fontSize: 13,
     fontWeight: "700",
-    textTransform: "uppercase",
-    letterSpacing: 1.5,
+    color: "#1A1A14",
     fontFamily: "PlusJakartaSans_700Bold",
+  },
+  stepBadge: {
+    fontSize: 12,
+    fontWeight: "800",
+    color: "rgba(26,26,20,0.6)",
+    fontFamily: "PlusJakartaSans_700Bold",
+    letterSpacing: 0.5,
   },
   slideContent: {
     alignItems: "center",
-    maxWidth: 300,
-    gap: 12,
+    gap: 8,
+    flex: 1,
+    justifyContent: "center",
   },
   slideIconWrap: {
-    width: 88,
-    height: 88,
-    borderRadius: 28,
+    width: 72,
+    height: 72,
+    borderRadius: 22,
+    backgroundColor: "rgba(26,26,20,0.12)",
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 8,
+    marginBottom: 4,
   },
   slideTitle: {
-    fontFamily: "SpaceGrotesk_700Bold",
-    fontSize: 28,
-    fontWeight: "700",
+    fontFamily: "Limelight_400Regular",
+    fontSize: 30,
+    color: "#1A1A14",
     textAlign: "center",
-    letterSpacing: -0.5,
+    letterSpacing: -0.3,
   },
   slideDesc: {
     fontFamily: "PlusJakartaSans_400Regular",
-    fontSize: 15,
+    fontSize: 14,
+    color: "rgba(26,26,20,0.65)",
     textAlign: "center",
-    lineHeight: 22,
+    lineHeight: 21,
+    maxWidth: 280,
   },
   pagination: {
     flexDirection: "row",
-    gap: 8,
-    marginTop: 24,
+    gap: 6,
     alignItems: "center",
+    justifyContent: "center",
   },
   paginationDot: {
     height: 6,
     borderRadius: 3,
   },
 
-  // Bottom
-  bottomSection: {
+  bottomPanel: {
     flex: 1,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
     paddingHorizontal: 20,
-    paddingTop: 8,
-    justifyContent: "flex-start",
+    paddingTop: 24,
   },
   tabRow: {
     flexDirection: "row",
@@ -511,39 +508,33 @@ const styles = StyleSheet.create({
     fontFamily: "PlusJakartaSans_500Medium",
     paddingBottom: 12,
   },
-
-  // Form card
   formCard: {
     width: "100%",
     padding: 20,
     borderRadius: 24,
     borderWidth: 1,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.08,
-    shadowRadius: 20,
-    elevation: 4,
     gap: 4,
   },
   formTitle: {
     fontFamily: "SpaceGrotesk_700Bold",
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: "700",
     marginBottom: 2,
   },
   formSubtitle: {
     fontFamily: "PlusJakartaSans_400Regular",
-    fontSize: 14,
-    marginBottom: 16,
-    lineHeight: 20,
+    fontSize: 13,
+    marginBottom: 14,
+    lineHeight: 19,
   },
   alertBox: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    padding: 12,
+    padding: 11,
     borderRadius: 12,
     borderWidth: 1,
-    marginBottom: 12,
+    marginBottom: 10,
   },
   alertText: {
     flex: 1,
@@ -551,7 +542,7 @@ const styles = StyleSheet.create({
     fontFamily: "PlusJakartaSans_500Medium",
   },
   linkText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "600",
     fontFamily: "PlusJakartaSans_600SemiBold",
   },
@@ -565,11 +556,11 @@ const styles = StyleSheet.create({
     height: 1,
   },
   dividerText: {
-    fontSize: 13,
+    fontSize: 12,
     fontFamily: "PlusJakartaSans_400Regular",
   },
   socialBtn: {
-    paddingVertical: 13,
+    paddingVertical: 12,
     borderRadius: 12,
     borderWidth: 1,
     alignItems: "center",
@@ -590,7 +581,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   otpLabel: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "600",
     fontFamily: "PlusJakartaSans_600SemiBold",
   },
@@ -601,33 +592,32 @@ const styles = StyleSheet.create({
   },
   otpBox: {
     flex: 1,
-    height: 52,
+    height: 50,
     borderRadius: 12,
     borderWidth: 2,
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: "800",
   },
   successState: {
-    paddingVertical: 24,
+    paddingVertical: 20,
     alignItems: "center",
     gap: 8,
   },
   successIcon: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 72,
+    height: 72,
+    borderRadius: 36,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 12,
-    borderWidth: 1,
+    marginBottom: 8,
   },
   successTitle: {
     fontFamily: "SpaceGrotesk_700Bold",
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: "700",
   },
   successSub: {
     fontFamily: "PlusJakartaSans_400Regular",
-    fontSize: 14,
+    fontSize: 13,
   },
 });

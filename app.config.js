@@ -24,5 +24,21 @@ module.exports = ({ config }) => ({
       process.env.NEXT_PUBLIC_API_URL ||
       "https://try-unihub-server.pxxl.click",
   },
-  plugins: ["expo-router", "expo-image", "expo-status-bar", "expo-font"],
+  plugins: [
+    "expo-router",
+    "expo-image",
+    "expo-status-bar",
+    "expo-font",
+    "expo-barcode-scanner",
+    "expo-sharing",
+    "expo-calendar",
+    [
+      "expo-camera",
+      { cameraPermission: "Allow UniHub to access your camera for event check-in." }
+    ],
+    [
+      "expo-location",
+      { locationAlwaysAndWhenInUsePermission: "Allow UniHub to show nearby events." }
+    ],
+  ],
 });

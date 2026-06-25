@@ -172,7 +172,7 @@ export default function NotificationDetailScreen() {
                     onPress={() => section.link && Linking.openURL(section.link)}
                   >
                     <Text style={styles.sectionButtonText}>{section.content}</Text>
-                    <ExternalLink size={14} color="#fff" />
+                    <ExternalLink size={14} color="#1A1A14" />
                   </Pressable>
                 );
               }
@@ -216,7 +216,7 @@ export default function NotificationDetailScreen() {
                   onPress={() => btn.link && Linking.openURL(btn.link)}
                 >
                   <Text style={styles.actionButtonText}>{btn.title}</Text>
-                  <ExternalLink size={14} color="#fff" />
+                  <ExternalLink size={14} color="#1A1A14" />
                 </Pressable>
               ))}
             </View>
@@ -325,9 +325,10 @@ const styles = StyleSheet.create({
     marginVertical: 8,
   },
   sectionButtonText: {
-    color: "#fff",
+    color: "#1A1A14",
     fontSize: 14,
     fontWeight: "700",
+    fontFamily: "PlusJakartaSans_700Bold",
   },
   sectionHeader: {
     fontSize: 20,
@@ -373,8 +374,9 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   actionButtonText: {
-    color: "#fff",
+    color: "#1A1A14",
     fontSize: 14,
     fontWeight: "700",
+    fontFamily: "PlusJakartaSans_700Bold",
   },
 });

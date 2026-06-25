@@ -292,404 +292,253 @@ export default function WalletScreen() {
 
   return (
     <Screen padded={false}>
-      <ScrollView
-        contentContainerStyle={styles.scrollContainer}
-        showsVerticalScrollIndicator={false}
-      >
+      <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
         <Text style={styles.headerTitle}>Wallet</Text>
 
-        {message.text && (
-          <View
-            style={[
-              styles.messageContainer,
-              message.type === "error"
-                ? styles.errorMessage
-                : styles.successMessage,
-            ]}
-          >
-            {message.type === "error" ? (
-              <AlertCircle size={20} color="#ef4444" />
-            ) : (
-              <CheckSquare size={20} color="#10b981" />
-            )}
-            <Text
-              style={[
-                styles.messageText,
-                message.type === "error"
-                  ? styles.errorText
-                  : styles.successText,
-              ]}
-            >
+        {/* Toast */}
+        {message.text ? (
+          <View style={[styles.toast, {
+            backgroundColor: message.type === "error" ? "rgba(220,38,38,0.1)" : "rgba(61,158,74,0.1)",
+            borderColor: message.type === "error" ? theme.colors.error : theme.colors.success,
+          }]}>
+            {message.type === "error"
+              ? <AlertCircle size={16} color={theme.colors.error} />
+              : <CheckSquare size={16} color={theme.colors.success} />}
+            <Text style={[styles.toastText, { color: message.type === "error" ? theme.colors.error : theme.colors.success }]}>
               {message.text}
             </Text>
           </View>
-        )}
+        ) : null}
 
-        <NeuCard style={styles.balanceCard}>
+        {/* Balance Hero */}
+        <View style={[styles.balanceCard, { backgroundColor: theme.colors.navSurface }]}>
           <View style={styles.balanceHeader}>
-            <Text style={styles.balanceLabel}>Total Balance</Text>
-            <TouchableOpacity
-              onPress={() => setShowBalance(!showBalance)}
-              style={styles.toggleButton}
-            >
-              {showBalance ? (
-                <Eye size={20} color="#6b7280" />
-              ) : (
-                <EyeOff size={20} color="#6b7280" />
-              )}
+            <Text style={styles.balanceChip}>TOTAL BALANCE</Text>
+            <TouchableOpacity onPress={() => setShowBalance(!showBalance)} hitSlop={8}>
+              {showBalance
+                ? <Eye size={18} color="rgba(240,239,224,0.45)" />
+                : <EyeOff size={18} color="rgba(240,239,224,0.45)" />}
             </TouchableOpacity>
           </View>
           <Text style={styles.balanceAmount}>
             {showBalance
-              ? formatCurrency(
-                  (user?.wallet?.availableBalance || 0) +
-                    (user?.wallet?.lockedBalance || 0),
-                )
-              : "₦••••••"}
+              ? formatCurrency((user?.wallet?.availableBalance || 0) + (user?.wallet?.lockedBalance || 0))
+              : "₦ ••••••"}
           </Text>
-          <View style={styles.statsGrid}>
-            <NeuInset style={styles.statItem}>
-              <View style={styles.statHeader}>
-                <View
-                  style={[styles.statDot, { backgroundColor: "#10b981" }]}
-                />
+          <View style={styles.balanceDivider} />
+          <View style={styles.statsRow}>
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>₦{(user?.wallet?.availableBalance || 0).toLocaleString()}</Text>
+              <View style={styles.statMeta}>
+                <View style={[styles.statDot, { backgroundColor: theme.colors.brand }]} />
                 <Text style={styles.statLabel}>Available</Text>
               </View>
-              <Text style={styles.statValue}>
-                ₦{user?.wallet?.availableBalance?.toLocaleString() || 0}
-              </Text>
-            </NeuInset>
-            <NeuInset style={styles.statItem}>
-              <View style={styles.statHeader}>
-                <View
-                  style={[styles.statDot, { backgroundColor: "#f59e0b" }]}
-                />
+            </View>
+            <View style={styles.statSep} />
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>₦{(user?.wallet?.lockedBalance || 0).toLocaleString()}</Text>
+              <View style={styles.statMeta}>
+                <View style={[styles.statDot, { backgroundColor: theme.colors.warning }]} />
                 <Text style={styles.statLabel}>Locked</Text>
               </View>
-              <Text style={styles.statValue}>
-                ₦{user?.wallet?.lockedBalance?.toLocaleString() || 0}
-              </Text>
-            </NeuInset>
-            <NeuInset style={styles.statItem}>
-              <View style={styles.statHeader}>
-                <View
-                  style={[styles.statDot, { backgroundColor: theme.colors.brand }]}
-                />
-                <Text style={styles.statLabel}>Total Earned</Text>
+            </View>
+            <View style={styles.statSep} />
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>₦{(user?.wallet?.totalEarnings || 0).toLocaleString()}</Text>
+              <View style={styles.statMeta}>
+                <View style={[styles.statDot, { backgroundColor: theme.colors.success }]} />
+                <Text style={styles.statLabel}>Earned</Text>
               </View>
-              <Text style={styles.statValue}>
-                ₦{user?.wallet?.totalEarnings?.toLocaleString() || 0}
-              </Text>
-            </NeuInset>
+            </View>
           </View>
+          {user?.wallet?.lockedBalance > 0 ? (
+            <View style={styles.lockedBanner}>
+              <AlertCircle size={13} color={theme.colors.warning} />
+              <Text style={styles.lockedBannerText}>Locked funds release 1 hour after events end.</Text>
+            </View>
+          ) : null}
+        </View>
 
-          {user?.wallet?.lockedBalance > 0 && (
-            <NeuInset style={styles.lockedNotice}>
-              <AlertCircle size={16} color="#f59e0b" />
-              <Text style={styles.lockedNoticeText}>
-                Locked funds unlock 1 hour after events end.
-              </Text>
-            </NeuInset>
-          )}
-        </NeuCard>
-
-        <NeuCard style={styles.withdrawCard}>
-          <Text style={styles.sectionTitle}>Withdraw Funds</Text>
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Amount</Text>
-            <View style={styles.amountInputContainer}>
-              <Text style={styles.currencySymbol}>₦</Text>
+        {/* Withdraw */}
+        <NeuCard style={styles.section}>
+          <Text style={styles.sectionLabel}>Withdraw Funds</Text>
+          <View style={styles.fieldGroup}>
+            <Text style={[styles.fieldLabel, { color: theme.colors.textSubtle }]}>Amount (NGN)</Text>
+            <View style={[styles.amountRow, { backgroundColor: theme.colors.surfaceMuted, borderColor: theme.colors.border }]}>
+              <Text style={[styles.currencySymbol, { color: theme.colors.textSubtle }]}>₦</Text>
               <TextInput
-                style={styles.amountInput}
+                style={[styles.amountInput, { color: theme.colors.text }]}
                 keyboardType="numeric"
                 value={withdrawForm.amount}
                 onChangeText={(text) => setWithdrawForm({ amount: text })}
                 placeholder="0"
+                placeholderTextColor={theme.colors.textSubtle}
               />
               <TouchableOpacity
-                style={styles.maxButton}
-                onPress={() =>
-                  setWithdrawForm({
-                    amount: user?.wallet?.availableBalance?.toString() || "0",
-                  })
-                }
+                style={[styles.maxBtn, { backgroundColor: theme.colors.brandTint }]}
+                onPress={() => setWithdrawForm({ amount: user?.wallet?.availableBalance?.toString() || "0" })}
               >
-                <Text style={styles.maxButtonText}>MAX</Text>
+                <Text style={[styles.maxBtnText, { color: theme.colors.brand }]}>MAX</Text>
               </TouchableOpacity>
             </View>
-            {withdrawForm.amount && parseFloat(withdrawForm.amount) > 0 && (
-              <Text style={styles.feeNotice}>
-                You receive ₦
-                {((parseFloat(withdrawForm.amount) || 0) * 0.98).toFixed(2)}{" "}
-                after 2% fee
+            {withdrawForm.amount && parseFloat(withdrawForm.amount) > 0 ? (
+              <Text style={[styles.feeNote, { color: theme.colors.textSubtle }]}>
+                You receive ₦{((parseFloat(withdrawForm.amount) || 0) * 0.98).toFixed(2)} after 2% fee
               </Text>
-            )}
+            ) : null}
           </View>
 
-          {!bankDetails.accountNumber && (
-            <NeuInset style={styles.missingBankNotice}>
-              <AlertCircle size={16} color="#f59e0b" />
-              <Text style={styles.missingBankText}>
-                Add bank details below before withdrawing.
-              </Text>
-            </NeuInset>
-          )}
+          {!bankDetails.accountNumber ? (
+            <View style={[styles.infoBox, { backgroundColor: theme.colors.surfaceMuted, borderColor: theme.colors.border }]}>
+              <AlertCircle size={14} color={theme.colors.warning} />
+              <Text style={[styles.infoBoxText, { color: theme.colors.textMuted }]}>Add bank details below before withdrawing.</Text>
+            </View>
+          ) : null}
 
           <TouchableOpacity
-            style={[
-              styles.withdrawButton,
-              (!bankDetails.accountNumber ||
-                !withdrawForm.amount ||
-                parseFloat(withdrawForm.amount) <= 0) &&
-                styles.disabledButton,
-            ]}
+            style={[styles.primaryBtn, { backgroundColor: theme.colors.brand },
+              (!bankDetails.accountNumber || !withdrawForm.amount || parseFloat(withdrawForm.amount) <= 0) && styles.disabledBtn]}
             onPress={handleWithdraw}
-            disabled={
-              submitting ||
-              !bankDetails.accountNumber ||
-              !withdrawForm.amount ||
-              parseFloat(withdrawForm.amount) <= 0
-            }
+            disabled={submitting || !bankDetails.accountNumber || !withdrawForm.amount || parseFloat(withdrawForm.amount) <= 0}
           >
-            {submitting ? (
-              <ActivityIndicator size="small" color="#fff" />
-            ) : (
-              <>
-                <Download size={20} color="#fff" style={{ marginRight: 8 }} />
-                <Text style={styles.withdrawButtonText}>Withdraw Now</Text>
-              </>
-            )}
+            {submitting
+              ? <ActivityIndicator size="small" color="#1A1A14" />
+              : <><Download size={18} color="#1A1A14" /><Text style={styles.primaryBtnText}>Withdraw Now</Text></>}
           </TouchableOpacity>
         </NeuCard>
 
-        <NeuCard style={styles.bankDetailsCard}>
-          <View style={styles.bankDetailsHeader}>
-            <Text style={styles.sectionTitle}>Bank Account</Text>
-            {bankDetails.accountNumber && !editingBankDetails && (
-              <TouchableOpacity
-                onPress={() => setEditingBankDetails(true)}
-                style={styles.editButton}
-              >
-                <Edit size={16} color={theme.colors.brand} style={{ marginRight: 4 }} />
-                <Text style={styles.editButtonText}>Edit</Text>
+        {/* Bank Account */}
+        <NeuCard style={styles.section}>
+          <View style={styles.sectionHeaderRow}>
+            <Text style={styles.sectionLabel}>Bank Account</Text>
+            {bankDetails.accountNumber && !editingBankDetails ? (
+              <TouchableOpacity onPress={() => setEditingBankDetails(true)} style={styles.editBtn}>
+                <Edit size={13} color={theme.colors.brand} />
+                <Text style={[styles.editBtnText, { color: theme.colors.brand }]}>Edit</Text>
               </TouchableOpacity>
-            )}
+            ) : null}
           </View>
 
           {!bankDetails.accountNumber || editingBankDetails ? (
-            <View style={styles.bankFormContainer}>
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Account Name</Text>
-                <TextInput
-                  style={styles.textInput}
-                  value={bankDetails.accountName}
-                  onChangeText={(text) =>
-                    setBankDetails({ ...bankDetails, accountName: text })
-                  }
-                  placeholder="John Doe"
-                />
-              </View>
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Account Number</Text>
-                <TextInput
-                  style={styles.textInput}
-                  value={bankDetails.accountNumber}
-                  onChangeText={(text) =>
-                    setBankDetails({ ...bankDetails, accountNumber: text })
-                  }
-                  placeholder="0123456789"
-                  maxLength={10}
-                  keyboardType="numeric"
-                />
-              </View>
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Bank</Text>
+            <View style={styles.bankForm}>
+              {[
+                { label: "Account Name", key: "accountName", placeholder: "John Doe", keyboard: "default" },
+                { label: "Account Number", key: "accountNumber", placeholder: "0123456789", keyboard: "numeric", maxLen: 10 },
+              ].map((f) => (
+                <View key={f.key} style={styles.fieldGroup}>
+                  <Text style={[styles.fieldLabel, { color: theme.colors.textSubtle }]}>{f.label}</Text>
+                  <TextInput
+                    style={[styles.textInput, { backgroundColor: theme.colors.surfaceMuted, borderColor: theme.colors.border, color: theme.colors.text }]}
+                    value={bankDetails[f.key]}
+                    onChangeText={(t) => setBankDetails({ ...bankDetails, [f.key]: t })}
+                    placeholder={f.placeholder}
+                    placeholderTextColor={theme.colors.textSubtle}
+                    keyboardType={f.keyboard}
+                    maxLength={f.maxLen}
+                  />
+                </View>
+              ))}
+              <View style={styles.fieldGroup}>
+                <Text style={[styles.fieldLabel, { color: theme.colors.textSubtle }]}>Bank</Text>
                 <TouchableOpacity
-                  style={styles.dropdownButton}
+                  style={[styles.dropdownBtn, { backgroundColor: theme.colors.surfaceMuted, borderColor: theme.colors.border }]}
                   onPress={() => setShowBankDropdown(!showBankDropdown)}
                 >
-                  <Text
-                    style={
-                      bankDetails.bankCode
-                        ? styles.dropdownText
-                        : styles.dropdownPlaceholder
-                    }
-                  >
-                    {bankDetails.bankCode
-                      ? NIGERIAN_BANKS.find(
-                          (b) => b.code === bankDetails.bankCode,
-                        )?.name
-                      : "Select Bank"}
+                  <Text style={[{ flex: 1, fontSize: 15 }, bankDetails.bankCode ? { color: theme.colors.text } : { color: theme.colors.textSubtle }]}>
+                    {bankDetails.bankCode ? NIGERIAN_BANKS.find((b) => b.code === bankDetails.bankCode)?.name : "Select Bank"}
                   </Text>
-                  <ChevronDown size={16} color="#6b7280" />
+                  <ChevronDown size={16} color={theme.colors.textSubtle} />
                 </TouchableOpacity>
-                {showBankDropdown && (
-                  <View style={styles.bankDropdown}>
-                    <ScrollView nestedScrollEnabled>
+                {showBankDropdown ? (
+                  <View style={[styles.dropdownList, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+                    <ScrollView nestedScrollEnabled style={{ maxHeight: 200 }}>
                       {NIGERIAN_BANKS.map((bank) => (
                         <TouchableOpacity
                           key={bank.code}
-                          style={[
-                            styles.bankOption,
-                            bankDetails.bankCode === bank.code &&
-                              styles.selectedBankOption,
-                          ]}
-                          onPress={() => {
-                            setBankDetails({
-                              ...bankDetails,
-                              bankCode: bank.code,
-                            });
-                            setShowBankDropdown(false);
-                          }}
+                          style={[styles.dropdownItem, { borderBottomColor: theme.colors.border },
+                            bankDetails.bankCode === bank.code && { backgroundColor: theme.colors.brandTint }]}
+                          onPress={() => { setBankDetails({ ...bankDetails, bankCode: bank.code }); setShowBankDropdown(false); }}
                         >
-                          <Text
-                            style={
-                              bankDetails.bankCode === bank.code
-                                ? styles.selectedBankText
-                                : styles.bankOptionText
-                            }
-                          >
+                          <Text style={[styles.dropdownItemText, { color: bankDetails.bankCode === bank.code ? theme.colors.brand : theme.colors.text }]}>
                             {bank.name}
                           </Text>
                         </TouchableOpacity>
                       ))}
                     </ScrollView>
                   </View>
-                )}
+                ) : null}
               </View>
-              <View style={styles.bankFormButtons}>
-                {bankDetails.accountNumber && (
+              <View style={styles.bankFormBtns}>
+                {bankDetails.accountNumber ? (
                   <TouchableOpacity
-                    style={styles.cancelButton}
-                    onPress={() => {
-                      setEditingBankDetails(false);
-                      if (user?.wallet?.bankDetails)
-                        setBankDetails(user.wallet.bankDetails);
-                    }}
+                    style={[styles.ghostBtn, { borderColor: theme.colors.border }]}
+                    onPress={() => { setEditingBankDetails(false); if (user?.wallet?.bankDetails) setBankDetails(user.wallet.bankDetails); }}
                   >
-                    <Text style={styles.cancelButtonText}>Cancel</Text>
+                    <Text style={[styles.ghostBtnText, { color: theme.colors.textMuted }]}>Cancel</Text>
                   </TouchableOpacity>
-                )}
+                ) : null}
                 <TouchableOpacity
-                  style={[
-                    styles.saveBankButton,
-                    submitting && styles.disabledButton,
-                  ]}
+                  style={[styles.primaryBtn, { flex: 1, backgroundColor: theme.colors.brand }, submitting && styles.disabledBtn]}
                   onPress={handleSaveBankDetails}
                   disabled={submitting}
                 >
-                  {submitting ? (
-                    <ActivityIndicator size="small" color="#fff" />
-                  ) : (
-                    <>
-                      <CheckSquare
-                        size={20}
-                        color="#fff"
-                        style={{ marginRight: 8 }}
-                      />
-                      <Text style={styles.saveBankButtonText}>
-                        Save Details
-                      </Text>
-                    </>
-                  )}
+                  {submitting
+                    ? <ActivityIndicator size="small" color="#1A1A14" />
+                    : <><CheckSquare size={18} color="#1A1A14" /><Text style={styles.primaryBtnText}>Save Details</Text></>}
                 </TouchableOpacity>
               </View>
             </View>
           ) : (
-            <View style={styles.bankDetailsViewContainer}>
-              <NeuInset style={styles.bankDetailRow}>
-                <Text style={styles.bankDetailLabel}>Account Name</Text>
-                <Text style={styles.bankDetailValue}>
-                  {bankDetails.accountName}
-                </Text>
-              </NeuInset>
-              <NeuInset style={styles.bankDetailRow}>
-                <Text style={styles.bankDetailLabel}>Account Number</Text>
-                <Text style={styles.bankDetailValue}>
-                  {bankDetails.accountNumber}
-                </Text>
-              </NeuInset>
-              <NeuInset style={styles.bankDetailRow}>
-                <Text style={styles.bankDetailLabel}>Bank</Text>
-                <Text style={styles.bankDetailValue}>
-                  {
-                    NIGERIAN_BANKS.find((b) => b.code === bankDetails.bankCode)
-                      ?.name
-                  }
-                </Text>
-              </NeuInset>
+            <View style={styles.bankViewGrid}>
+              {[
+                { label: "Account Name", value: bankDetails.accountName },
+                { label: "Account Number", value: bankDetails.accountNumber },
+                { label: "Bank", value: NIGERIAN_BANKS.find((b) => b.code === bankDetails.bankCode)?.name },
+              ].map((row) => (
+                <View key={row.label} style={[styles.bankViewRow, { backgroundColor: theme.colors.surfaceMuted, borderColor: theme.colors.border }]}>
+                  <Text style={[styles.bankViewLabel, { color: theme.colors.textSubtle }]}>{row.label}</Text>
+                  <Text style={[styles.bankViewValue, { color: theme.colors.text }]}>{row.value}</Text>
+                </View>
+              ))}
             </View>
           )}
         </NeuCard>
 
-        <NeuCard style={styles.transactionsCard}>
-          <Text style={styles.sectionTitle}>Transaction History</Text>
+        {/* Transactions */}
+        <NeuCard style={styles.section}>
+          <Text style={styles.sectionLabel}>Transaction History</Text>
           {allTransactions.length === 0 ? (
-            <NeuInset style={styles.emptyTransactionsContainer}>
-              <ShieldCheck size={48} color="#6b7280" />
-              <Text style={styles.emptyTransactionsTitle}>
-                No transactions yet
-              </Text>
-              <Text style={styles.emptyTransactionsText}>
-                Your history will appear here
-              </Text>
-            </NeuInset>
+            <View style={styles.emptyState}>
+              <ShieldCheck size={40} color={theme.colors.textSubtle} />
+              <Text style={[styles.emptyTitle, { color: theme.colors.text }]}>No transactions yet</Text>
+              <Text style={[styles.emptyText, { color: theme.colors.textSubtle }]}>Your history will appear here</Text>
+            </View>
           ) : (
-            <View style={styles.transactionsList}>
+            <View style={styles.txList}>
               {allTransactions.map((item, index) => {
-                const isIncome = [
-                  "ticket_sale",
-                  "deposit",
-                  "refund_received",
-                ].includes(item.type);
-                const statusColor =
-                  item.status === "completed"
-                    ? "#10b981"
-                    : item.status === "pending"
-                      ? "#f59e0b"
-                      : "#ef4444";
+                const isIncome = ["ticket_sale", "deposit", "refund_received"].includes(item.type);
+                const statusColor = item.status === "completed" ? theme.colors.success
+                  : item.status === "pending" ? theme.colors.warning : theme.colors.error;
                 return (
-                  <View key={item._id || index} style={styles.transactionRow}>
-                    <View
-                      style={[
-                        styles.transactionIconContainer,
-                        isIncome
-                          ? styles.incomeIconContainer
-                          : styles.withdrawIconContainer,
-                      ]}
-                    >
-                      {isIncome ? (
-                        <Plus size={20} color="#10b981" />
-                      ) : (
-                        <Download size={20} color="#6b7280" />
-                      )}
+                  <View key={item._id || index} style={[styles.txRow, { borderBottomColor: theme.colors.border }]}>
+                    <View style={[styles.txIcon, { backgroundColor: isIncome ? "rgba(61,158,74,0.12)" : theme.colors.surfaceMuted }]}>
+                      {isIncome
+                        ? <Plus size={18} color={theme.colors.success} />
+                        : <Download size={18} color={theme.colors.textSubtle} />}
                     </View>
-                    <View style={styles.transactionInfo}>
-                      <Text style={styles.transactionDescription}>
-                        {item.description ||
-                          (item.type === "withdrawal"
-                            ? "Withdrawal"
-                            : "Transaction")}
+                    <View style={styles.txInfo}>
+                      <Text style={[styles.txDesc, { color: theme.colors.text }]}>
+                        {item.description || (item.type === "withdrawal" ? "Withdrawal" : "Transaction")}
                       </Text>
-                      <Text style={styles.transactionDate}>
-                        {formatDate(item.date || item.createdAt)}
-                      </Text>
+                      <Text style={[styles.txDate, { color: theme.colors.textSubtle }]}>{formatDate(item.date || item.createdAt)}</Text>
                     </View>
-                    <View style={styles.transactionAmountContainer}>
-                      <Text style={styles.transactionAmount}>
-                        {isIncome ? "+" : "-"}
-                        {formatCurrency(Math.abs(item.amount))}
+                    <View style={styles.txRight}>
+                      <Text style={[styles.txAmount, { color: isIncome ? theme.colors.success : theme.colors.text }]}>
+                        {isIncome ? "+" : "-"}{formatCurrency(Math.abs(item.amount))}
                       </Text>
-                      {item.status && (
-                        <Text
-                          style={[
-                            styles.transactionStatus,
-                            { color: statusColor },
-                          ]}
-                        >
-                          {item.status}
-                        </Text>
-                      )}
+                      {item.status ? (
+                        <Text style={[styles.txStatus, { color: statusColor }]}>{item.status}</Text>
+                      ) : null}
                     </View>
                   </View>
                 );
@@ -705,416 +554,135 @@ export default function WalletScreen() {
 }
 
 const getStyles = (theme) => StyleSheet.create({
-  scrollContainer: {
-    paddingTop: 24,
-    paddingBottom: 24,
-    paddingHorizontal: 16,
-  },
+  scrollContainer: { paddingTop: 24, paddingBottom: 24, paddingHorizontal: 16 },
   headerTitle: {
-    fontSize: 28,
-    fontWeight: "800",
-    fontFamily: "SpaceGrotesk_700Bold",
-    color: theme.colors.text,
-    marginBottom: 20,
+    fontSize: 28, fontWeight: "800", fontFamily: "SpaceGrotesk_700Bold",
+    color: theme.colors.text, letterSpacing: -0.5, marginBottom: 20,
   },
-  loadingContainer: {
-    alignItems: "center",
-    paddingVertical: 40,
-    gap: 12,
+  toast: {
+    flexDirection: "row", alignItems: "center", gap: 8,
+    padding: 14, borderRadius: 14, borderWidth: 1, marginBottom: 16,
   },
-  loadingText: {
-    fontSize: 14,
-    color: theme.colors.textSubtle,
-  },
-  messageContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    padding: 16,
-    borderRadius: 16,
-    marginBottom: 16,
-  },
-  errorMessage: {
-    backgroundColor: "#fef2f2",
-    borderColor: "#fecaca",
-    borderWidth: 1,
-  },
-  successMessage: {
-    backgroundColor: "#f0fdf4",
-    borderColor: "#bbf7d0",
-    borderWidth: 1,
-  },
-  messageText: {
-    flex: 1,
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  errorText: {
-    color: theme.colors.error,
-  },
-  successText: {
-    color: theme.colors.success,
-  },
+  toastText: { flex: 1, fontSize: 13, fontFamily: "PlusJakartaSans_500Medium" },
+
+  // Balance card
   balanceCard: {
-    padding: 24,
-    marginBottom: 16,
+    borderRadius: 24, padding: 24, marginBottom: 16,
+    shadowColor: "#000", shadowOpacity: 0.25, shadowRadius: 20, shadowOffset: { width: 0, height: 8 }, elevation: 8,
   },
-  balanceHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  balanceLabel: {
-    fontSize: 12,
-    fontWeight: "800",
-    color: theme.colors.textSubtle,
-    textTransform: "uppercase",
-    letterSpacing: 1,
-  },
-  toggleButton: {
-    padding: 8,
+  balanceHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
+  balanceChip: {
+    fontSize: 10, fontWeight: "800", fontFamily: "PlusJakartaSans_700Bold",
+    color: "rgba(200,230,48,0.7)", letterSpacing: 1.5, textTransform: "uppercase",
   },
   balanceAmount: {
-    fontSize: 36,
-    fontWeight: "800",
-    fontFamily: "SpaceGrotesk_700Bold",
-    color: theme.colors.text,
-    marginBottom: 20,
+    fontSize: 38, fontWeight: "800", fontFamily: "SpaceGrotesk_700Bold",
+    color: "#F0EFE0", marginBottom: 20, letterSpacing: -1,
   },
-  statsGrid: {
-    flexDirection: "row",
-    gap: 12,
-  },
-  statItem: {
-    flex: 1,
-    padding: 12,
-  },
-  statHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    marginBottom: 4,
-  },
-  statDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  statLabel: {
-    fontSize: 10,
-    fontWeight: "800",
-    color: theme.colors.textSubtle,
-    textTransform: "uppercase",
-    letterSpacing: 1,
-  },
+  balanceDivider: { height: 1, backgroundColor: "rgba(255,255,255,0.1)", marginBottom: 20 },
+  statsRow: { flexDirection: "row", alignItems: "center" },
+  statItem: { flex: 1, alignItems: "center" },
   statValue: {
-    fontSize: 14,
-    fontWeight: "800",
-    color: theme.colors.text,
+    fontSize: 15, fontWeight: "700", fontFamily: "SpaceGrotesk_700Bold",
+    color: "#F0EFE0", marginBottom: 6,
   },
-  lockedNotice: {
-    marginTop: 16,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    padding: 12,
+  statMeta: { flexDirection: "row", alignItems: "center", gap: 5 },
+  statDot: { width: 6, height: 6, borderRadius: 3 },
+  statLabel: {
+    fontSize: 10, fontWeight: "600", fontFamily: "PlusJakartaSans_600SemiBold",
+    color: "rgba(240,239,224,0.5)", textTransform: "uppercase", letterSpacing: 0.8,
   },
-  lockedNoticeText: {
-    flex: 1,
-    fontSize: 14,
-    fontWeight: "600",
-    color: theme.colors.warning,
+  statSep: { width: 1, height: 32, backgroundColor: "rgba(255,255,255,0.12)" },
+  lockedBanner: {
+    flexDirection: "row", alignItems: "center", gap: 6, marginTop: 16,
+    backgroundColor: "rgba(217,119,6,0.12)", padding: 10, borderRadius: 10,
   },
-  withdrawCard: {
-    padding: 24,
-    marginBottom: 16,
+  lockedBannerText: { flex: 1, fontSize: 12, fontFamily: "PlusJakartaSans_500Medium", color: theme.colors.warning },
+
+  // Sections
+  section: { padding: 20, marginBottom: 16 },
+  sectionLabel: {
+    fontSize: 17, fontWeight: "800", fontFamily: "SpaceGrotesk_700Bold",
+    color: theme.colors.text, letterSpacing: -0.3, marginBottom: 16,
   },
-  sectionTitle: {
-    fontSize: 12,
-    fontWeight: "800",
-    color: theme.colors.textSubtle,
-    textTransform: "uppercase",
-    letterSpacing: 1,
-    marginBottom: 20,
+  sectionHeaderRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 },
+  fieldGroup: { marginBottom: 14 },
+  fieldLabel: {
+    fontSize: 12, fontWeight: "600", fontFamily: "PlusJakartaSans_600SemiBold",
+    marginBottom: 6, letterSpacing: 0.3,
   },
-  inputGroup: {
-    marginBottom: 16,
+  amountRow: {
+    flexDirection: "row", alignItems: "center", borderRadius: 16, borderWidth: 1.5, overflow: "hidden",
   },
-  inputLabel: {
-    fontSize: 12,
-    fontWeight: "800",
-    color: theme.colors.textSubtle,
-    textTransform: "uppercase",
-    letterSpacing: 1,
-    marginBottom: 8,
-  },
-  amountInputContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: theme.colors.surface,
-    borderRadius: 16,
-    borderWidth: 2,
-    borderColor: "#e5e7eb",
-  },
-  currencySymbol: {
-    fontSize: 20,
-    fontWeight: "800",
-    color: theme.colors.textSubtle,
-    paddingLeft: 16,
-  },
+  currencySymbol: { fontSize: 20, fontWeight: "700", paddingLeft: 16 },
   amountInput: {
-    flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-    fontSize: 20,
-    fontWeight: "800",
-    color: theme.colors.text,
+    flex: 1, paddingVertical: 14, paddingHorizontal: 8, fontSize: 22, fontWeight: "800",
+    fontFamily: "SpaceGrotesk_700Bold",
   },
-  maxButton: {
-    paddingVertical: 10,
-    paddingHorizontal: 14,
+  maxBtn: { paddingVertical: 10, paddingHorizontal: 14, marginRight: 4, borderRadius: 10 },
+  maxBtnText: { fontSize: 11, fontWeight: "800", fontFamily: "PlusJakartaSans_700Bold", letterSpacing: 0.5 },
+  feeNote: { fontSize: 12, fontFamily: "PlusJakartaSans_400Regular", marginTop: 6 },
+  infoBox: {
+    flexDirection: "row", alignItems: "center", gap: 8,
+    padding: 12, borderRadius: 12, borderWidth: 1, marginBottom: 14,
   },
-  maxButtonText: {
-    fontSize: 12,
-    fontWeight: "800",
-    color: theme.colors.brand,
+  infoBoxText: { flex: 1, fontSize: 13, fontFamily: "PlusJakartaSans_400Regular" },
+  primaryBtn: {
+    flexDirection: "row", alignItems: "center", justifyContent: "center",
+    gap: 8, borderRadius: 16, paddingVertical: 14,
   },
-  feeNotice: {
-    fontSize: 12,
-    color: theme.colors.textSubtle,
-    marginTop: 8,
-  },
-  missingBankNotice: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    padding: 12,
-    marginBottom: 16,
-  },
-  missingBankText: {
-    flex: 1,
-    fontSize: 14,
-    fontWeight: "600",
-    color: theme.colors.warning,
-  },
-  withdrawButton: {
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: theme.colors.brand,
-    borderRadius: 16,
-    paddingVertical: 14,
-    shadowColor: theme.colors.brand,
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-  },
-  withdrawButtonText: {
-    color: theme.colors.surface,
-    fontSize: 16,
-    fontWeight: "700",
-  },
-  disabledButton: {
-    opacity: 0.5,
-  },
-  bankDetailsCard: {
-    padding: 24,
-    marginBottom: 16,
-  },
-  bankDetailsHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  editButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 4,
-    paddingHorizontal: 10,
-  },
-  editButtonText: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: theme.colors.brand,
-  },
-  bankFormContainer: {
-    gap: 12,
-  },
+  primaryBtnText: { fontSize: 15, fontWeight: "700", fontFamily: "PlusJakartaSans_700Bold", color: "#1A1A14" },
+  disabledBtn: { opacity: 0.4 },
+  editBtn: { flexDirection: "row", alignItems: "center", gap: 4 },
+  editBtnText: { fontSize: 13, fontWeight: "700", fontFamily: "PlusJakartaSans_700Bold" },
+
+  // Bank form
+  bankForm: { gap: 0 },
   textInput: {
-    width: "100%",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: theme.colors.surface,
-    borderWidth: 2,
-    borderColor: "#e5e7eb",
-    borderRadius: 16,
-    fontSize: 16,
+    paddingHorizontal: 14, paddingVertical: 12, borderRadius: 14, borderWidth: 1.5,
+    fontSize: 15, fontFamily: "PlusJakartaSans_400Regular",
   },
-  dropdownButton: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: theme.colors.surface,
-    borderWidth: 2,
-    borderColor: "#e5e7eb",
-    borderRadius: 16,
+  dropdownBtn: {
+    flexDirection: "row", alignItems: "center", paddingHorizontal: 14, paddingVertical: 12,
+    borderRadius: 14, borderWidth: 1.5,
   },
-  dropdownText: {
-    fontSize: 16,
-    color: theme.colors.text,
+  dropdownList: {
+    borderRadius: 12, borderWidth: 1, marginTop: 6, overflow: "hidden",
   },
-  dropdownPlaceholder: {
-    fontSize: 16,
-    color: theme.colors.textMuted,
+  dropdownItem: {
+    paddingHorizontal: 14, paddingVertical: 12, borderBottomWidth: 1,
   },
-  bankDropdown: {
-    marginTop: 8,
-    backgroundColor: theme.colors.surface,
-    borderRadius: 12,
-    maxHeight: 200,
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
-    shadowColor: theme.colors.text,
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
+  dropdownItemText: { fontSize: 14, fontFamily: "PlusJakartaSans_400Regular" },
+  bankFormBtns: { flexDirection: "row", gap: 10, marginTop: 4 },
+  ghostBtn: {
+    paddingHorizontal: 18, paddingVertical: 14, borderRadius: 16, borderWidth: 1,
+    alignItems: "center", justifyContent: "center",
   },
-  bankOption: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.surface,
+  ghostBtnText: { fontSize: 14, fontWeight: "600", fontFamily: "PlusJakartaSans_600SemiBold" },
+
+  // Bank view
+  bankViewGrid: { gap: 8 },
+  bankViewRow: {
+    flexDirection: "row", justifyContent: "space-between", alignItems: "center",
+    padding: 14, borderRadius: 14, borderWidth: 1,
   },
-  selectedBankOption: {
-    backgroundColor: "#dbeafe",
+  bankViewLabel: { fontSize: 12, fontWeight: "600", fontFamily: "PlusJakartaSans_600SemiBold", letterSpacing: 0.3 },
+  bankViewValue: { fontSize: 14, fontWeight: "700", fontFamily: "PlusJakartaSans_700Bold" },
+
+  // Transactions
+  emptyState: { alignItems: "center", paddingVertical: 32, gap: 10 },
+  emptyTitle: { fontSize: 15, fontWeight: "700", fontFamily: "SpaceGrotesk_700Bold" },
+  emptyText: { fontSize: 13, fontFamily: "PlusJakartaSans_400Regular" },
+  txList: { gap: 4 },
+  txRow: {
+    flexDirection: "row", alignItems: "center", gap: 12,
+    paddingVertical: 12, borderBottomWidth: 1,
   },
-  bankOptionText: {
-    fontSize: 14,
-    color: theme.colors.text,
-  },
-  selectedBankText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#1e40af",
-  },
-  bankFormButtons: {
-    flexDirection: "row",
-    gap: 12,
-    marginTop: 8,
-  },
-  cancelButton: {
-    flex: 1,
-    paddingVertical: 12,
-    alignItems: "center",
-  },
-  cancelButtonText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: theme.colors.textSubtle,
-  },
-  saveBankButton: {
-    flex: 1,
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: theme.colors.brand,
-    borderRadius: 16,
-    paddingVertical: 12,
-  },
-  saveBankButtonText: {
-    color: theme.colors.surface,
-    fontSize: 16,
-    fontWeight: "700",
-  },
-  bankDetailsViewContainer: {
-    gap: 10,
-  },
-  bankDetailRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  bankDetailLabel: {
-    fontSize: 12,
-    fontWeight: "800",
-    color: theme.colors.textSubtle,
-    textTransform: "uppercase",
-    letterSpacing: 1,
-  },
-  bankDetailValue: {
-    fontSize: 14,
-    fontWeight: "800",
-    color: theme.colors.text,
-  },
-  transactionsCard: {
-    padding: 24,
-  },
-  emptyTransactionsContainer: {
-    alignItems: "center",
-    paddingVertical: 40,
-    gap: 12,
-  },
-  emptyTransactionsTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: theme.colors.textSubtle,
-  },
-  emptyTransactionsText: {
-    fontSize: 14,
-    color: theme.colors.textSubtle,
-  },
-  transactionsList: {
-    gap: 10,
-  },
-  transactionRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    padding: 12,
-    borderRadius: 12,
-  },
-  transactionIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 16,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  incomeIconContainer: {
-    backgroundColor: "#d1fae5",
-  },
-  withdrawIconContainer: {
-    backgroundColor: theme.colors.surface,
-  },
-  transactionInfo: {
-    flex: 1,
-    minWidth: 0,
-  },
-  transactionDescription: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: theme.colors.text,
-  },
-  transactionDate: {
-    fontSize: 12,
-    color: theme.colors.textSubtle,
-  },
-  transactionAmountContainer: {
-    alignItems: "flex-end",
-  },
-  transactionAmount: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: theme.colors.text,
-  },
-  transactionStatus: {
-    fontSize: 10,
-    fontWeight: "800",
-    textTransform: "capitalize",
-  },
+  txIcon: { width: 40, height: 40, borderRadius: 14, alignItems: "center", justifyContent: "center" },
+  txInfo: { flex: 1, minWidth: 0 },
+  txDesc: { fontSize: 14, fontWeight: "600", fontFamily: "PlusJakartaSans_600SemiBold" },
+  txDate: { fontSize: 12, fontFamily: "PlusJakartaSans_400Regular", marginTop: 2 },
+  txRight: { alignItems: "flex-end" },
+  txAmount: { fontSize: 14, fontWeight: "700", fontFamily: "PlusJakartaSans_700Bold" },
+  txStatus: { fontSize: 10, fontWeight: "700", fontFamily: "PlusJakartaSans_700Bold", textTransform: "capitalize", marginTop: 2 },
 });

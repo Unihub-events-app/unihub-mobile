@@ -24,6 +24,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { useSessionStore } from "../lib/auth";
 import { ThemeProvider, useTheme } from "../theme/ThemeProvider";
 import { GitHubUpdater } from "../components/GitHubUpdater";
+import { setupNotificationHandlers } from "../lib/pushNotifications";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -60,6 +61,8 @@ export default function RootLayout() {
 
   useEffect(() => {
     useSessionStore.getState().hydrateSession();
+    const cleanup = setupNotificationHandlers();
+    return cleanup;
   }, []);
 
   useEffect(() => {

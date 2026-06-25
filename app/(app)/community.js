@@ -9,6 +9,7 @@ import {
   TextInput,
   ActivityIndicator,
   Modal,
+  Image,
 } from "react-native";
 import { useRouter } from "expo-router";
 import {
@@ -70,192 +71,189 @@ const CommunityCard = ({
   const { theme } = useTheme();
   const styles = getStyles(theme);
   const isPrivate = community.isPrivate;
+  const memberCount = (community.members || []).length;
+  const hasImageUrl = community.profileImage?.startsWith?.("http");
+
   const handleCardClick = () => {
     if (isMember) return onEnter(community._id);
     if (isPrivate && !isPrivateJoinable) return;
     onJoin(community._id, isPrivate);
   };
 
-  const memberCount = (community.members || []).length;
-
   return (
-    <NeuCard style={styles.communityCard} onPress={handleCardClick}>
-      {/* Top row: avatar + meta badges */}
-      <View style={styles.communityCardTop}>
-        <CommunityAvatar
-          profileImage={community.profileImage}
-          alt={community.name}
-          style={styles.communityAvatar}
-        />
-        <View style={styles.communityMeta}>
-          {community.isPrivate && (
-            <View style={styles.privateBadge}>
-              <Lock size={9} color={theme.colors.textSubtle} style={{ marginRight: 3 }} />
-              <Text style={styles.privateBadgeText}>Private</Text>
+    <TouchableOpacity
+      style={[styles.communityCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
+      onPress={handleCardClick}
+      activeOpacity={0.93}
+    >
+      {/* Banner */}
+      <View style={styles.cardBanner}>
+        {hasImageUrl ? (
+          <Image source={{ uri: community.profileImage }} style={styles.cardBannerImg} resizeMode="cover" />
+        ) : (
+          <View style={[styles.cardBannerPlaceholder, { backgroundColor: theme.colors.navSurface }]}>
+            <Text style={styles.cardBannerEmoji}>{community.profileImage || "🏛️"}</Text>
+          </View>
+        )}
+        <View style={styles.cardBannerScrim} />
+        <View style={styles.cardBannerContent}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.cardBannerTitle} numberOfLines={1}>{community.name}</Text>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 4, flexWrap: "wrap" }}>
+              <View style={styles.membersPill}>
+                <Users size={10} color="rgba(255,255,255,0.7)" />
+                <Text style={styles.membersPillText}>
+                  {memberCount} {memberCount === 1 ? "member" : "members"}
+                </Text>
+              </View>
+              {isPrivate && (
+                <View style={styles.privatePill}>
+                  <Lock size={9} color={theme.colors.brand} />
+                  <Text style={styles.privatePillText}>Private</Text>
+                </View>
+              )}
+            </View>
+          </View>
+          {isMember && (
+            <View style={styles.joinedBadge}>
+              <Text style={styles.joinedBadgeText}>✓ Joined</Text>
             </View>
           )}
-          <View style={styles.communityMembers}>
-            <Users size={12} color={theme.colors.textSubtle} style={{ marginRight: 4 }} />
-            <Text style={styles.communityMembersText}>
-              {memberCount} {memberCount === 1 ? "member" : "members"}
-            </Text>
-          </View>
         </View>
       </View>
 
-      {/* Name */}
-      <Text style={styles.communityTitle} numberOfLines={1}>
-        {community.name}
-      </Text>
-
-      {/* Recent message or description */}
-      {isMember && recentMessage ? (
-        <View style={styles.recentMessage}>
-          <View style={styles.recentMessageBubble}>
-            <Text style={styles.recentMessageAuthor} numberOfLines={1}>
+      {/* Body */}
+      <View style={styles.cardBody}>
+        {isMember && recentMessage ? (
+          <View style={[styles.recentMessage, { backgroundColor: theme.colors.surfaceMuted }]}>
+            <Text style={[styles.recentMessageAuthor, { color: theme.colors.brand }]} numberOfLines={1}>
               {recentMessageAuthorName || "Someone"}
             </Text>
-            <Text style={styles.recentMessageText} numberOfLines={1}>
-              {recentMessage.image && !recentMessage.content
-                ? "Sent a photo"
-                : recentMessage.content}
+            <Text style={[styles.recentMessageText, { color: theme.colors.textMuted }]} numberOfLines={1}>
+              {recentMessage.image && !recentMessage.content ? "📷 Photo" : recentMessage.content}
             </Text>
           </View>
-        </View>
-      ) : (
-        <Text style={styles.communityDescription} numberOfLines={2}>
-          {community.description || "No description yet."}
-        </Text>
-      )}
+        ) : (
+          <Text style={[styles.communityDescription, { color: theme.colors.textSubtle }]} numberOfLines={2}>
+            {community.description || "No description yet."}
+          </Text>
+        )}
 
-      {/* Action row */}
-      <View style={styles.communityActions}>
-        <TouchableOpacity
-          style={[
-            styles.actionButton,
-            isMember ? styles.ghostButton : styles.primaryButton,
-            isPrivate && !isPrivateJoinable && !isMember && styles.disabledButton,
-          ]}
-          onPress={(e) => {
-            e.stopPropagation();
-            if (isMember) return onEnter(community._id);
-            if (isPrivate && !isPrivateJoinable) return;
-            onJoin(community._id, isPrivate);
-          }}
-          disabled={isPrivate && !isPrivateJoinable && !isMember}
-        >
-          {isMember ? (
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-              <Text style={styles.ghostButtonText}>Open Chat</Text>
-              <ChevronRight size={14} color={theme.colors.brand} />
-            </View>
-          ) : isPrivate && !isPrivateJoinable ? (
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-              <Lock size={13} color={theme.colors.textSubtle} />
-              <Text style={[styles.primaryButtonText, { color: theme.colors.textSubtle }]}>
-                Private
-              </Text>
-            </View>
-          ) : (
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-              <Text style={styles.primaryButtonText}>Join</Text>
-              <Plus size={13} color="#1A1A14" />
-            </View>
-          )}
-        </TouchableOpacity>
-        {isCreator ? (
+        <View style={styles.communityActions}>
           <TouchableOpacity
-            style={styles.iconAction}
+            style={[
+              styles.actionButton,
+              isMember
+                ? { backgroundColor: theme.colors.surfaceMuted }
+                : isPrivate && !isPrivateJoinable
+                ? { backgroundColor: theme.colors.surfaceMuted, opacity: 0.5 }
+                : { backgroundColor: theme.colors.brand },
+            ]}
             onPress={(e) => {
               e.stopPropagation();
-              onDelete({ type: "delete", id: community._id, name: community.name });
+              if (isMember) return onEnter(community._id);
+              if (isPrivate && !isPrivateJoinable) return;
+              onJoin(community._id, isPrivate);
             }}
+            disabled={isPrivate && !isPrivateJoinable && !isMember}
           >
-            <Delete size={17} color="#ef4444" />
+            {isMember ? (
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                <Text style={[styles.actionButtonText, { color: theme.colors.brand }]}>Open Chat</Text>
+                <ChevronRight size={14} color={theme.colors.brand} />
+              </View>
+            ) : isPrivate && !isPrivateJoinable ? (
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                <Lock size={12} color={theme.colors.textSubtle} />
+                <Text style={[styles.actionButtonText, { color: theme.colors.textSubtle }]}>Private</Text>
+              </View>
+            ) : (
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                <Text style={[styles.actionButtonText, { color: "#1A1A14" }]}>Join Community</Text>
+                <Plus size={13} color="#1A1A14" />
+              </View>
+            )}
           </TouchableOpacity>
-        ) : (
-          isMember && (
+          {isCreator ? (
             <TouchableOpacity
-              style={styles.iconAction}
+              style={[styles.iconAction, { backgroundColor: "rgba(239,68,68,0.1)" }]}
+              onPress={(e) => {
+                e.stopPropagation();
+                onDelete({ type: "delete", id: community._id, name: community.name });
+              }}
+            >
+              <Delete size={16} color="#ef4444" />
+            </TouchableOpacity>
+          ) : isMember ? (
+            <TouchableOpacity
+              style={[styles.iconAction, { backgroundColor: theme.colors.surfaceMuted }]}
               onPress={(e) => {
                 e.stopPropagation();
                 onLeave({ type: "leave", id: community._id, name: community.name });
               }}
             >
-              <LogOut size={17} color={theme.colors.textSubtle} />
+              <LogOut size={16} color={theme.colors.textSubtle} />
             </TouchableOpacity>
-          )
-        )}
+          ) : null}
+        </View>
       </View>
-    </NeuCard>
+    </TouchableOpacity>
   );
 };
 
-const UserCard = ({
-  user,
-  onFollow,
-  onUnfollow,
-  isFollowing,
-  isFriend,
-  router,
-}) => {
+const UserCard = ({ user, onFollow, onUnfollow, isFollowing, isFriend, router }) => {
   const { theme } = useTheme();
-  const styles = getStyles(theme);
   return (
-  <NeuCard
-    style={styles.userCard}
-    onPress={() => router.push(`/users/u/${user._id}`)}
-  >
-    <View style={styles.userAvatarContainer}>
-      {user.avatar ? (
-        <Text style={styles.userAvatarPlaceholder}>
-          {user.username?.charAt(0).toUpperCase()}
-        </Text>
-      ) : (
-        <Users size={32} color="#6b7280" />
-      )}
-    </View>
-    <Text style={styles.userName}>{user.username || "User"}</Text>
-    <Text style={styles.userRole}>{user.role}</Text>
-    {user.bio && (
-      <Text style={styles.userBio} numberOfLines={2}>
-        {user.bio}
-      </Text>
-    )}
-    <View style={styles.userFollowContainer}>
-      <TouchableOpacity
-        style={[
-          styles.followButton,
-          isFriend
-            ? styles.friendButton
-            : isFollowing
-              ? styles.followingButton
-              : null,
-        ]}
-        onPress={(e) => {
-          e.stopPropagation();
-          isFollowing ? onUnfollow(user._id) : onFollow(user._id);
-        }}
-      >
-        {isFriend ? (
-          <>
-            <CheckSquare size={16} color="#10b981" style={{ marginRight: 4 }} />
-            <Text style={styles.friendButtonText}>Friends</Text>
-          </>
-        ) : isFollowing ? (
-          <>
-            <CheckSquare size={16} color={theme.colors.brand} style={{ marginRight: 4 }} />
-            <Text style={styles.followingButtonText}>Following</Text>
-          </>
+    <TouchableOpacity
+      style={{
+        flexDirection: "row", alignItems: "center", gap: 14,
+        padding: 14, borderRadius: 20,
+        backgroundColor: theme.colors.surface,
+        borderWidth: 1, borderColor: theme.colors.border,
+      }}
+      onPress={() => router.push(`/users/u/${user._id}`)}
+      activeOpacity={0.85}
+    >
+      <View style={{
+        width: 52, height: 52, borderRadius: 26,
+        backgroundColor: theme.colors.brandTint,
+        alignItems: "center", justifyContent: "center", flexShrink: 0,
+      }}>
+        {user.avatar ? (
+          <Text style={{ fontSize: 22, fontWeight: "700", color: theme.colors.text }}>
+            {user.username?.charAt(0).toUpperCase()}
+          </Text>
         ) : (
-          <>
-            <AddUser size={16} color="#fff" style={{ marginRight: 4 }} />
-            <Text style={styles.followButtonText}>Follow</Text>
-          </>
+          <Users size={22} color={theme.colors.textSubtle} />
         )}
+      </View>
+      <View style={{ flex: 1, minWidth: 0 }}>
+        <Text style={{ fontSize: 15, fontWeight: "700", fontFamily: "SpaceGrotesk_700Bold", color: theme.colors.text }} numberOfLines={1}>
+          {user.username || "User"}
+        </Text>
+        <Text style={{ fontSize: 11, fontWeight: "600", textTransform: "uppercase", letterSpacing: 0.7, color: theme.colors.textSubtle, marginTop: 2 }}>
+          {user.role}
+        </Text>
+        {user.bio && (
+          <Text style={{ fontSize: 12, color: theme.colors.textSubtle, marginTop: 3 }} numberOfLines={1}>
+            {user.bio}
+          </Text>
+        )}
+      </View>
+      <TouchableOpacity
+        style={{
+          paddingHorizontal: 14, paddingVertical: 8, borderRadius: 12,
+          backgroundColor: isFriend ? "rgba(61,158,74,0.12)" : isFollowing ? theme.colors.surfaceMuted : theme.colors.brand,
+          borderWidth: isFriend || isFollowing ? 1 : 0,
+          borderColor: isFriend ? theme.colors.success : theme.colors.border,
+        }}
+        onPress={(e) => { e.stopPropagation(); isFollowing ? onUnfollow(user._id) : onFollow(user._id); }}
+      >
+        <Text style={{ fontSize: 12, fontWeight: "700", fontFamily: "PlusJakartaSans_700Bold", color: isFriend ? theme.colors.success : isFollowing ? theme.colors.brand : "#1A1A14" }}>
+          {isFriend ? "Friends" : isFollowing ? "Following" : "Follow"}
+        </Text>
       </TouchableOpacity>
-    </View>
-  </NeuCard>
+    </TouchableOpacity>
   );
 };
 
@@ -724,11 +722,14 @@ export default function CommunityScreen() {
     const creatorId = c.creator?._id
       ? String(c.creator._id)
       : String(c.creator);
-    return !(
+    const isMember =
       userId &&
       (creatorId === userId ||
-        (c.members || []).some((m) => String(m) === userId))
-    );
+        (c.members || []).some((m) => String(m) === userId));
+    if (isMember) return false;
+    // Only show private communities in Discover if user searched by code
+    if (c.isPrivate && !isCodeSearch) return false;
+    return true;
   });
 
   return (
@@ -783,7 +784,7 @@ export default function CommunityScreen() {
               style={styles.createButton}
               onPress={() => setShowCreateModal(true)}
             >
-              <Plus size={20} color="#fff" style={{ marginRight: 4 }} />
+              <Plus size={20} color="#1A1A14" style={{ marginRight: 4 }} />
               <Text style={styles.createButtonText}>Create Community</Text>
             </TouchableOpacity>
           )}
@@ -805,7 +806,7 @@ export default function CommunityScreen() {
                 setSearchTerm("");
               }
             }}
-            leftIcon={<Search size={18} color="#9ca3af" />}
+            leftIcon={<Search size={18} color={theme.colors.textSubtle} />}
           />
         </View>
         {activeTab === "communities" &&
@@ -974,7 +975,7 @@ export default function CommunityScreen() {
                 }}
                 style={styles.modalCloseButton}
               >
-                <Delete size={24} color="#6b7280" />
+                <Delete size={24} color={theme.colors.textSubtle} />
               </TouchableOpacity>
             </View>
 
@@ -1008,7 +1009,7 @@ export default function CommunityScreen() {
                   <Text style={styles.nextButtonText}>Next Step</Text>
                   <ChevronRight
                     size={20}
-                    color="#fff"
+                    color="#1A1A14"
                     style={{ marginLeft: 4 }}
                   />
                 </TouchableOpacity>
@@ -1207,69 +1208,74 @@ const getStyles = (theme) => StyleSheet.create({
     marginBottom: 20,
   },
   headerLabel: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "700",
     textTransform: "uppercase",
-    letterSpacing: 1,
+    letterSpacing: 1.2,
     color: theme.colors.brand,
     marginBottom: 4,
+    fontFamily: "PlusJakartaSans_700Bold",
   },
   headerTitle: {
-    fontSize: 28,
+    fontSize: 30,
     fontWeight: "800",
     fontFamily: "SpaceGrotesk_700Bold",
     color: theme.colors.text,
     marginBottom: 4,
+    letterSpacing: -0.5,
   },
   headerSubtitle: {
     fontSize: 14,
     color: theme.colors.textSubtle,
+    fontFamily: "PlusJakartaSans_400Regular",
   },
   tabsContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 20,
+    marginBottom: 16,
   },
   tabs: {
     flexDirection: "row",
     backgroundColor: theme.colors.surface,
-    padding: 6,
-    borderRadius: 16,
+    padding: 5,
+    borderRadius: 14,
     gap: 4,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
   },
   tab: {
-    paddingVertical: 10,
+    paddingVertical: 9,
     paddingHorizontal: 16,
-    borderRadius: 12,
+    borderRadius: 10,
   },
   activeTab: {
-    backgroundColor: theme.colors.surface,
-    shadowColor: theme.colors.text,
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
+    backgroundColor: theme.colors.brand,
   },
   tabText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "600",
     color: theme.colors.textSubtle,
+    fontFamily: "PlusJakartaSans_600SemiBold",
   },
   activeTabText: {
-    color: theme.colors.text,
+    color: "#1A1A14",
+    fontFamily: "PlusJakartaSans_700Bold",
   },
   createButton: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 10,
-    paddingHorizontal: 16,
+    paddingVertical: 9,
+    paddingHorizontal: 14,
     backgroundColor: theme.colors.brand,
-    borderRadius: 16,
+    borderRadius: 14,
+    gap: 4,
   },
   createButtonText: {
-    color: theme.colors.surface,
-    fontSize: 14,
-    fontWeight: "600",
+    color: "#1A1A14",
+    fontSize: 13,
+    fontWeight: "700",
+    fontFamily: "PlusJakartaSans_700Bold",
   },
   searchContainer: {
     position: "relative",
@@ -1353,11 +1359,11 @@ const getStyles = (theme) => StyleSheet.create({
     gap: 12,
   },
   sectionTitle: {
-    fontSize: 14,
+    fontSize: 17,
     fontWeight: "800",
-    textTransform: "uppercase",
-    letterSpacing: 1,
+    fontFamily: "SpaceGrotesk_700Bold",
     color: theme.colors.text,
+    letterSpacing: -0.3,
   },
   sectionCount: {
     paddingVertical: 4,
@@ -1383,78 +1389,123 @@ const getStyles = (theme) => StyleSheet.create({
     width: "100%",
   },
   communityCard: {
-    padding: 18,
-    gap: 12,
+    borderRadius: 24,
+    overflow: "hidden",
+    borderWidth: 1,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.1,
+    shadowRadius: 18,
+    elevation: 6,
   },
-  communityCardTop: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+  cardBanner: {
+    height: 124,
+    position: "relative",
+  },
+  cardBannerImg: {
+    width: "100%",
+    height: "100%",
+  },
+  cardBannerPlaceholder: {
+    width: "100%",
+    height: "100%",
     alignItems: "center",
+    justifyContent: "center",
   },
-  communityAvatar: {
-    width: 52,
-    height: 52,
-    borderRadius: 16,
+  cardBannerEmoji: {
+    fontSize: 52,
+    opacity: 0.5,
   },
-  communityMeta: {
+  cardBannerScrim: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.44)",
+  },
+  cardBannerContent: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 14,
+    flexDirection: "row",
     alignItems: "flex-end",
-    gap: 6,
+    gap: 10,
   },
-  communityMembers: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: theme.colors.surfaceMuted,
-    paddingVertical: 5,
-    paddingHorizontal: 10,
-    borderRadius: 10,
-  },
-  communityMembersText: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: theme.colors.textSubtle,
-  },
-  communityTitle: {
-    fontSize: 16,
+  cardBannerTitle: {
+    fontSize: 19,
     fontWeight: "800",
-    color: theme.colors.text,
+    color: "#fff",
     fontFamily: "SpaceGrotesk_700Bold",
+    letterSpacing: -0.4,
   },
-  privateBadge: {
+  membersPill: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: theme.colors.surfaceMuted,
-    borderRadius: 8,
-    paddingVertical: 4,
+    gap: 4,
+    backgroundColor: "rgba(255,255,255,0.15)",
+    borderRadius: 99,
     paddingHorizontal: 8,
+    paddingVertical: 3,
   },
-  privateBadgeText: {
+  membersPillText: {
     fontSize: 11,
+    color: "rgba(255,255,255,0.88)",
     fontWeight: "600",
-    color: theme.colors.textSubtle,
+    fontFamily: "PlusJakartaSans_600SemiBold",
+  },
+  privatePill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "rgba(200,230,48,0.22)",
+    borderRadius: 99,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderWidth: 1,
+    borderColor: "rgba(200,230,48,0.45)",
+  },
+  privatePillText: {
+    fontSize: 11,
+    color: "#C8E630",
+    fontWeight: "700",
+    fontFamily: "PlusJakartaSans_700Bold",
+  },
+  joinedBadge: {
+    backgroundColor: "rgba(200,230,48,0.22)",
+    borderRadius: 99,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderWidth: 1,
+    borderColor: "rgba(200,230,48,0.45)",
+  },
+  joinedBadgeText: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#C8E630",
+    fontFamily: "PlusJakartaSans_700Bold",
+  },
+  cardBody: {
+    padding: 14,
+    gap: 12,
   },
   communityDescription: {
     fontSize: 13,
-    color: theme.colors.textSubtle,
     lineHeight: 19,
+    fontFamily: "PlusJakartaSans_400Regular",
   },
   recentMessage: {
-    backgroundColor: theme.colors.surfaceMuted,
     borderRadius: 12,
-    paddingVertical: 8,
+    paddingVertical: 9,
     paddingHorizontal: 12,
-  },
-  recentMessageBubble: {
     gap: 2,
   },
   recentMessageAuthor: {
     fontSize: 11,
     fontWeight: "700",
-    color: theme.colors.brand,
+    fontFamily: "PlusJakartaSans_700Bold",
   },
   recentMessageText: {
-    fontSize: 12,
-    color: theme.colors.textSubtle,
-    lineHeight: 17,
+    fontSize: 13,
+    fontFamily: "PlusJakartaSans_400Regular",
   },
   communityActions: {
     flexDirection: "row",
@@ -1463,35 +1514,22 @@ const getStyles = (theme) => StyleSheet.create({
   },
   actionButton: {
     flex: 1,
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 10,
-    borderRadius: 12,
+    gap: 6,
+    paddingVertical: 12,
+    borderRadius: 14,
   },
-  primaryButton: {
-    backgroundColor: theme.colors.brand,
-  },
-  primaryButtonText: {
+  actionButtonText: {
     fontSize: 13,
     fontWeight: "700",
-    color: "#1A1A14",
-  },
-  ghostButton: {
-    backgroundColor: theme.colors.surfaceMuted,
-  },
-  ghostButtonText: {
-    fontSize: 13,
-    fontWeight: "700",
-    color: theme.colors.brand,
-  },
-  disabledButton: {
-    opacity: 0.5,
+    fontFamily: "PlusJakartaSans_700Bold",
   },
   iconAction: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
-    backgroundColor: theme.colors.surfaceMuted,
+    width: 42,
+    height: 42,
+    borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1548,7 +1586,7 @@ const getStyles = (theme) => StyleSheet.create({
   followButtonText: {
     fontSize: 14,
     fontWeight: "700",
-    color: theme.colors.surface,
+    color: "#1A1A14",
   },
   followingButton: {
     backgroundColor: theme.colors.surface,
@@ -1557,7 +1595,7 @@ const getStyles = (theme) => StyleSheet.create({
     color: theme.colors.brand,
   },
   friendButton: {
-    backgroundColor: "#d1fae5",
+    backgroundColor: "rgba(61,158,74,0.12)",
   },
   friendButtonText: {
     color: theme.colors.success,
@@ -1624,9 +1662,10 @@ const getStyles = (theme) => StyleSheet.create({
     marginTop: 8,
   },
   nextButtonText: {
-    color: theme.colors.surface,
+    color: "#1A1A14",
     fontSize: 16,
     fontWeight: "700",
+    fontFamily: "PlusJakartaSans_700Bold",
   },
   backButton: {
     flexDirection: "row",
@@ -1683,7 +1722,7 @@ const getStyles = (theme) => StyleSheet.create({
     justifyContent: "center",
   },
   selectedIconOption: {
-    backgroundColor: "#dbeafe",
+    backgroundColor: theme.colors.brandTint,
     borderWidth: 2,
     borderColor: theme.colors.brand,
   },
@@ -1716,8 +1755,9 @@ const getStyles = (theme) => StyleSheet.create({
     backgroundColor: theme.colors.success,
   },
   createButtonFinalText: {
-    color: theme.colors.surface,
+    color: "#fff",
     fontSize: 16,
     fontWeight: "700",
+    fontFamily: "PlusJakartaSans_700Bold",
   },
 });

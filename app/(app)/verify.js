@@ -16,7 +16,7 @@ export default function VerifyScreen() {
         <Text style={styles.headerTitle}>Verify Your Email</Text>
         
         <NeuInset style={styles.emptyState}>
-          <CheckCircle2 size={48} color="#9ca3af" />
+          <CheckCircle2 size={48} color={theme.colors.textSubtle} />
           <Text style={styles.emptyTitle}>Coming Soon</Text>
           <Text style={styles.emptyText}>
             Email verification will be available here soon!

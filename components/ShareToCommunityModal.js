@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   View,
   Text,
@@ -13,8 +13,11 @@ import { X, CheckSquare, Users } from "lucide-react-native";
 import { getUserToken } from "../lib/auth";
 import { API_URL } from "../lib/config";
 import { postJson } from "../lib/api";
+import { useTheme } from "../theme/ThemeProvider";
 
 const ShareToCommunityModal = ({ isOpen, onClose, eventData }) => {
+  const { theme } = useTheme();
+  const styles = useMemo(() => getStyles(theme), [theme]);
   const [communities, setCommunities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [sharing, setSharing] = useState(false);
@@ -132,19 +135,19 @@ const ShareToCommunityModal = ({ isOpen, onClose, eventData }) => {
               <Text style={styles.subtitle}>Select communities to share this event</Text>
             </View>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-              <X size={24} color="#fff" />
+              <X size={24} color="#1A1A14" />
             </TouchableOpacity>
           </View>
           <View style={styles.content}>
             {loading ? (
               <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#C8E630" />
+                <ActivityIndicator size="large" color={theme.colors.brand} />
                 <Text style={styles.loadingText}>Loading communities...</Text>
               </View>
             ) : communities.length === 0 ? (
               <View style={styles.emptyContainer}>
                 <View style={styles.emptyIconContainer}>
-                  <Users size={40} color="#6b7280" />
+                  <Users size={40} color={theme.colors.textSubtle} />
                 </View>
                 <Text style={styles.emptyTitle}>No communities found</Text>
                 <Text style={styles.emptySubtitle}>Join communities to share events with them</Text>
@@ -160,10 +163,7 @@ const ShareToCommunityModal = ({ isOpen, onClose, eventData }) => {
                         onPress={() => toggleCommunity(community._id)}
                         style={[
                           styles.communityItem,
-                          {
-                            borderColor: isSelected ? "#C8E630" : "rgba(0,0,0,0.10)",
-                            backgroundColor: isSelected ? "#eff6ff" : "#fff",
-                          },
+                          isSelected && styles.communityItemSelected,
                         ]}
                       >
                         <View style={styles.communityAvatarContainer}>
@@ -188,7 +188,7 @@ const ShareToCommunityModal = ({ isOpen, onClose, eventData }) => {
                         </View>
                         {isSelected && (
                           <View style={styles.checkContainer}>
-                            <CheckSquare size={20} color="#fff" />
+                            <CheckSquare size={20} color="#1A1A14" />
                           </View>
                         )}
                       </TouchableOpacity>
@@ -243,7 +243,7 @@ const ShareToCommunityModal = ({ isOpen, onClose, eventData }) => {
             >
               {sharing ? (
                 <View style={styles.sharingContainer}>
-                  <ActivityIndicator size="small" color="#fff" />
+                  <ActivityIndicator size="small" color="#1A1A14" />
                   <Text style={styles.shareButtonText}>Sharing...</Text>
                 </View>
               ) : (
@@ -259,16 +259,16 @@ const ShareToCommunityModal = ({ isOpen, onClose, eventData }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (theme) => StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
+    backgroundColor: "rgba(0,0,0,0.6)",
     justifyContent: "center",
     alignItems: "center",
     padding: 16,
   },
   container: {
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.surface,
     borderRadius: 24,
     width: "100%",
     maxWidth: 400,
@@ -276,7 +276,7 @@ const styles = StyleSheet.create({
   },
   header: {
     padding: 24,
-    backgroundColor: "#C8E630",
+    backgroundColor: theme.colors.brand,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
@@ -286,14 +286,16 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   title: {
-    color: "#fff",
+    color: "#1A1A14",
     fontSize: 20,
     fontWeight: "700",
+    fontFamily: "SpaceGrotesk_700Bold",
   },
   subtitle: {
-    color: "rgba(255,255,255,0.9)",
+    color: "rgba(26,26,20,0.7)",
     fontSize: 14,
     marginTop: 4,
+    fontFamily: "PlusJakartaSans_400Regular",
   },
   closeButton: {
     padding: 4,
@@ -308,7 +310,8 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 14,
-    color: "#6b7280",
+    color: theme.colors.textSubtle,
+    fontFamily: "PlusJakartaSans_400Regular",
   },
   emptyContainer: {
     paddingVertical: 48,
@@ -318,7 +321,7 @@ const styles = StyleSheet.create({
   emptyIconContainer: {
     width: 64,
     height: 64,
-    backgroundColor: "#f3f4f6",
+    backgroundColor: theme.colors.surfaceMuted,
     borderRadius: 999,
     justifyContent: "center",
     alignItems: "center",
@@ -326,12 +329,14 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#4b5563",
+    color: theme.colors.textMuted,
+    fontFamily: "PlusJakartaSans_600SemiBold",
   },
   emptySubtitle: {
     fontSize: 14,
-    color: "#6b7280",
+    color: theme.colors.textSubtle,
     textAlign: "center",
+    fontFamily: "PlusJakartaSans_400Regular",
   },
   communitiesList: {
     maxHeight: 320,
@@ -342,13 +347,18 @@ const styles = StyleSheet.create({
     gap: 12,
     padding: 16,
     borderRadius: 16,
-    borderWidth: 2,
+    borderWidth: 1.5,
+    borderColor: theme.colors.border,
     marginBottom: 8,
+  },
+  communityItemSelected: {
+    borderColor: theme.colors.brand,
+    backgroundColor: theme.colors.brandTint,
   },
   communityAvatarContainer: {
     width: 48,
     height: 48,
-    backgroundColor: "#C8E630",
+    backgroundColor: theme.colors.brand,
     borderRadius: 12,
     overflow: "hidden",
     justifyContent: "center",
@@ -367,17 +377,19 @@ const styles = StyleSheet.create({
   communityName: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#111827",
+    color: theme.colors.text,
+    fontFamily: "PlusJakartaSans_700Bold",
   },
   communityRole: {
     fontSize: 12,
-    color: "#6b7280",
+    color: theme.colors.textSubtle,
     textTransform: "capitalize",
+    fontFamily: "PlusJakartaSans_400Regular",
   },
   checkContainer: {
     width: 24,
     height: 24,
-    backgroundColor: "#C8E630",
+    backgroundColor: theme.colors.brand,
     borderRadius: 999,
     justifyContent: "center",
     alignItems: "center",
@@ -392,6 +404,7 @@ const styles = StyleSheet.create({
   messageText: {
     fontSize: 14,
     fontWeight: "500",
+    fontFamily: "PlusJakartaSans_500Medium",
   },
   footer: {
     flexDirection: "row",
@@ -402,26 +415,30 @@ const styles = StyleSheet.create({
   cancelButton: {
     flex: 1,
     paddingVertical: 12,
-    backgroundColor: "#f3f4f6",
+    backgroundColor: theme.colors.surfaceMuted,
     borderRadius: 12,
     alignItems: "center",
+    borderWidth: 1,
+    borderColor: theme.colors.border,
   },
   cancelButtonText: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#4b5563",
+    color: theme.colors.textMuted,
+    fontFamily: "PlusJakartaSans_600SemiBold",
   },
   shareButton: {
     flex: 1,
     paddingVertical: 12,
-    backgroundColor: "#C8E630",
+    backgroundColor: theme.colors.brand,
     borderRadius: 12,
     alignItems: "center",
   },
   shareButtonText: {
     fontSize: 16,
-    fontWeight: "600",
-    color: "#fff",
+    fontWeight: "700",
+    fontFamily: "PlusJakartaSans_700Bold",
+    color: "#1A1A14",
   },
   sharingContainer: {
     flexDirection: "row",
