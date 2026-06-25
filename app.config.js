@@ -29,7 +29,6 @@ module.exports = ({ config }) => ({
     "expo-image",
     "expo-status-bar",
     "expo-font",
-    "expo-barcode-scanner",
     "expo-sharing",
     "expo-calendar",
     [
