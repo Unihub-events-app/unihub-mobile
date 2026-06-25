@@ -23,6 +23,7 @@ import {
 } from "lucide-react-native";
 import { Share } from "react-native";
 import { useTheme } from "../../../theme/ThemeProvider";
+import { radius, spacing } from "../../../theme/tokens.js";
 import { getUserToken } from "../../../lib/auth";
 import { API_URL } from "../../../lib/config";
 import { getSocket, disconnectSocket, joinCommunity, onMessage, offMessage } from "../../../lib/socket";
@@ -102,7 +103,7 @@ function LinkPreview({ url, theme }) {
 
 const lpStyles = StyleSheet.create({
   container: {
-    borderRadius: 12,
+    borderRadius: radius.md,
     borderWidth: 1,
     overflow: "hidden",
     marginTop: 6,
@@ -724,7 +725,7 @@ const styles = StyleSheet.create({
     height: 36,
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 12,
+    borderRadius: radius.md,
     backgroundColor: "rgba(255,255,255,0.1)",
   },
   headerCenter: {
@@ -751,7 +752,7 @@ const styles = StyleSheet.create({
   infoBtn: {
     width: 36,
     height: 36,
-    borderRadius: 12,
+    borderRadius: radius.md,
     backgroundColor: "rgba(255,255,255,0.1)",
     alignItems: "center",
     justifyContent: "center",
@@ -774,7 +775,7 @@ const styles = StyleSheet.create({
     height: 40,
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 12,
+    borderRadius: radius.md,
   },
   emojiPickerEmoji: {
     fontSize: 24,
@@ -784,7 +785,8 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   chatContent: {
-    padding: 16,
+    paddingHorizontal: spacing.page,
+    paddingVertical: 16,
     paddingBottom: 8,
     gap: 10,
   },
@@ -801,7 +803,7 @@ const styles = StyleSheet.create({
   dateSeparatorPill: {
     paddingHorizontal: 12,
     paddingVertical: 4,
-    borderRadius: 99,
+    borderRadius: radius.xxl,
     borderWidth: 1,
   },
   dateSeparatorText: {
@@ -825,7 +827,7 @@ const styles = StyleSheet.create({
   avatar: {
     width: 34,
     height: 34,
-    borderRadius: 12,
+    borderRadius: radius.md,
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,
@@ -833,11 +835,11 @@ const styles = StyleSheet.create({
   avatarImg: {
     width: 34,
     height: 34,
-    borderRadius: 12,
+    borderRadius: radius.md,
   },
   avatarText: {
     fontSize: 12,
-    fontWeight: "800",
+    fontWeight: "700",
     color: "#fff",
     fontFamily: "SpaceGrotesk_700Bold",
   },
@@ -852,7 +854,7 @@ const styles = StyleSheet.create({
     fontFamily: "PlusJakartaSans_700Bold",
   },
   messageBubble: {
-    borderRadius: 20,
+    borderRadius: radius.xl,
     paddingVertical: 10,
     paddingHorizontal: 14,
     maxWidth: "100%",
@@ -871,24 +873,24 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 5,
   },
   imageContainer: {
-    borderRadius: 12,
+    borderRadius: radius.md,
     overflow: "hidden",
   },
   chatImage: {
     width: "100%",
     height: 180,
-    borderRadius: 12,
+    borderRadius: radius.md,
   },
   fileCard: {
     flexDirection: "row",
     alignItems: "center",
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 10,
   },
   fileIconCircle: {
     width: 38,
     height: 38,
-    borderRadius: 12,
+    borderRadius: radius.md,
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,
@@ -919,7 +921,7 @@ const styles = StyleSheet.create({
     gap: 3,
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 99,
+    borderRadius: radius.xxl,
     borderWidth: 1,
   },
   reactionEmoji: {
@@ -950,14 +952,14 @@ const styles = StyleSheet.create({
   emptyIconWrap: {
     width: 80,
     height: 80,
-    borderRadius: 28,
+    borderRadius: radius.xl,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 4,
   },
   emptyTitle: {
     fontSize: 20,
-    fontWeight: "800",
+    fontWeight: "700",
     fontFamily: "SpaceGrotesk_700Bold",
     letterSpacing: -0.3,
   },
@@ -973,7 +975,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
   },
   previewWrapper: {
-    borderRadius: 14,
+    borderRadius: radius.lg,
     overflow: "hidden",
     borderWidth: 1,
     position: "relative",
@@ -1000,7 +1002,7 @@ const styles = StyleSheet.create({
     right: 4,
     width: 22,
     height: 22,
-    borderRadius: 11,
+    borderRadius: radius.full,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1011,7 +1013,7 @@ const styles = StyleSheet.create({
   emojiInsertItem: {
     width: 44,
     height: 44,
-    borderRadius: 14,
+    borderRadius: radius.lg,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1029,13 +1031,13 @@ const styles = StyleSheet.create({
     height: 38,
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 12,
+    borderRadius: radius.md,
   },
   input: {
     flex: 1,
     paddingHorizontal: 14,
     paddingVertical: 9,
-    borderRadius: 20,
+    borderRadius: radius.xxl,
     fontSize: 15,
     borderWidth: 1,
     minHeight: 38,
@@ -1044,7 +1046,7 @@ const styles = StyleSheet.create({
   sendBtn: {
     width: 40,
     height: 40,
-    borderRadius: 14,
+    borderRadius: radius.lg,
     alignItems: "center",
     justifyContent: "center",
   },

@@ -13,6 +13,7 @@ import {
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ArrowLeft, CheckCircle, AlertCircle } from "lucide-react-native";
 import { useTheme } from "../../../theme/ThemeProvider.js";
+import { radius, spacing } from "../../../theme/tokens.js";
 import { API_URL } from "../../../lib/config.js";
 import { getUserToken } from "../../../lib/auth.js";
 
@@ -119,7 +120,7 @@ export default function RegistrationScreen() {
     const configs = {
       success: {
         icon: CheckCircle,
-        color: "#3D9E4A",
+        color: theme.colors.success,
         title: "You're in!",
         message: "You've successfully registered for this event. Check your email for a confirmation.",
       },
@@ -231,7 +232,7 @@ export default function RegistrationScreen() {
           disabled={submitting}
         >
           {submitting ? (
-            <ActivityIndicator size="small" color="#1A1A14" />
+            <ActivityIndicator size="small" color={theme.colors.textOnBrand} />
           ) : (
             <Text style={styles.submitBtnText}>Confirm Registration</Text>
           )}
@@ -262,7 +263,7 @@ const getStyles = (theme) => StyleSheet.create({
   backPill: {
     width: 40,
     height: 40,
-    borderRadius: 14,
+    borderRadius: radius.xxl,
     backgroundColor: theme.colors.surfaceMuted,
     alignItems: "center",
     justifyContent: "center",
@@ -273,12 +274,13 @@ const getStyles = (theme) => StyleSheet.create({
     fontFamily: "PlusJakartaSans_700Bold",
   },
   scrollContent: {
-    padding: 16,
+    paddingHorizontal: spacing.page,
+    paddingVertical: 16,
     gap: 16,
   },
   summaryCard: {
     padding: 18,
-    borderRadius: 18,
+    borderRadius: radius.lg,
     borderWidth: 1,
     gap: 6,
   },
@@ -319,8 +321,8 @@ const getStyles = (theme) => StyleSheet.create({
     fontFamily: "PlusJakartaSans_600SemiBold",
   },
   input: {
-    borderWidth: 1.5,
-    borderRadius: 14,
+    borderWidth: 1,
+    borderRadius: radius.lg,
     paddingHorizontal: 16,
     paddingVertical: 12,
     fontSize: 15,
@@ -331,7 +333,7 @@ const getStyles = (theme) => StyleSheet.create({
     alignItems: "center",
     gap: 8,
     padding: 14,
-    borderRadius: 12,
+    borderRadius: radius.md,
     borderWidth: 1,
     backgroundColor: "rgba(220,38,38,0.06)",
   },
@@ -342,7 +344,7 @@ const getStyles = (theme) => StyleSheet.create({
   },
   submitBtn: {
     paddingVertical: 16,
-    borderRadius: 16,
+    borderRadius: radius.xxl,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -354,7 +356,7 @@ const getStyles = (theme) => StyleSheet.create({
   },
   resultCard: {
     width: "100%",
-    borderRadius: 24,
+    borderRadius: radius.xl,
     borderWidth: 1,
     padding: 28,
     alignItems: "center",
@@ -363,14 +365,14 @@ const getStyles = (theme) => StyleSheet.create({
   resultIconWrap: {
     width: 72,
     height: 72,
-    borderRadius: 24,
+    borderRadius: radius.xl,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 4,
   },
   resultTitle: {
     fontSize: 22,
-    fontWeight: "800",
+    fontWeight: "700",
     fontFamily: "SpaceGrotesk_700Bold",
     textAlign: "center",
   },
@@ -383,8 +385,8 @@ const getStyles = (theme) => StyleSheet.create({
   doneBtn: {
     marginTop: 8,
     paddingHorizontal: 28,
-    paddingVertical: 14,
-    borderRadius: 16,
+    paddingVertical: 15,
+    borderRadius: radius.xxl,
     width: "100%",
     alignItems: "center",
   },

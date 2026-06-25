@@ -23,6 +23,7 @@ import {
   Ticket,
 } from "lucide-react-native";
 import { useTheme } from "../../../theme/ThemeProvider.js";
+import { radius, spacing } from "../../../theme/tokens.js";
 import { API_URL } from "../../../lib/config.js";
 import { getUserToken } from "../../../lib/auth.js";
 
@@ -231,8 +232,8 @@ export default function PaymentScreen() {
     return (
       <View style={[styles.center, { backgroundColor: theme.colors.background }]}>
         <View style={[styles.resultCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
-          <View style={[styles.resultIconWrap, { backgroundColor: "rgba(61,158,74,0.12)" }]}>
-            <CheckCircle size={40} color="#3D9E4A" />
+          <View style={[styles.resultIconWrap, { backgroundColor: theme.colors.successTint }]}>
+            <CheckCircle size={40} color={theme.colors.success} />
           </View>
           <Text style={[styles.resultTitle, { color: theme.colors.text }]}>
             {result === "already" ? "Already Registered" : "Ticket Confirmed!"}
@@ -428,10 +429,10 @@ export default function PaymentScreen() {
           disabled={submitting || (paymentMethod === "wallet" && !hasEnoughBalance)}
         >
           {submitting ? (
-            <ActivityIndicator size="small" color="#1A1A14" />
+            <ActivityIndicator size="small" color={theme.colors.textOnBrand} />
           ) : (
             <>
-              <Ticket size={18} color="#1A1A14" />
+              <Ticket size={18} color={theme.colors.textOnBrand} />
               <Text style={styles.payBtnText}>
                 Pay ₦{total.toLocaleString()}
               </Text>
@@ -468,7 +469,7 @@ const getStyles = (theme) => StyleSheet.create({
   backPill: {
     width: 40,
     height: 40,
-    borderRadius: 14,
+    borderRadius: radius.xxl,
     backgroundColor: theme.colors.surfaceMuted,
     alignItems: "center",
     justifyContent: "center",
@@ -479,12 +480,13 @@ const getStyles = (theme) => StyleSheet.create({
     fontFamily: "PlusJakartaSans_700Bold",
   },
   scrollContent: {
-    padding: 16,
+    paddingHorizontal: spacing.page,
+    paddingVertical: 16,
     gap: 16,
   },
   summaryCard: {
     padding: 18,
-    borderRadius: 18,
+    borderRadius: radius.lg,
     borderWidth: 1,
     gap: 6,
   },
@@ -519,8 +521,8 @@ const getStyles = (theme) => StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     padding: 14,
-    borderRadius: 14,
-    borderWidth: 1.5,
+    borderRadius: radius.lg,
+    borderWidth: 1,
     gap: 12,
   },
   ticketOptionName: {
@@ -535,12 +537,12 @@ const getStyles = (theme) => StyleSheet.create({
   },
   ticketOptionPrice: {
     fontSize: 16,
-    fontWeight: "800",
+    fontWeight: "700",
     fontFamily: "SpaceGrotesk_700Bold",
   },
   orderCard: {
     padding: 18,
-    borderRadius: 18,
+    borderRadius: radius.lg,
     borderWidth: 1,
     gap: 12,
   },
@@ -569,21 +571,21 @@ const getStyles = (theme) => StyleSheet.create({
   },
   orderTotalVal: {
     fontSize: 18,
-    fontWeight: "800",
+    fontWeight: "700",
     fontFamily: "SpaceGrotesk_700Bold",
   },
   methodCard: {
     flexDirection: "row",
     alignItems: "center",
     padding: 14,
-    borderRadius: 14,
-    borderWidth: 1.5,
+    borderRadius: radius.lg,
+    borderWidth: 1,
     gap: 12,
   },
   methodIcon: {
     width: 44,
     height: 44,
-    borderRadius: 14,
+    borderRadius: radius.md,
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,
@@ -607,8 +609,8 @@ const getStyles = (theme) => StyleSheet.create({
     fontFamily: "PlusJakartaSans_600SemiBold",
   },
   input: {
-    borderWidth: 1.5,
-    borderRadius: 14,
+    borderWidth: 1,
+    borderRadius: radius.lg,
     paddingHorizontal: 16,
     paddingVertical: 12,
     fontSize: 15,
@@ -619,7 +621,7 @@ const getStyles = (theme) => StyleSheet.create({
     alignItems: "center",
     gap: 8,
     padding: 14,
-    borderRadius: 12,
+    borderRadius: radius.md,
     borderWidth: 1,
     backgroundColor: "rgba(220,38,38,0.06)",
   },
@@ -634,13 +636,13 @@ const getStyles = (theme) => StyleSheet.create({
     justifyContent: "center",
     gap: 10,
     paddingVertical: 16,
-    borderRadius: 16,
+    borderRadius: radius.xxl,
   },
   payBtnText: {
     fontSize: 16,
     fontWeight: "700",
     fontFamily: "PlusJakartaSans_700Bold",
-    color: "#1A1A14",
+    color: theme.colors.textOnBrand,
   },
   termsNote: {
     fontSize: 12,
@@ -650,7 +652,7 @@ const getStyles = (theme) => StyleSheet.create({
   },
   resultCard: {
     width: "100%",
-    borderRadius: 24,
+    borderRadius: radius.xl,
     borderWidth: 1,
     padding: 28,
     alignItems: "center",
@@ -659,14 +661,14 @@ const getStyles = (theme) => StyleSheet.create({
   resultIconWrap: {
     width: 72,
     height: 72,
-    borderRadius: 24,
+    borderRadius: radius.xl,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 4,
   },
   resultTitle: {
     fontSize: 22,
-    fontWeight: "800",
+    fontWeight: "700",
     fontFamily: "SpaceGrotesk_700Bold",
     textAlign: "center",
   },
@@ -679,8 +681,8 @@ const getStyles = (theme) => StyleSheet.create({
   doneBtn: {
     marginTop: 8,
     paddingHorizontal: 28,
-    paddingVertical: 14,
-    borderRadius: 16,
+    paddingVertical: 15,
+    borderRadius: radius.xxl,
     width: "100%",
     alignItems: "center",
   },
@@ -688,6 +690,6 @@ const getStyles = (theme) => StyleSheet.create({
     fontSize: 15,
     fontWeight: "700",
     fontFamily: "PlusJakartaSans_700Bold",
-    color: "#1A1A14",
+    color: theme.colors.textOnBrand,
   },
 });

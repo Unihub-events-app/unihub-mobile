@@ -34,6 +34,8 @@ import {
   Copy,
 } from "lucide-react-native";
 import { useTheme } from "../../../theme/ThemeProvider.js";
+import { radius, spacing } from "../../../theme/tokens.js";
+import { Toast, SkeletonLoader, Screen } from "../../../components/index.js";
 import { API_URL } from "../../../lib/config.js";
 import { getUserToken } from "../../../lib/auth.js";
 
@@ -251,9 +253,11 @@ export default function ManageEventScreen() {
 
   if (loading) {
     return (
-      <View style={[styles.center, { backgroundColor: theme.colors.background }]}>
-        <ActivityIndicator size="large" color={theme.colors.brand} />
-      </View>
+      <Screen padded>
+        <SkeletonLoader variant="text" />
+        <SkeletonLoader variant="card" count={3} />
+        <SkeletonLoader variant="row" count={4} />
+      </Screen>
     );
   }
 
@@ -300,7 +304,7 @@ export default function ManageEventScreen() {
           <Text style={[styles.statLabel, { color: theme.colors.textSubtle }]}>Pending</Text>
         </View>
         <View style={[styles.statCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
-          <QrCode size={20} color="#3D9E4A" />
+          <QrCode size={20} color={theme.colors.success} />
           <Text style={[styles.statVal, { color: theme.colors.text }]}>
             {attendees.filter((p) => p.checkedIn).length}
           </Text>
@@ -360,8 +364,8 @@ export default function ManageEventScreen() {
         onPress={() => router.push(`/event/${eventId}/announce`)}
         style={[styles.announceBtn, { backgroundColor: theme.colors.brand }]}
       >
-        <Megaphone size={18} color="#1A1A14" />
-        <Text style={[styles.announceBtnText, { color: "#1A1A14" }]}>Send Announcement</Text>
+        <Megaphone size={18} color={theme.colors.textOnBrand} />
+        <Text style={[styles.announceBtnText, { color: theme.colors.textOnBrand }]}>Send Announcement</Text>
       </Pressable>
     </View>
   );
@@ -417,8 +421,8 @@ export default function ManageEventScreen() {
               )}
               {p.checkedIn && (
                 <View style={styles.checkedInBadge}>
-                  <CheckCircle size={10} color="#3D9E4A" />
-                  <Text style={styles.checkedInText}>Checked in</Text>
+                  <CheckCircle size={10} color={theme.colors.success} />
+                  <Text style={[styles.checkedInText, { color: theme.colors.success }]}>Checked in</Text>
                 </View>
               )}
             </View>
@@ -474,7 +478,7 @@ export default function ManageEventScreen() {
                   borderColor: selectedIds.length === pendingList.length ? theme.colors.brand : theme.colors.border,
                   backgroundColor: selectedIds.length === pendingList.length ? theme.colors.brand : "transparent",
                 }]}>
-                  {selectedIds.length === pendingList.length && <CheckCircle size={12} color="#1A1A14" />}
+                  {selectedIds.length === pendingList.length && <CheckCircle size={12} color={theme.colors.textOnBrand} />}
                 </View>
                 <Text style={[styles.bulkSelectText, { color: theme.colors.textMuted }]}>
                   {selectedIds.length > 0 ? `${selectedIds.length} selected` : "Select all"}
@@ -488,10 +492,10 @@ export default function ManageEventScreen() {
                     <>
                       <Pressable
                         onPress={() => handleBulkAction("approve")}
-                        style={[styles.bulkApprove, { backgroundColor: "rgba(61,158,74,0.15)" }]}
+                        style={[styles.bulkApprove, { backgroundColor: theme.colors.successTint }]}
                       >
-                        <UserCheck size={14} color="#3D9E4A" />
-                        <Text style={[styles.bulkBtnText, { color: "#3D9E4A" }]}>Approve ({selectedIds.length})</Text>
+                        <UserCheck size={14} color={theme.colors.success} />
+                        <Text style={[styles.bulkBtnText, { color: theme.colors.success }]}>Approve ({selectedIds.length})</Text>
                       </Pressable>
                       <Pressable
                         onPress={() => handleBulkAction("reject")}
@@ -519,7 +523,7 @@ export default function ManageEventScreen() {
                   borderColor: selectedIds.includes(p.userId) ? theme.colors.brand : theme.colors.border,
                   backgroundColor: selectedIds.includes(p.userId) ? theme.colors.brand : "transparent",
                 }]}>
-                  {selectedIds.includes(p.userId) && <CheckCircle size={12} color="#1A1A14" />}
+                  {selectedIds.includes(p.userId) && <CheckCircle size={12} color={theme.colors.textOnBrand} />}
                 </View>
                 <View style={[styles.participantAvatar, { backgroundColor: "rgba(245,158,11,0.12)" }]}>
                   <Text style={[styles.participantAvatarText, { color: "#f59e0b" }]}>
@@ -539,10 +543,10 @@ export default function ManageEventScreen() {
                     <>
                       <Pressable
                         onPress={(e) => { e.stopPropagation?.(); handleApprove(p.userId); }}
-                        style={[styles.approveBtn, { backgroundColor: "rgba(61,158,74,0.12)" }]}
+                        style={[styles.approveBtn, { backgroundColor: theme.colors.successTint }]}
                         hitSlop={4}
                       >
-                        <UserCheck size={16} color="#3D9E4A" />
+                        <UserCheck size={16} color={theme.colors.success} />
                       </Pressable>
                       <Pressable
                         onPress={(e) => { e.stopPropagation?.(); handleReject(p.userId); }}
@@ -657,8 +661,8 @@ export default function ManageEventScreen() {
         onPress={() => router.push(`/event/${eventId}/scan`)}
         style={[styles.scanQrBtn, { backgroundColor: theme.colors.brand }]}
       >
-        <QrCode size={20} color="#1A1A14" />
-        <Text style={[styles.scanQrBtnText, { color: "#1A1A14" }]}>Scan QR Code</Text>
+        <QrCode size={20} color={theme.colors.textOnBrand} />
+        <Text style={[styles.scanQrBtnText, { color: theme.colors.textOnBrand }]}>Scan QR Code</Text>
       </Pressable>
 
       <View style={[styles.checkInHeader, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
@@ -686,9 +690,9 @@ export default function ManageEventScreen() {
           return (
             <View key={pid || i} style={[styles.participantCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
               <View style={[styles.participantAvatar, {
-                backgroundColor: p.checkedIn ? "rgba(61,158,74,0.12)" : theme.colors.brandTint,
+                backgroundColor: p.checkedIn ? theme.colors.successTint : theme.colors.brandTint,
               }]}>
-                <Text style={[styles.participantAvatarText, { color: p.checkedIn ? "#3D9E4A" : theme.colors.brand }]}>
+                <Text style={[styles.participantAvatarText, { color: p.checkedIn ? theme.colors.success : theme.colors.brand }]}>
                   {name.substring(0, 2).toUpperCase()}
                 </Text>
               </View>
@@ -697,8 +701,8 @@ export default function ManageEventScreen() {
                 {p.email ? <Text style={[styles.participantEmail, { color: theme.colors.textMuted }]}>{p.email}</Text> : null}
                 {p.checkedIn ? (
                   <View style={styles.checkedInBadge}>
-                    <CheckCircle size={10} color="#3D9E4A" />
-                    <Text style={styles.checkedInText}>Checked in</Text>
+                    <CheckCircle size={10} color={theme.colors.success} />
+                    <Text style={[styles.checkedInText, { color: theme.colors.success }]}>Checked in</Text>
                   </View>
                 ) : null}
               </View>
@@ -709,12 +713,12 @@ export default function ManageEventScreen() {
                   style={[styles.checkInBtn, { backgroundColor: theme.colors.brand }]}
                 >
                   {checkingInId === pid
-                    ? <ActivityIndicator size="small" color="#1A1A14" />
+                    ? <ActivityIndicator size="small" color={theme.colors.textOnBrand} />
                     : <Text style={styles.checkInBtnText}>Check In</Text>}
                 </Pressable>
               ) : (
-                <View style={[styles.checkInDone, { backgroundColor: "rgba(61,158,74,0.12)" }]}>
-                  <CheckCircle size={14} color="#3D9E4A" />
+                <View style={[styles.checkInDone, { backgroundColor: theme.colors.successTint }]}>
+                  <CheckCircle size={14} color={theme.colors.success} />
                 </View>
               )}
             </View>
@@ -743,7 +747,7 @@ export default function ManageEventScreen() {
             <Text style={[styles.statLabel, { color: theme.colors.textSubtle }]}>Total Registered</Text>
           </View>
           <View style={[styles.statCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
-            <QrCode size={20} color="#3D9E4A" />
+            <QrCode size={20} color={theme.colors.success} />
             <Text style={[styles.statVal, { color: theme.colors.text }]}>{checkedInCount}</Text>
             <Text style={[styles.statLabel, { color: theme.colors.textSubtle }]}>Checked In</Text>
           </View>
@@ -766,7 +770,7 @@ export default function ManageEventScreen() {
             <Text style={[styles.capacityFraction, { color: theme.colors.text }]}>{checkedInCount}/{attendees.length}</Text>
           </View>
           <View style={[styles.progressBg, { backgroundColor: theme.colors.surfaceMuted }]}>
-            <View style={[styles.progressFill, { width: `${checkInRate}%`, backgroundColor: "#3D9E4A" }]} />
+            <View style={[styles.progressFill, { width: `${checkInRate}%`, backgroundColor: theme.colors.success }]} />
           </View>
         </View>
 
@@ -817,22 +821,12 @@ export default function ManageEventScreen() {
         </View>
       </View>
 
-      {/* Message toast */}
-      {message.text ? (
-        <View style={[
-          styles.toastBar,
-          { backgroundColor: message.type === "error" ? "rgba(220,38,38,0.12)" : "rgba(61,158,74,0.12)", borderColor: message.type === "error" ? theme.colors.error : "#3D9E4A" },
-        ]}>
-          {message.type === "error" ? (
-            <XCircle size={14} color={theme.colors.error} />
-          ) : (
-            <CheckCircle size={14} color="#3D9E4A" />
-          )}
-          <Text style={[styles.toastText, { color: message.type === "error" ? theme.colors.error : "#3D9E4A" }]}>
-            {message.text}
-          </Text>
-        </View>
-      ) : null}
+      <Toast
+        visible={!!message.text}
+        message={message.text}
+        type={message.type || "info"}
+        onDismiss={() => setMessage({ type: "", text: "" })}
+      />
 
       {/* Tab bar */}
       <ScrollView
@@ -851,7 +845,7 @@ export default function ManageEventScreen() {
                 : { backgroundColor: theme.colors.surfaceMuted, borderColor: theme.colors.border, borderWidth: 1 },
             ]}
           >
-            <Text style={[styles.tabText, { color: activeTab === tab ? "#1A1A14" : theme.colors.textSubtle }]}>
+            <Text style={[styles.tabText, { color: activeTab === tab ? theme.colors.textOnBrand : theme.colors.textSubtle }]}>
               {tab}
               {tab === "Pending" && pendingList.length > 0 ? ` (${pendingList.length})` : ""}
             </Text>
@@ -891,7 +885,7 @@ const getStyles = (theme) => StyleSheet.create({
   backPill: {
     width: 40,
     height: 40,
-    borderRadius: 14,
+    borderRadius: radius.xxl,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -905,21 +899,6 @@ const getStyles = (theme) => StyleSheet.create({
     fontFamily: "PlusJakartaSans_400Regular",
     marginTop: 1,
   },
-  toastBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginHorizontal: 16,
-    marginTop: 10,
-    padding: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-  },
-  toastText: {
-    fontSize: 13,
-    fontFamily: "PlusJakartaSans_500Medium",
-    flex: 1,
-  },
   tabBar: {
     paddingHorizontal: 16,
     paddingVertical: 12,
@@ -928,7 +907,7 @@ const getStyles = (theme) => StyleSheet.create({
   tab: {
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 100,
+    borderRadius: radius.xxl,
   },
   tabText: {
     fontSize: 13,
@@ -936,11 +915,12 @@ const getStyles = (theme) => StyleSheet.create({
     fontFamily: "PlusJakartaSans_700Bold",
   },
   tabContent: {
-    padding: 16,
+    paddingHorizontal: spacing.page,
+    paddingVertical: 16,
     gap: 12,
   },
   coverWrap: {
-    borderRadius: 16,
+    borderRadius: radius.lg,
     overflow: "hidden",
     height: 160,
   },
@@ -957,14 +937,14 @@ const getStyles = (theme) => StyleSheet.create({
     flex: 1,
     minWidth: "44%",
     padding: 16,
-    borderRadius: 16,
+    borderRadius: radius.lg,
     borderWidth: 1,
     alignItems: "center",
     gap: 6,
   },
   statVal: {
     fontSize: 24,
-    fontWeight: "800",
+    fontWeight: "700",
     fontFamily: "SpaceGrotesk_700Bold",
   },
   statLabel: {
@@ -975,7 +955,7 @@ const getStyles = (theme) => StyleSheet.create({
   },
   capacityCard: {
     padding: 16,
-    borderRadius: 16,
+    borderRadius: radius.lg,
     borderWidth: 1,
     gap: 10,
   },
@@ -1007,7 +987,7 @@ const getStyles = (theme) => StyleSheet.create({
   },
   infoCard: {
     padding: 16,
-    borderRadius: 16,
+    borderRadius: radius.lg,
     borderWidth: 1,
     gap: 12,
   },
@@ -1030,7 +1010,7 @@ const getStyles = (theme) => StyleSheet.create({
   },
   emptyCard: {
     padding: 40,
-    borderRadius: 16,
+    borderRadius: radius.lg,
     borderWidth: 1,
     alignItems: "center",
     gap: 12,
@@ -1043,21 +1023,21 @@ const getStyles = (theme) => StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     padding: 14,
-    borderRadius: 14,
+    borderRadius: radius.lg,
     borderWidth: 1,
     gap: 12,
   },
   participantAvatar: {
     width: 42,
     height: 42,
-    borderRadius: 14,
+    borderRadius: radius.md,
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,
   },
   participantAvatarText: {
     fontSize: 14,
-    fontWeight: "800",
+    fontWeight: "700",
     fontFamily: "SpaceGrotesk_700Bold",
   },
   participantName: {
@@ -1079,7 +1059,6 @@ const getStyles = (theme) => StyleSheet.create({
   checkedInText: {
     fontSize: 11,
     fontWeight: "600",
-    color: "#3D9E4A",
     fontFamily: "PlusJakartaSans_600SemiBold",
   },
   bulkBar: {
@@ -1088,7 +1067,7 @@ const getStyles = (theme) => StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: 12,
     paddingVertical: 10,
-    borderRadius: 14,
+    borderRadius: radius.lg,
     borderWidth: 1,
     marginBottom: 10,
     flexWrap: "wrap",
@@ -1121,7 +1100,7 @@ const getStyles = (theme) => StyleSheet.create({
     gap: 4,
     paddingHorizontal: 10,
     paddingVertical: 7,
-    borderRadius: 10,
+    borderRadius: radius.xxl,
   },
   bulkReject: {
     flexDirection: "row",
@@ -1129,7 +1108,7 @@ const getStyles = (theme) => StyleSheet.create({
     gap: 4,
     paddingHorizontal: 10,
     paddingVertical: 7,
-    borderRadius: 10,
+    borderRadius: radius.xxl,
   },
   bulkBtnText: {
     fontSize: 12,
@@ -1143,26 +1122,26 @@ const getStyles = (theme) => StyleSheet.create({
   approveBtn: {
     width: 36,
     height: 36,
-    borderRadius: 10,
+    borderRadius: radius.md,
     alignItems: "center",
     justifyContent: "center",
   },
   rejectBtn: {
     width: 36,
     height: 36,
-    borderRadius: 10,
+    borderRadius: radius.md,
     alignItems: "center",
     justifyContent: "center",
   },
   dangerCard: {
     padding: 20,
-    borderRadius: 18,
+    borderRadius: radius.lg,
     borderWidth: 1,
     gap: 14,
   },
   dangerTitle: {
     fontSize: 16,
-    fontWeight: "800",
+    fontWeight: "700",
     fontFamily: "SpaceGrotesk_700Bold",
   },
   dangerSub: {
@@ -1175,7 +1154,7 @@ const getStyles = (theme) => StyleSheet.create({
     alignItems: "center",
     gap: 12,
     padding: 14,
-    borderRadius: 14,
+    borderRadius: radius.lg,
     borderWidth: 1,
   },
   dangerBtnTitle: {
@@ -1194,7 +1173,7 @@ const getStyles = (theme) => StyleSheet.create({
     justifyContent: "center",
     gap: 8,
     paddingVertical: 11,
-    borderRadius: 14,
+    borderRadius: radius.xxl,
     borderWidth: 1,
     marginBottom: 12,
   },
@@ -1209,7 +1188,7 @@ const getStyles = (theme) => StyleSheet.create({
     justifyContent: "center",
     gap: 10,
     paddingVertical: 16,
-    borderRadius: 18,
+    borderRadius: radius.xxl,
     marginTop: 4,
   },
   announceBtnText: {
@@ -1223,7 +1202,7 @@ const getStyles = (theme) => StyleSheet.create({
     justifyContent: "center",
     gap: 10,
     paddingVertical: 16,
-    borderRadius: 18,
+    borderRadius: radius.xxl,
     marginBottom: 12,
   },
   scanQrBtnText: {
@@ -1233,7 +1212,7 @@ const getStyles = (theme) => StyleSheet.create({
   },
   checkInHeader: {
     padding: 16,
-    borderRadius: 16,
+    borderRadius: radius.lg,
     borderWidth: 1,
     flexDirection: "row",
     alignItems: "center",
@@ -1241,7 +1220,7 @@ const getStyles = (theme) => StyleSheet.create({
   },
   checkInCount: {
     fontSize: 22,
-    fontWeight: "800",
+    fontWeight: "700",
     fontFamily: "SpaceGrotesk_700Bold",
   },
   checkInLabel: {
@@ -1262,7 +1241,7 @@ const getStyles = (theme) => StyleSheet.create({
   checkInBtn: {
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: 10,
+    borderRadius: radius.xxl,
     alignItems: "center",
     justifyContent: "center",
     minWidth: 72,
@@ -1271,12 +1250,12 @@ const getStyles = (theme) => StyleSheet.create({
     fontSize: 12,
     fontWeight: "700",
     fontFamily: "PlusJakartaSans_700Bold",
-    color: "#1A1A14",
+    color: theme.colors.textOnBrand,
   },
   checkInDone: {
     width: 32,
     height: 32,
-    borderRadius: 10,
+    borderRadius: radius.md,
     alignItems: "center",
     justifyContent: "center",
   },

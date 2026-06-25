@@ -508,11 +508,11 @@ export default function WalletScreen() {
         <NeuCard style={styles.section}>
           <Text style={styles.sectionLabel}>Transaction History</Text>
           {allTransactions.length === 0 ? (
-            <View style={styles.emptyState}>
-              <ShieldCheck size={40} color={theme.colors.textSubtle} />
-              <Text style={[styles.emptyTitle, { color: theme.colors.text }]}>No transactions yet</Text>
-              <Text style={[styles.emptyText, { color: theme.colors.textSubtle }]}>Your history will appear here</Text>
-            </View>
+            <EmptyState
+              emoji="💳"
+              title="No transactions yet"
+              subtitle="Your wallet history will appear here once you top up or make a payment."
+            />
           ) : (
             <View style={styles.txList}>
               {allTransactions.map((item, index) => {

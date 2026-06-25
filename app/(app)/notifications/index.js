@@ -6,22 +6,23 @@ import {
   ScrollView,
   Image,
   TouchableOpacity,
-  Animated,
 } from "react-native";
+import Reanimated, { useSharedValue, useAnimatedStyle, withSpring } from "react-native-reanimated";
 import {
   Bell, Ticket, Users, Megaphone, ShieldAlert,
   Wallet, CalendarX, Star, UserPlus, CheckCheck,
 } from "lucide-react-native";
-import { Screen, NeuInset, PageLoader } from "../../../components/index.js";
+import { Screen, NeuInset, SkeletonLoader } from "../../../components/index.js";
+import { radius, spacing } from "../../../theme/tokens.js";
 import { API_URL } from "../../../lib/config.js";
 import { getUserToken } from "../../../lib/auth.js";
 import { useRouter } from "expo-router";
 import { useTheme } from "../../../theme/ThemeProvider.js";
 
-function getNotificationMeta(type) {
+function getNotificationMeta(type, successColor = "#22c55e") {
   switch (type) {
     case "ticket_purchase":
-      return { icon: Ticket, color: "#3D9E4A", label: "Ticket" };
+      return { icon: Ticket, color: successColor, label: "Ticket" };
     case "ticket_sale":
       return { icon: Ticket, color: "#C8E630", label: "Sale" };
     case "community_tag":
@@ -32,7 +33,7 @@ function getNotificationMeta(type) {
       return { icon: UserPlus, color: "#06b6d4", label: "Follow" };
     case "payout_approved":
     case "payout_completed":
-      return { icon: Wallet, color: "#3D9E4A", label: "Payout" };
+      return { icon: Wallet, color: successColor, label: "Payout" };
     case "payout_rejected":
     case "payout_failed":
       return { icon: Wallet, color: "#DC2626", label: "Payout" };
@@ -63,29 +64,26 @@ function timeAgo(date) {
 }
 
 function NotificationCard({ notification, onPress, theme }) {
-  const { icon: Icon, color, label } = getNotificationMeta(notification.type);
+  const { icon: Icon, color, label } = getNotificationMeta(notification.type, theme.colors.success);
   const isUnread = !notification.read;
-  const scale = useRef(new Animated.Value(1)).current;
-
-  const pressIn = () =>
-    Animated.spring(scale, { toValue: 0.97, useNativeDriver: true, speed: 40 }).start();
-  const pressOut = () =>
-    Animated.spring(scale, { toValue: 1, useNativeDriver: true, speed: 25 }).start();
+  const scale = useSharedValue(1);
+  const anim = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
 
   return (
-    <TouchableOpacity onPress={onPress} onPressIn={pressIn} onPressOut={pressOut} activeOpacity={1}>
-      <Animated.View
+    <TouchableOpacity
+      onPress={onPress}
+      onPressIn={() => { scale.value = withSpring(0.97, { damping: 20, stiffness: 400 }); }}
+      onPressOut={() => { scale.value = withSpring(1.0, { damping: 22, stiffness: 280 }); }}
+      activeOpacity={1}
+    >
+      <Reanimated.View
         style={[
           styles.card,
           {
-            backgroundColor: isUnread
-              ? theme.colors.mode === "dark"
-                ? "rgba(200,230,48,0.07)"
-                : "rgba(200,230,48,0.06)"
-              : theme.colors.surface,
+            backgroundColor: isUnread ? "rgba(200,230,48,0.06)" : theme.colors.surface,
             borderColor: isUnread ? `${color}30` : theme.colors.border,
-            transform: [{ scale }],
           },
+          anim,
         ]}
       >
         {/* Banner image */}
@@ -128,7 +126,7 @@ function NotificationCard({ notification, onPress, theme }) {
             <Text style={[styles.readMore, { color }]}>Read full message →</Text>
           </View>
         </View>
-      </Animated.View>
+      </Reanimated.View>
     </TouchableOpacity>
   );
 }
@@ -194,7 +192,12 @@ export default function NotificationsScreen() {
     router.push(`/(app)/notifications/${notification._id}`);
   };
 
-  if (loading) return <PageLoader />;
+  if (loading) return (
+    <Screen padded>
+      <SkeletonLoader variant="text" />
+      <SkeletonLoader variant="card" count={4} />
+    </Screen>
+  );
 
   const unread = notifications.filter((n) => !n.read);
   const read = notifications.filter((n) => n.read);
@@ -208,6 +211,7 @@ export default function NotificationsScreen() {
         {/* Header */}
         <View style={styles.header}>
           <View>
+            <Text style={[styles.headerEyebrow, { color: theme.colors.brand }]}>Activity</Text>
             <Text style={[styles.headerTitle, { color: theme.colors.text }]}>Notifications</Text>
             {unreadCount > 0 && (
               <Text style={[styles.headerSub, { color: theme.colors.textSubtle }]}>
@@ -287,7 +291,7 @@ export default function NotificationsScreen() {
 const styles = StyleSheet.create({
   scrollContainer: {
     paddingTop: 24,
-    paddingHorizontal: 16,
+    paddingHorizontal: spacing.page,
     paddingBottom: 24,
   },
   header: {
@@ -296,11 +300,21 @@ const styles = StyleSheet.create({
     alignItems: "flex-end",
     marginBottom: 24,
   },
+  headerEyebrow: {
+    fontSize: 11,
+    fontWeight: "700",
+    fontFamily: "PlusJakartaSans_700Bold",
+    textTransform: "uppercase",
+    letterSpacing: 1.2,
+    marginBottom: 4,
+    lineHeight: 16,
+  },
   headerTitle: {
-    fontSize: 28,
-    fontWeight: "800",
+    fontSize: 32,
+    fontWeight: "700",
     fontFamily: "SpaceGrotesk_700Bold",
     letterSpacing: -0.5,
+    lineHeight: 38,
   },
   headerSub: {
     fontSize: 13,
@@ -311,9 +325,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: radius.xxl,
     borderWidth: 1,
   },
   markAllText: {
@@ -338,7 +352,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   card: {
-    borderRadius: 18,
+    borderRadius: radius.lg,
     borderWidth: 1,
     overflow: "hidden",
   },
@@ -362,7 +376,7 @@ const styles = StyleSheet.create({
   iconWrap: {
     width: 42,
     height: 42,
-    borderRadius: 14,
+    borderRadius: radius.md,
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,
@@ -420,7 +434,7 @@ const styles = StyleSheet.create({
   emptyState: {
     padding: 40,
     alignItems: "center",
-    borderRadius: 24,
+    borderRadius: radius.xl,
     gap: 12,
   },
   emptyTitle: {

@@ -97,14 +97,17 @@ const CommunityCard = ({
             <Text style={styles.cardBannerEmoji}>{community.profileImage || "🏛️"}</Text>
           </View>
         )}
-        <View style={styles.cardBannerScrim} />
+        {hasImageUrl && <View style={styles.cardBannerScrim} />}
         <View style={styles.cardBannerContent}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.cardBannerTitle} numberOfLines={1}>{community.name}</Text>
+            <Text
+              style={[styles.cardBannerTitle, { color: hasImageUrl ? "#fff" : theme.colors.text }]}
+              numberOfLines={1}
+            >{community.name}</Text>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 4, flexWrap: "wrap" }}>
-              <View style={styles.membersPill}>
-                <Users size={10} color="rgba(255,255,255,0.7)" />
-                <Text style={styles.membersPillText}>
+              <View style={[styles.membersPill, !hasImageUrl && { backgroundColor: theme.colors.surfaceMuted }]}>
+                <Users size={10} color={hasImageUrl ? "rgba(255,255,255,0.7)" : theme.colors.textSubtle} />
+                <Text style={[styles.membersPillText, !hasImageUrl && { color: theme.colors.textSubtle }]}>
                   {memberCount} {memberCount === 1 ? "member" : "members"}
                 </Text>
               </View>

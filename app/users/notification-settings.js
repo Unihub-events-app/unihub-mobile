@@ -29,7 +29,7 @@ import { useTheme } from "../../theme/ThemeProvider.js";
 import { radius, spacing } from "../../theme/tokens.js";
 import { API_URL } from "../../lib/config.js";
 import { getUserToken } from "../../lib/auth.js";
-import { registerForPushNotifications } from "../../lib/pushNotifications.js";
+import { registerForPushNotifications, checkPushPermission } from "../../lib/pushNotifications.js";
 
 const STATUS_BAR_HEIGHT = Platform.OS === "android" ? StatusBar.currentHeight || 24 : 44;
 
@@ -137,7 +137,11 @@ export default function NotificationSettingsScreen() {
   useEffect(() => {
     const loadPrefs = async () => {
       try {
-        const token = await getUserToken();
+        const [permGranted, token] = await Promise.all([
+          checkPushPermission(),
+          getUserToken(),
+        ]);
+        setPushEnabled(permGranted);
         if (!token) return;
         const res = await fetch(`${API_URL}/notifications/preferences`, {
           headers: { Authorization: `Bearer ${token}` },

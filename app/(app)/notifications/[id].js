@@ -10,7 +10,8 @@ import {
   Pressable,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { Screen, NeuCard, BackButton, PageLoader } from "../../../components/index.js";
+import { Screen, NeuCard, BackButton, SkeletonLoader } from "../../../components/index.js";
+import { radius, spacing } from "../../../theme/tokens.js";
 import { useTheme } from "../../../theme/ThemeProvider.js";
 import { API_URL } from "../../../lib/config.js";
 import { getUserToken } from "../../../lib/auth.js";
@@ -83,7 +84,13 @@ export default function NotificationDetailScreen() {
   };
 
   if (loading) {
-    return <PageLoader />;
+    return (
+      <Screen padded>
+        <SkeletonLoader variant="text" />
+        <SkeletonLoader variant="card" />
+        <SkeletonLoader variant="row" count={4} />
+      </Screen>
+    );
   }
 
   if (notFound || !notification) {
@@ -172,7 +179,7 @@ export default function NotificationDetailScreen() {
                     onPress={() => section.link && Linking.openURL(section.link)}
                   >
                     <Text style={styles.sectionButtonText}>{section.content}</Text>
-                    <ExternalLink size={14} color="#1A1A14" />
+                    <ExternalLink size={14} color={theme.colors.textOnBrand} />
                   </Pressable>
                 );
               }
@@ -216,7 +223,7 @@ export default function NotificationDetailScreen() {
                   onPress={() => btn.link && Linking.openURL(btn.link)}
                 >
                   <Text style={styles.actionButtonText}>{btn.title}</Text>
-                  <ExternalLink size={14} color="#1A1A14" />
+                  <ExternalLink size={14} color={theme.colors.textOnBrand} />
                 </Pressable>
               ))}
             </View>
@@ -259,7 +266,7 @@ const styles = StyleSheet.create({
   metaIcon: {
     width: 34,
     height: 34,
-    borderRadius: 10,
+    borderRadius: radius.full,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -279,10 +286,10 @@ const styles = StyleSheet.create({
     fontSize: 11,
   },
   title: {
-    fontSize: 26,
-    fontWeight: "900",
+    fontSize: 28,
+    fontWeight: "700",
     fontFamily: "SpaceGrotesk_700Bold",
-    lineHeight: 32,
+    lineHeight: 34,
     letterSpacing: -0.4,
     marginBottom: 20,
   },
@@ -291,7 +298,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   bannerWrap: {
-    borderRadius: 12,
+    borderRadius: radius.md,
     overflow: "hidden",
     borderWidth: 1,
     marginBottom: 24,
@@ -311,16 +318,16 @@ const styles = StyleSheet.create({
   sectionImage: {
     width: "100%",
     height: 180,
-    borderRadius: 10,
+    borderRadius: radius.md,
   },
   sectionButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 28,
+    borderRadius: radius.xxl,
     alignSelf: "center",
     marginVertical: 8,
   },
@@ -332,7 +339,8 @@ const styles = StyleSheet.create({
   },
   sectionHeader: {
     fontSize: 20,
-    fontWeight: "800",
+    fontWeight: "700",
+    fontFamily: "SpaceGrotesk_700Bold",
     lineHeight: 26,
     marginTop: 8,
   },
@@ -369,9 +377,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    paddingVertical: 10,
+    paddingVertical: 12,
     paddingHorizontal: 20,
-    borderRadius: 10,
+    borderRadius: radius.xxl,
   },
   actionButtonText: {
     color: "#1A1A14",
