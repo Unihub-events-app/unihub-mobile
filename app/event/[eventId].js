@@ -457,7 +457,7 @@ export default function EventDetailScreen() {
           {/* Already registered notice */}
           {isRegistered && (
             <View style={[styles.noticeCard, { backgroundColor: "rgba(61,158,74,0.12)", borderColor: "rgba(61,158,74,0.3)" }]}>
-              <CheckCircle size={16} color=theme.colors.success />
+              <CheckCircle size={16} color={theme.colors.success} />
               <Text style={[styles.noticeText, { color: theme.colors.success }]}>
                 You're registered for this event!
               </Text>

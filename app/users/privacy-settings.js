@@ -136,7 +136,7 @@ function ChangePasswordModal({ visible, onClose, theme }) {
                 }]}>
                   {msg.type === "error"
                     ? <AlertCircle size={13} color={theme.colors.error} />
-                    : <CheckCircle size={13} color=theme.colors.success />}
+                    : <CheckCircle size={13} color={theme.colors.success} />}
                   <Text style={{ fontSize: 13, fontFamily: "PlusJakartaSans_500Medium", color: msg.type === "error" ? theme.colors.error : theme.colors.success, flex: 1 }}>
                     {msg.text}
                   </Text>
@@ -267,7 +267,7 @@ export default function PrivacySettingsScreen() {
         }]}>
           {msg.type === "error"
             ? <AlertCircle size={14} color={theme.colors.error} />
-            : <CheckCircle size={14} color=theme.colors.success />}
+            : <CheckCircle size={14} color={theme.colors.success} />}
           <Text style={[styles.toastText, { color: msg.type === "error" ? theme.colors.error : theme.colors.success }]}>{msg.text}</Text>
         </View>
       ) : null}

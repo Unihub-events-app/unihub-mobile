@@ -11,7 +11,14 @@ import {
   Vibration,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { CameraView, Camera } from "expo-camera";
+
+let CameraView = null;
+let Camera = null;
+try {
+  const expoCamera = require("expo-camera");
+  CameraView = expoCamera.CameraView;
+  Camera = expoCamera.Camera;
+} catch {}
 import {
   ArrowLeft,
   CheckCircle,
@@ -39,6 +46,7 @@ export default function ScanEventScreen() {
   const resultOpacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    if (!Camera) return;
     (async () => {
       const { status } = await Camera.requestCameraPermissionsAsync();
       setHasPermission(status === "granted");
@@ -86,6 +94,21 @@ export default function ScanEventScreen() {
       setProcessing(false);
     }
   };
+
+  if (!CameraView || !Camera) {
+    return (
+      <View style={[styles.centered, { backgroundColor: theme.colors.background }]}>
+        <QrCode size={48} color={theme.colors.textSubtle} />
+        <Text style={[styles.permTitle, { color: theme.colors.text }]}>Camera Not Available</Text>
+        <Text style={[styles.permText, { color: theme.colors.textMuted }]}>
+          QR scanning requires a development build. Run{"\n"}`npx expo run:android` to enable it.
+        </Text>
+        <Pressable onPress={() => router.back()} style={[styles.backBtn2, { backgroundColor: theme.colors.brand }]}>
+          <Text style={styles.backBtn2Text}>Go Back</Text>
+        </Pressable>
+      </View>
+    );
+  }
 
   if (hasPermission === null) {
     return (
