@@ -36,7 +36,7 @@ import {
 } from "lucide-react-native";
 import { toggleBookmark, isBookmarked } from "../../lib/bookmarks.js";
 import { scheduleReminder, cancelReminder, getReminderInfo } from "../../lib/reminders.js";
-import * as Calendar from "expo-calendar";
+import * as ExpoCalendar from "expo-calendar";
 import { useTheme } from "../../theme/ThemeProvider.js";
 import { API_URL } from "../../lib/config.js";
 import { getUserToken } from "../../lib/auth.js";
