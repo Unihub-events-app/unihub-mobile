@@ -3,7 +3,8 @@ import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator } from "react-native";
 import { router } from "expo-router";
 import { User, MapPin, Edit, Calendar, Users, Bookmark } from "lucide-react-native";
-import { Screen, InterestsModal, PageLoader } from "../../components/index.js";
+import { Screen, InterestsModal, SkeletonLoader, EmptyState } from "../../components/index.js";
+import { radius, spacing } from "../../theme/tokens.js";
 import { BadgeRow } from "../../components/BadgeRow.js";
 import { useSessionStore } from "../../lib/auth.js";
 import { API_URL } from "../../lib/config.js";
@@ -86,7 +87,19 @@ export default function ProfileScreen() {
   };
 
   if (loading) {
-    return <PageLoader />;
+    return (
+      <Screen padded>
+        <View style={{ flexDirection: "row", gap: 16, marginBottom: 20, alignItems: "flex-start" }}>
+          <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: "#e5e7eb", opacity: 0.6 }} />
+          <View style={{ flex: 1, gap: 8, paddingTop: 8 }}>
+            <View style={{ width: "60%", height: 18, borderRadius: radius.xs, backgroundColor: "#e5e7eb", opacity: 0.6 }} />
+            <View style={{ width: "40%", height: 13, borderRadius: radius.xs, backgroundColor: "#e5e7eb", opacity: 0.5 }} />
+          </View>
+        </View>
+        <SkeletonLoader variant="text" count={3} />
+        <SkeletonLoader variant="row"  count={4} />
+      </Screen>
+    );
   }
 
   const stats = [
@@ -408,17 +421,18 @@ const getStyles = (theme) =>
       color: theme.colors.textMuted,
     },
     displayName: {
-      fontSize: 24,
-      fontWeight: "800",
+      fontSize: 26,
+      fontWeight: "700",
       fontFamily: "SpaceGrotesk_700Bold",
       color: theme.colors.text,
       letterSpacing: -0.5,
       marginBottom: 2,
+      lineHeight: 32,
     },
     username: {
       fontSize: 14,
       fontWeight: "600",
-      color: theme.colors.brand,
+      color: theme.colors.accentProfile,
       fontFamily: "PlusJakartaSans_600SemiBold",
       marginBottom: 10,
     },
@@ -499,7 +513,7 @@ const getStyles = (theme) =>
       borderBottomColor: "transparent",
     },
     tabActive: {
-      borderBottomColor: theme.colors.brand,
+      borderBottomColor: theme.colors.accentProfile,
     },
     tabText: {
       fontSize: 13,
@@ -508,7 +522,7 @@ const getStyles = (theme) =>
       color: theme.colors.textSubtle,
     },
     tabTextActive: {
-      color: theme.colors.brand,
+      color: theme.colors.accentProfile,
       fontFamily: "PlusJakartaSans_700Bold",
       fontWeight: "700",
     },
@@ -535,8 +549,8 @@ const getStyles = (theme) =>
     },
     addBtn: {
       paddingVertical: 5,
-      paddingHorizontal: 12,
-      borderRadius: 8,
+      paddingHorizontal: 14,
+      borderRadius: radius.xxl,
       backgroundColor: theme.colors.brandTint,
     },
     addBtnText: {
@@ -554,13 +568,13 @@ const getStyles = (theme) =>
     pill: {
       paddingVertical: 6,
       paddingHorizontal: 14,
-      borderRadius: 99,
+      borderRadius: radius.xxl,
       backgroundColor: theme.colors.brand,
     },
     pillText: {
       fontSize: 12,
       fontWeight: "700",
-      color: "#1A1A14",
+      color: theme.colors.textOnBrand,
       fontFamily: "PlusJakartaSans_700Bold",
     },
     inlineEmpty: {
@@ -584,13 +598,13 @@ const getStyles = (theme) =>
       alignItems: "center",
       gap: 12,
       padding: 14,
-      borderRadius: 16,
+      borderRadius: radius.lg,
       borderWidth: 1,
     },
     eventRowThumb: {
       width: 48,
       height: 48,
-      borderRadius: 14,
+      borderRadius: radius.md,
       alignItems: "center",
       justifyContent: "center",
       flexShrink: 0,
@@ -647,7 +661,7 @@ const getStyles = (theme) =>
     emptyActionText: {
       fontSize: 14,
       fontWeight: "700",
-      color: "#1A1A14",
+      color: theme.colors.textOnBrand,
       fontFamily: "PlusJakartaSans_700Bold",
     },
 
@@ -688,7 +702,7 @@ const getStyles = (theme) =>
       alignItems: "center",
       gap: 12,
       padding: 12,
-      borderRadius: 16,
+      borderRadius: radius.lg,
       borderWidth: 1,
       marginBottom: 8,
     },

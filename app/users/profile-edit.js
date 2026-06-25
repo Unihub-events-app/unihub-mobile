@@ -15,6 +15,11 @@ import {
   Alert,
   Animated,
 } from "react-native";
+import Reanimated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+} from "react-native-reanimated";
 import { useRouter } from "expo-router";
 import {
   ArrowLeft,
@@ -33,6 +38,7 @@ import {
   X,
 } from "lucide-react-native";
 import { useTheme } from "../../theme/ThemeProvider.js";
+import { radius, spacing } from "../../theme/tokens.js";
 import { API_URL } from "../../lib/config.js";
 import { getUserToken } from "../../lib/auth.js";
 
@@ -73,80 +79,86 @@ const SECTIONS = [
 ];
 
 function ScalePressable({ onPress, style, children, disabled }) {
-  const scale = useRef(new Animated.Value(1)).current;
-
-  const pressIn = () =>
-    Animated.spring(scale, { toValue: 0.94, useNativeDriver: true, speed: 30 }).start();
-  const pressOut = () =>
-    Animated.spring(scale, { toValue: 1, useNativeDriver: true, speed: 20 }).start();
+  const scale = useSharedValue(1);
+  const anim = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
 
   return (
-    <Pressable onPress={onPress} onPressIn={pressIn} onPressOut={pressOut} disabled={disabled}>
-      <Animated.View style={[style, { transform: [{ scale }] }]}>{children}</Animated.View>
+    <Pressable
+      onPress={onPress}
+      onPressIn={() => { scale.value = withSpring(0.94, { damping: 20, stiffness: 400 }); }}
+      onPressOut={() => { scale.value = withSpring(1.0, { damping: 20, stiffness: 400 }); }}
+      disabled={disabled}
+    >
+      <Reanimated.View style={[style, anim]}>{children}</Reanimated.View>
     </Pressable>
   );
 }
 
 function SectionTab({ section, active, onPress }) {
-  const scale = useRef(new Animated.Value(1)).current;
-  const pressIn = () =>
-    Animated.spring(scale, { toValue: 0.9, useNativeDriver: true, speed: 40 }).start();
-  const pressOut = () =>
-    Animated.spring(scale, { toValue: 1, useNativeDriver: true, speed: 25 }).start();
+  const scale = useSharedValue(1);
+  const anim = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
 
   return (
-    <Pressable onPress={onPress} onPressIn={pressIn} onPressOut={pressOut}>
-      <Animated.View
+    <Pressable
+      onPress={onPress}
+      onPressIn={() => { scale.value = withSpring(0.9, { damping: 20, stiffness: 400 }); }}
+      onPressOut={() => { scale.value = withSpring(1.0, { damping: 22, stiffness: 280 }); }}
+    >
+      <Reanimated.View
         style={[
           styles.sectionTab,
           active && { backgroundColor: section.color + "22", borderColor: section.color },
-          { transform: [{ scale }] },
+          anim,
         ]}
       >
         <Text style={styles.sectionTabEmoji}>{section.emoji}</Text>
         <Text style={[styles.sectionTabLabel, active && { color: section.color }]}>
           {section.label.split(" ")[0]}
         </Text>
-      </Animated.View>
+      </Reanimated.View>
     </Pressable>
   );
 }
 
 function FunField({ label, hint, children, done }) {
+  const { theme } = useTheme();
   return (
     <View style={styles.funField}>
       <View style={styles.funFieldHeader}>
-        <Text style={styles.funFieldLabel}>{label}</Text>
-        {done && <CheckCircle size={14} color="#3D9E4A" />}
+        <Text style={[styles.funFieldLabel, { color: theme.colors.textSubtle }]}>{label}</Text>
+        {done && <CheckCircle size={14} color={theme.colors.success} />}
       </View>
-      {hint && <Text style={styles.funFieldHint}>{hint}</Text>}
+      {hint && <Text style={[styles.funFieldHint, { color: theme.colors.textSubtle }]}>{hint}</Text>}
       {children}
     </View>
   );
 }
 
 function InterestPill({ interest, active, onPress }) {
-  const scale = useRef(new Animated.Value(1)).current;
-  const pressIn = () =>
-    Animated.spring(scale, { toValue: 0.88, useNativeDriver: true, speed: 50 }).start();
-  const pressOut = () =>
-    Animated.spring(scale, { toValue: active ? 1.06 : 1, useNativeDriver: true, speed: 20 }).start();
+  const { theme } = useTheme();
+  const scale = useSharedValue(1);
+  const anim = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
 
   return (
-    <Pressable onPress={onPress} onPressIn={pressIn} onPressOut={pressOut}>
-      <Animated.View
+    <Pressable
+      onPress={onPress}
+      onPressIn={() => { scale.value = withSpring(0.88, { damping: 14, stiffness: 260 }); }}
+      onPressOut={() => { scale.value = withSpring(active ? 1.04 : 1.0, { damping: 22, stiffness: 280 }); }}
+    >
+      <Reanimated.View
         style={[
           styles.interestPill,
-          active && styles.interestPillActive,
-          { transform: [{ scale }] },
+          { backgroundColor: theme.colors.surfaceMuted, borderColor: theme.colors.border },
+          active && { backgroundColor: theme.colors.brand, borderColor: theme.colors.brand },
+          anim,
         ]}
       >
         <Text style={styles.interestPillEmoji}>{interest.emoji}</Text>
-        <Text style={[styles.interestPillText, active && styles.interestPillTextActive]}>
+        <Text style={[styles.interestPillText, { color: theme.colors.textMuted }, active && { color: theme.colors.textOnBrand, fontWeight: "700" }]}>
           {interest.label}
         </Text>
-        {active && <Check size={12} color="#1A1A14" />}
-      </Animated.View>
+        {active && <Check size={12} color={theme.colors.textOnBrand} />}
+      </Reanimated.View>
     </Pressable>
   );
 }
@@ -367,7 +379,7 @@ export default function ProfileEditScreen() {
           <Text style={styles.heroTitle}>Edit Profile</Text>
           <ScalePressable onPress={handleSave} style={styles.saveBtn} disabled={saving}>
             {saving ? (
-              <ActivityIndicator size="small" color="#1A1A14" />
+              <ActivityIndicator size="small" color={theme.colors.textOnBrand} />
             ) : (
               <Animated.View style={{ transform: [{ scale: saveScale }] }}>
                 <Text style={styles.saveBtnText}>Save ✓</Text>
@@ -423,15 +435,15 @@ export default function ProfileEditScreen() {
           style={[
             styles.toast,
             {
-              backgroundColor: message.type === "error" ? "rgba(220,38,38,0.1)" : "rgba(61,158,74,0.1)",
-              borderColor: message.type === "error" ? theme.colors.error : "#3D9E4A",
+              backgroundColor: message.type === "error" ? "rgba(220,38,38,0.1)" : theme.colors.brandTint,
+              borderColor: message.type === "error" ? theme.colors.error : theme.colors.success,
             },
           ]}
         >
           {message.type === "error"
             ? <AlertCircle size={14} color={theme.colors.error} />
-            : <CheckCircle size={14} color="#3D9E4A" />}
-          <Text style={[styles.toastText, { color: message.type === "error" ? theme.colors.error : "#3D9E4A" }]}>
+            : <CheckCircle size={14} color={theme.colors.success} />}
+          <Text style={[styles.toastText, { color: message.type === "error" ? theme.colors.error : theme.colors.success }]}>
             {message.text}
           </Text>
         </View>
@@ -683,7 +695,7 @@ export default function ProfileEditScreen() {
           <View style={styles.sectionContent}>
             <View style={[styles.privacyCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
               <View style={styles.privacyCardHeader}>
-                <ShieldCheck size={18} color="#3D9E4A" />
+                <ShieldCheck size={18} color={theme.colors.success} />
                 <Text style={[styles.privacyCardTitle, { color: theme.colors.text }]}>Public Profile</Text>
                 <Switch
                   value={form.publicProfile}
@@ -698,8 +710,8 @@ export default function ProfileEditScreen() {
                   ? "Anyone can find and view your profile page."
                   : "Your profile is hidden from others."}
               </Text>
-              <View style={[styles.privacyStatus, { backgroundColor: form.publicProfile ? "rgba(61,158,74,0.12)" : "rgba(220,38,38,0.10)" }]}>
-                <Text style={{ fontSize: 11, fontFamily: "PlusJakartaSans_700Bold", fontWeight: "700", color: form.publicProfile ? "#3D9E4A" : "#DC2626" }}>
+              <View style={[styles.privacyStatus, { backgroundColor: form.publicProfile ? theme.colors.brandTint : "rgba(220,38,38,0.10)" }]}>
+                <Text style={{ fontSize: 11, fontFamily: "PlusJakartaSans_700Bold", fontWeight: "700", color: form.publicProfile ? theme.colors.success : theme.colors.error }}>
                   {form.publicProfile ? "🟢  VISIBLE TO EVERYONE" : "🔴  PRIVATE"}
                 </Text>
               </View>
@@ -755,7 +767,7 @@ const styles = StyleSheet.create({
   heroBack: {
     width: 38,
     height: 38,
-    borderRadius: 14,
+    borderRadius: radius.xxl,
     backgroundColor: "rgba(255,255,255,0.12)",
     alignItems: "center",
     justifyContent: "center",
@@ -767,17 +779,17 @@ const styles = StyleSheet.create({
     color: "#fff",
   },
   saveBtn: {
-    paddingHorizontal: 16,
-    paddingVertical: 9,
-    borderRadius: 12,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: radius.xxl,
     backgroundColor: "#C8E630",
-    minWidth: 72,
+    minWidth: 76,
     alignItems: "center",
     justifyContent: "center",
   },
   saveBtnText: {
     fontSize: 14,
-    fontWeight: "800",
+    fontWeight: "700",
     fontFamily: "PlusJakartaSans_700Bold",
     color: "#1A1A14",
   },
@@ -789,9 +801,9 @@ const styles = StyleSheet.create({
   },
   avatarWrap: { position: "relative" },
   avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 28,
+    width: 84,
+    height: 84,
+    borderRadius: radius.xl,
     overflow: "hidden",
     borderWidth: 3,
     borderColor: "#C8E630",
@@ -811,9 +823,9 @@ const styles = StyleSheet.create({
     position: "absolute",
     bottom: -4,
     right: -4,
-    width: 26,
-    height: 26,
-    borderRadius: 10,
+    width: 28,
+    height: 28,
+    borderRadius: radius.full,
     backgroundColor: "#C8E630",
     alignItems: "center",
     justifyContent: "center",
@@ -823,7 +835,7 @@ const styles = StyleSheet.create({
   heroInfo: { flex: 1, gap: 4 },
   heroName: {
     fontSize: 18,
-    fontWeight: "800",
+    fontWeight: "700",
     fontFamily: "SpaceGrotesk_700Bold",
     color: "#fff",
   },
@@ -868,7 +880,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginTop: 10,
     padding: 12,
-    borderRadius: 12,
+    borderRadius: radius.md,
     borderWidth: 1,
   },
   toastText: {
@@ -892,7 +904,7 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingHorizontal: 14,
     paddingVertical: 8,
-    borderRadius: 20,
+    borderRadius: radius.xxl,
     borderWidth: 1.5,
     borderColor: "transparent",
     backgroundColor: "transparent",
@@ -927,7 +939,7 @@ const styles = StyleSheet.create({
 
   /* Scroll content */
   scroll: {
-    paddingHorizontal: 16,
+    paddingHorizontal: spacing.page,
     paddingTop: 4,
   },
   sectionContent: { gap: 16, paddingTop: 8 },
@@ -958,8 +970,8 @@ const styles = StyleSheet.create({
   inputWrap: {
     flexDirection: "row",
     alignItems: "center",
-    borderWidth: 1.5,
-    borderRadius: 16,
+    borderWidth: 1,
+    borderRadius: radius.lg,
     paddingHorizontal: 14,
     paddingVertical: 2,
     gap: 10,
@@ -997,7 +1009,7 @@ const styles = StyleSheet.create({
   },
   dropdownList: {
     borderWidth: 1,
-    borderRadius: 14,
+    borderRadius: radius.md,
     marginTop: 4,
     overflow: "hidden",
   },
@@ -1017,8 +1029,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
     padding: 16,
-    borderRadius: 16,
-    borderWidth: 1.5,
+    borderRadius: radius.lg,
+    borderWidth: 1,
     marginTop: 4,
   },
   changeUsernameTitle: {
@@ -1042,7 +1054,7 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     gap: 10,
     padding: 14,
-    borderRadius: 14,
+    borderRadius: radius.md,
     borderWidth: 1,
     marginTop: 4,
   },
@@ -1075,14 +1087,8 @@ const styles = StyleSheet.create({
     gap: 5,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: 99,
-    borderWidth: 1.5,
-    borderColor: "rgba(0,0,0,0.10)",
-    backgroundColor: "#fff",
-  },
-  interestPillActive: {
-    backgroundColor: "#C8E630",
-    borderColor: "#C8E630",
+    borderRadius: radius.xxl,
+    borderWidth: 1,
   },
   interestPillEmoji: { fontSize: 14 },
   interestPillText: {
@@ -1095,7 +1101,7 @@ const styles = StyleSheet.create({
   interestsSummary: {
     marginTop: 12,
     padding: 14,
-    borderRadius: 14,
+    borderRadius: radius.md,
     borderWidth: 1,
     gap: 4,
   },
@@ -1112,8 +1118,8 @@ const styles = StyleSheet.create({
 
   /* Privacy */
   privacyCard: {
-    borderRadius: 20,
-    borderWidth: 1.5,
+    borderRadius: radius.xl,
+    borderWidth: 1,
     padding: 18,
     gap: 10,
   },
@@ -1137,7 +1143,7 @@ const styles = StyleSheet.create({
   privacyStatus: {
     paddingHorizontal: 12,
     paddingVertical: 7,
-    borderRadius: 8,
+    borderRadius: radius.sm,
     alignSelf: "flex-start",
   },
 });

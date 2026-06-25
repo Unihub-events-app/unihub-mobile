@@ -40,7 +40,8 @@ import * as Calendar from "expo-calendar";
 import { useTheme } from "../../theme/ThemeProvider.js";
 import { API_URL } from "../../lib/config.js";
 import { getUserToken } from "../../lib/auth.js";
-import { PageLoader } from "../../components/index.js";
+import { SkeletonLoader } from "../../components/index.js";
+import { radius } from "../../theme/tokens.js";
 import { ReviewModal } from "../../components/ReviewModal.js";
 import { Platform, StatusBar } from "react-native";
 
@@ -208,7 +209,15 @@ export default function EventDetailScreen() {
     }
   };
 
-  if (loading) return <PageLoader />;
+  if (loading) return (
+    <View style={{ flex: 1, backgroundColor: theme?.colors?.background || "#FAF9F0" }}>
+      <SkeletonLoader variant="card" count={1} style={{ height: HERO_HEIGHT, borderRadius: 0, margin: 0 }} />
+      <View style={{ padding: 16, gap: 14 }}>
+        <SkeletonLoader variant="text" count={2} />
+        <SkeletonLoader variant="row"  count={3} />
+      </View>
+    </View>
+  );
 
   if (!event) {
     return (
@@ -448,8 +457,8 @@ export default function EventDetailScreen() {
           {/* Already registered notice */}
           {isRegistered && (
             <View style={[styles.noticeCard, { backgroundColor: "rgba(61,158,74,0.12)", borderColor: "rgba(61,158,74,0.3)" }]}>
-              <CheckCircle size={16} color="#3D9E4A" />
-              <Text style={[styles.noticeText, { color: "#3D9E4A" }]}>
+              <CheckCircle size={16} color=theme.colors.success />
+              <Text style={[styles.noticeText, { color: theme.colors.success }]}>
                 You're registered for this event!
               </Text>
             </View>
@@ -550,11 +559,11 @@ export default function EventDetailScreen() {
               }}
               style={[styles.remindBtn, {
                 backgroundColor: calendarAdded ? "rgba(61,158,74,0.1)" : theme.colors.surfaceMuted,
-                borderColor: calendarAdded ? "#3D9E4A" : theme.colors.border,
+                borderColor: calendarAdded ? theme.colors.success : theme.colors.border,
               }]}
             >
-              <Calendar size={16} color={calendarAdded ? "#3D9E4A" : theme.colors.textMuted} />
-              <Text style={[styles.remindBtnText, { color: calendarAdded ? "#3D9E4A" : theme.colors.textMuted }]}>
+              <Calendar size={16} color={calendarAdded ? theme.colors.success : theme.colors.textMuted} />
+              <Text style={[styles.remindBtnText, { color: calendarAdded ? theme.colors.success : theme.colors.textMuted }]}>
                 {calendarAdded ? "Added to Calendar" : "Add to Calendar"}
               </Text>
             </Pressable>
@@ -652,15 +661,15 @@ export default function EventDetailScreen() {
           disabled={(ctaDisabled && !isOwner) || waitlistLoading}
         >
           {waitlistLoading ? (
-            <ActivityIndicator size="small" color="#1A1A14" />
+            <ActivityIndicator size="small" color={theme.colors.textOnBrand} />
           ) : isOwner ? (
-            <Settings size={18} color="#1A1A14" />
+            <Settings size={18} color={theme.colors.textOnBrand} />
           ) : isRegistered || isWaitlisted ? (
-            <CheckCircle size={18} color={ctaDisabled ? theme.colors.textSubtle : "#1A1A14"} />
+            <CheckCircle size={18} color={ctaDisabled ? theme.colors.textSubtle : theme.colors.textOnBrand} />
           ) : (
-            <Ticket size={18} color={ctaDisabled ? theme.colors.textSubtle : "#1A1A14"} />
+            <Ticket size={18} color={ctaDisabled ? theme.colors.textSubtle : theme.colors.textOnBrand} />
           )}
-          <Text style={[styles.ctaBtnText, { color: ctaDisabled ? theme.colors.textSubtle : "#1A1A14" }]}>
+          <Text style={[styles.ctaBtnText, { color: ctaDisabled ? theme.colors.textSubtle : theme.colors.textOnBrand }]}>
             {waitlistLoading ? "Joining…" : ctaLabel}
           </Text>
         </Pressable>
@@ -691,9 +700,9 @@ const styles = StyleSheet.create({
   },
   backBtn: {
     marginTop: 12,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 14,
+    paddingHorizontal: 28,
+    paddingVertical: 13,
+    borderRadius: radius.xxl,
   },
   backBtnText: {
     fontSize: 15,
@@ -803,13 +812,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
     padding: 14,
-    borderRadius: 18,
+    borderRadius: radius.lg,
     borderWidth: 1,
   },
   organizerAvatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
+    width: 46,
+    height: 46,
+    borderRadius: radius.full,
     alignItems: "center",
     justifyContent: "center",
     overflow: "hidden",
@@ -830,7 +839,7 @@ const styles = StyleSheet.create({
     fontFamily: "PlusJakartaSans_600SemiBold",
   },
   infoCard: {
-    borderRadius: 18,
+    borderRadius: radius.lg,
     borderWidth: 1,
     padding: 16,
   },
@@ -840,9 +849,9 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   infoIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 14,
+    width: 44,
+    height: 44,
+    borderRadius: radius.full,
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,
@@ -887,7 +896,7 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     justifyContent: "space-between",
     padding: 16,
-    borderRadius: 16,
+    borderRadius: radius.lg,
     borderWidth: 1.5,
     gap: 12,
   },
@@ -930,7 +939,7 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     gap: 10,
     padding: 14,
-    borderRadius: 14,
+    borderRadius: radius.lg,
     borderWidth: 1,
   },
   noticeText: {
@@ -969,9 +978,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    paddingHorizontal: 22,
-    paddingVertical: 14,
-    borderRadius: 16,
+    paddingHorizontal: 26,
+    paddingVertical: 15,
+    borderRadius: radius.xxl,
   },
   ctaBtnText: {
     fontSize: 15,
@@ -984,7 +993,7 @@ const styles = StyleSheet.create({
     gap: 10,
     paddingVertical: 12,
     paddingHorizontal: 16,
-    borderRadius: 14,
+    borderRadius: radius.lg,
     borderWidth: 1,
   },
   remindBtnText: {

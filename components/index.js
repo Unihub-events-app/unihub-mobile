@@ -13,6 +13,7 @@ export { Toast } from "./Toast.js";
 export { ConfirmModal } from "./ConfirmModal.js";
 export { default as BackButton } from "./BackButton.js";
 export { SkeletonLoader } from "./SkeletonLoader.js";
+export { EmptyState } from "./EmptyState.js";
 export { PasswordSetupModal } from "./PasswordSetupModal.js";
 export { UsernameSetupModal } from "./UsernameSetupModal.js";
 export { default as InterestsModal } from "./InterestsModal.js";

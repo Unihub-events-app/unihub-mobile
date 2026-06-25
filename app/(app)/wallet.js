@@ -25,8 +25,11 @@ import {
   NeuCard,
   NeuInset,
   PrimaryButton,
-  PageLoader,
+  SkeletonLoader,
+  EmptyState,
+  Toast,
 } from "../../components/index.js";
+import { radius, spacing } from "../../theme/tokens.js";
 import { API_URL } from "../../lib/config.js";
 import { getUserToken } from "../../lib/auth.js";
 import { useRouter } from "expo-router";
@@ -269,7 +272,16 @@ export default function WalletScreen() {
   };
 
   if (loading) {
-    return <PageLoader />;
+    return (
+      <Screen padded>
+        <View style={{ marginBottom: 24, gap: 4 }}>
+          <View style={{ width: 60, height: 11, borderRadius: radius.xs, backgroundColor: "#e5e7eb", opacity: 0.6 }} />
+          <View style={{ width: 120, height: 30, borderRadius: radius.sm, backgroundColor: "#e5e7eb", opacity: 0.6 }} />
+        </View>
+        <SkeletonLoader variant="card" count={1} />
+        <SkeletonLoader variant="card" count={1} />
+      </Screen>
+    );
   }
 
   const allTransactions = [
@@ -293,22 +305,10 @@ export default function WalletScreen() {
   return (
     <Screen padded={false}>
       <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+        <Text style={styles.headerEyebrow}>My Earnings</Text>
         <Text style={styles.headerTitle}>Wallet</Text>
 
-        {/* Toast */}
-        {message.text ? (
-          <View style={[styles.toast, {
-            backgroundColor: message.type === "error" ? "rgba(220,38,38,0.1)" : "rgba(61,158,74,0.1)",
-            borderColor: message.type === "error" ? theme.colors.error : theme.colors.success,
-          }]}>
-            {message.type === "error"
-              ? <AlertCircle size={16} color={theme.colors.error} />
-              : <CheckSquare size={16} color={theme.colors.success} />}
-            <Text style={[styles.toastText, { color: message.type === "error" ? theme.colors.error : theme.colors.success }]}>
-              {message.text}
-            </Text>
-          </View>
-        ) : null}
+        {/* Toast rendered at root level below */}
 
         {/* Balance Hero */}
         <View style={[styles.balanceCard, { backgroundColor: theme.colors.navSurface }]}>
@@ -402,8 +402,8 @@ export default function WalletScreen() {
             disabled={submitting || !bankDetails.accountNumber || !withdrawForm.amount || parseFloat(withdrawForm.amount) <= 0}
           >
             {submitting
-              ? <ActivityIndicator size="small" color="#1A1A14" />
-              : <><Download size={18} color="#1A1A14" /><Text style={styles.primaryBtnText}>Withdraw Now</Text></>}
+              ? <ActivityIndicator size="small" color={theme.colors.textOnBrand} />
+              : <><Download size={18} color={theme.colors.textOnBrand} /><Text style={styles.primaryBtnText}>Withdraw Now</Text></>}
           </TouchableOpacity>
         </NeuCard>
 
@@ -483,8 +483,8 @@ export default function WalletScreen() {
                   disabled={submitting}
                 >
                   {submitting
-                    ? <ActivityIndicator size="small" color="#1A1A14" />
-                    : <><CheckSquare size={18} color="#1A1A14" /><Text style={styles.primaryBtnText}>Save Details</Text></>}
+                    ? <ActivityIndicator size="small" color={theme.colors.textOnBrand} />
+                    : <><CheckSquare size={18} color={theme.colors.textOnBrand} /><Text style={styles.primaryBtnText}>Save Details</Text></>}
                 </TouchableOpacity>
               </View>
             </View>
@@ -549,25 +549,30 @@ export default function WalletScreen() {
 
         <View style={{ height: 120 }} />
       </ScrollView>
+      <Toast
+        visible={!!message.text}
+        message={message.text}
+        type={message.type || "info"}
+        onDismiss={() => setMessage({ type: "", text: "" })}
+      />
     </Screen>
   );
 }
 
 const getStyles = (theme) => StyleSheet.create({
-  scrollContainer: { paddingTop: 24, paddingBottom: 24, paddingHorizontal: 16 },
+  scrollContainer: { paddingTop: 24, paddingBottom: 24, paddingHorizontal: spacing.page },
+  headerEyebrow: {
+    fontSize: 11, fontWeight: "700", fontFamily: "PlusJakartaSans_700Bold",
+    color: theme.colors.accentWallet, textTransform: "uppercase", letterSpacing: 1.2,
+    marginBottom: 4, lineHeight: 16,
+  },
   headerTitle: {
-    fontSize: 28, fontWeight: "800", fontFamily: "SpaceGrotesk_700Bold",
-    color: theme.colors.text, letterSpacing: -0.5, marginBottom: 20,
+    fontSize: 32, fontWeight: "700", fontFamily: "SpaceGrotesk_700Bold",
+    color: theme.colors.text, letterSpacing: -0.5, marginBottom: 20, lineHeight: 38,
   },
-  toast: {
-    flexDirection: "row", alignItems: "center", gap: 8,
-    padding: 14, borderRadius: 14, borderWidth: 1, marginBottom: 16,
-  },
-  toastText: { flex: 1, fontSize: 13, fontFamily: "PlusJakartaSans_500Medium" },
-
   // Balance card
   balanceCard: {
-    borderRadius: 24, padding: 24, marginBottom: 16,
+    borderRadius: radius.xl, padding: 24, marginBottom: 16,
     shadowColor: "#000", shadowOpacity: 0.25, shadowRadius: 20, shadowOffset: { width: 0, height: 8 }, elevation: 8,
   },
   balanceHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
@@ -602,8 +607,8 @@ const getStyles = (theme) => StyleSheet.create({
   // Sections
   section: { padding: 20, marginBottom: 16 },
   sectionLabel: {
-    fontSize: 17, fontWeight: "800", fontFamily: "SpaceGrotesk_700Bold",
-    color: theme.colors.text, letterSpacing: -0.3, marginBottom: 16,
+    fontSize: 20, fontWeight: "700", fontFamily: "SpaceGrotesk_700Bold",
+    color: theme.colors.text, letterSpacing: -0.3, marginBottom: 16, lineHeight: 26,
   },
   sectionHeaderRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 },
   fieldGroup: { marginBottom: 14 },
@@ -612,26 +617,26 @@ const getStyles = (theme) => StyleSheet.create({
     marginBottom: 6, letterSpacing: 0.3,
   },
   amountRow: {
-    flexDirection: "row", alignItems: "center", borderRadius: 16, borderWidth: 1.5, overflow: "hidden",
+    flexDirection: "row", alignItems: "center", borderRadius: radius.lg, borderWidth: 1.5, overflow: "hidden",
   },
   currencySymbol: { fontSize: 20, fontWeight: "700", paddingLeft: 16 },
   amountInput: {
     flex: 1, paddingVertical: 14, paddingHorizontal: 8, fontSize: 22, fontWeight: "800",
     fontFamily: "SpaceGrotesk_700Bold",
   },
-  maxBtn: { paddingVertical: 10, paddingHorizontal: 14, marginRight: 4, borderRadius: 10 },
+  maxBtn: { paddingVertical: 10, paddingHorizontal: 14, marginRight: 4, borderRadius: radius.xxl },
   maxBtnText: { fontSize: 11, fontWeight: "800", fontFamily: "PlusJakartaSans_700Bold", letterSpacing: 0.5 },
   feeNote: { fontSize: 12, fontFamily: "PlusJakartaSans_400Regular", marginTop: 6 },
   infoBox: {
     flexDirection: "row", alignItems: "center", gap: 8,
-    padding: 12, borderRadius: 12, borderWidth: 1, marginBottom: 14,
+    padding: 12, borderRadius: radius.md, borderWidth: 1, marginBottom: 14,
   },
   infoBoxText: { flex: 1, fontSize: 13, fontFamily: "PlusJakartaSans_400Regular" },
   primaryBtn: {
     flexDirection: "row", alignItems: "center", justifyContent: "center",
-    gap: 8, borderRadius: 16, paddingVertical: 14,
+    gap: 8, borderRadius: radius.xxl, paddingVertical: 15,
   },
-  primaryBtnText: { fontSize: 15, fontWeight: "700", fontFamily: "PlusJakartaSans_700Bold", color: "#1A1A14" },
+  primaryBtnText: { fontSize: 15, fontWeight: "700", fontFamily: "PlusJakartaSans_700Bold", color: theme.colors.textOnBrand },
   disabledBtn: { opacity: 0.4 },
   editBtn: { flexDirection: "row", alignItems: "center", gap: 4 },
   editBtnText: { fontSize: 13, fontWeight: "700", fontFamily: "PlusJakartaSans_700Bold" },
@@ -639,15 +644,15 @@ const getStyles = (theme) => StyleSheet.create({
   // Bank form
   bankForm: { gap: 0 },
   textInput: {
-    paddingHorizontal: 14, paddingVertical: 12, borderRadius: 14, borderWidth: 1.5,
+    paddingHorizontal: 14, paddingVertical: 13, borderRadius: radius.lg, borderWidth: 1,
     fontSize: 15, fontFamily: "PlusJakartaSans_400Regular",
   },
   dropdownBtn: {
-    flexDirection: "row", alignItems: "center", paddingHorizontal: 14, paddingVertical: 12,
-    borderRadius: 14, borderWidth: 1.5,
+    flexDirection: "row", alignItems: "center", paddingHorizontal: 14, paddingVertical: 13,
+    borderRadius: radius.lg, borderWidth: 1,
   },
   dropdownList: {
-    borderRadius: 12, borderWidth: 1, marginTop: 6, overflow: "hidden",
+    borderRadius: radius.md, borderWidth: 1, marginTop: 6, overflow: "hidden",
   },
   dropdownItem: {
     paddingHorizontal: 14, paddingVertical: 12, borderBottomWidth: 1,
@@ -655,7 +660,7 @@ const getStyles = (theme) => StyleSheet.create({
   dropdownItemText: { fontSize: 14, fontFamily: "PlusJakartaSans_400Regular" },
   bankFormBtns: { flexDirection: "row", gap: 10, marginTop: 4 },
   ghostBtn: {
-    paddingHorizontal: 18, paddingVertical: 14, borderRadius: 16, borderWidth: 1,
+    paddingHorizontal: 18, paddingVertical: 14, borderRadius: radius.xxl, borderWidth: 1,
     alignItems: "center", justifyContent: "center",
   },
   ghostBtnText: { fontSize: 14, fontWeight: "600", fontFamily: "PlusJakartaSans_600SemiBold" },
@@ -664,7 +669,7 @@ const getStyles = (theme) => StyleSheet.create({
   bankViewGrid: { gap: 8 },
   bankViewRow: {
     flexDirection: "row", justifyContent: "space-between", alignItems: "center",
-    padding: 14, borderRadius: 14, borderWidth: 1,
+    padding: 14, borderRadius: radius.md, borderWidth: 1,
   },
   bankViewLabel: { fontSize: 12, fontWeight: "600", fontFamily: "PlusJakartaSans_600SemiBold", letterSpacing: 0.3 },
   bankViewValue: { fontSize: 14, fontWeight: "700", fontFamily: "PlusJakartaSans_700Bold" },
@@ -678,7 +683,7 @@ const getStyles = (theme) => StyleSheet.create({
     flexDirection: "row", alignItems: "center", gap: 12,
     paddingVertical: 12, borderBottomWidth: 1,
   },
-  txIcon: { width: 40, height: 40, borderRadius: 14, alignItems: "center", justifyContent: "center" },
+  txIcon: { width: 42, height: 42, borderRadius: radius.full, alignItems: "center", justifyContent: "center" },
   txInfo: { flex: 1, minWidth: 0 },
   txDesc: { fontSize: 14, fontWeight: "600", fontFamily: "PlusJakartaSans_600SemiBold" },
   txDate: { fontSize: 12, fontFamily: "PlusJakartaSans_400Regular", marginTop: 2 },

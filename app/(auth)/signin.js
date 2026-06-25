@@ -16,6 +16,7 @@ import {
 } from "lucide-react-native";
 import { Screen, TextField, PrimaryButton } from "../../components";
 import { useTheme } from "../../theme/ThemeProvider";
+import { radius } from "../../theme/tokens";
 import { useSessionStore } from "../../lib/auth";
 import { API_URL } from "../../lib/config";
 
@@ -439,7 +440,7 @@ const styles = StyleSheet.create({
   slideIconWrap: {
     width: 72,
     height: 72,
-    borderRadius: 22,
+    borderRadius: radius.xl,
     backgroundColor: "rgba(26,26,20,0.12)",
     alignItems: "center",
     justifyContent: "center",
@@ -473,8 +474,8 @@ const styles = StyleSheet.create({
 
   bottomPanel: {
     flex: 1,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
+    borderTopLeftRadius: radius.xl,
+    borderTopRightRadius: radius.xl,
     paddingHorizontal: 20,
     paddingTop: 24,
   },
@@ -511,7 +512,7 @@ const styles = StyleSheet.create({
   formCard: {
     width: "100%",
     padding: 20,
-    borderRadius: 24,
+    borderRadius: radius.xl,
     borderWidth: 1,
     gap: 4,
   },
@@ -531,8 +532,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    padding: 11,
-    borderRadius: 12,
+    padding: 12,
+    borderRadius: radius.md,
     borderWidth: 1,
     marginBottom: 10,
   },
@@ -560,8 +561,8 @@ const styles = StyleSheet.create({
     fontFamily: "PlusJakartaSans_400Regular",
   },
   socialBtn: {
-    paddingVertical: 12,
-    borderRadius: 12,
+    paddingVertical: 13,
+    borderRadius: radius.xxl,
     borderWidth: 1,
     alignItems: "center",
   },
@@ -592,8 +593,8 @@ const styles = StyleSheet.create({
   },
   otpBox: {
     flex: 1,
-    height: 50,
-    borderRadius: 12,
+    height: 52,
+    borderRadius: radius.md,
     borderWidth: 2,
     fontSize: 20,
     fontWeight: "800",

@@ -30,8 +30,10 @@ import {
   NeuInset,
   ConfirmModal,
   TextField,
-  PageLoader,
+  SkeletonLoader,
+  Toast,
 } from "../../components/index";
+import { radius, spacing } from "../../theme/tokens";
 import CommunityAvatar from "../../components/CommunityAvatar";
 import { API_URL } from "../../lib/config";
 import { getUserToken } from "../../lib/auth";
@@ -169,8 +171,8 @@ const CommunityCard = ({
               </View>
             ) : (
               <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                <Text style={[styles.actionButtonText, { color: "#1A1A14" }]}>Join Community</Text>
-                <Plus size={13} color="#1A1A14" />
+                <Text style={[styles.actionButtonText, { color: theme.colors.textOnBrand }]}>Join Community</Text>
+                <Plus size={13} color={theme.colors.textOnBrand} />
               </View>
             )}
           </TouchableOpacity>
@@ -697,7 +699,15 @@ export default function CommunityScreen() {
   }, [searchTerm, activeTab]);
 
   if (loading) {
-    return <PageLoader />;
+    return (
+      <Screen padded>
+        <View style={{ gap: 6, marginBottom: 28, marginTop: 8 }}>
+          <View style={{ width: 80,  height: 11, borderRadius: radius.xs, backgroundColor: "#e5e7eb", opacity: 0.7 }} />
+          <View style={{ width: 160, height: 30, borderRadius: radius.sm, backgroundColor: "#e5e7eb", opacity: 0.7 }} />
+        </View>
+        <SkeletonLoader variant="card" count={3} />
+      </Screen>
+    );
   }
 
   const isCodeSearch = /^UHB-C-\d{3}-\d{3}-\d{3}$/i.test(searchTerm.trim());
@@ -1188,6 +1198,12 @@ export default function CommunityScreen() {
           isDestructive={confirmModal.type === "delete"}
         />
       )}
+      <Toast
+        visible={!!message?.text}
+        message={message?.text}
+        type={message?.type || "info"}
+        onDismiss={() => setMessage(null)}
+      />
     </Screen>
   );
 }
@@ -1212,17 +1228,19 @@ const getStyles = (theme) => StyleSheet.create({
     fontWeight: "700",
     textTransform: "uppercase",
     letterSpacing: 1.2,
-    color: theme.colors.brand,
+    color: theme.colors.accentCommunity,
     marginBottom: 4,
     fontFamily: "PlusJakartaSans_700Bold",
+    lineHeight: 16,
   },
   headerTitle: {
-    fontSize: 30,
-    fontWeight: "800",
+    fontSize: 32,
+    fontWeight: "700",
     fontFamily: "SpaceGrotesk_700Bold",
     color: theme.colors.text,
     marginBottom: 4,
     letterSpacing: -0.5,
+    lineHeight: 38,
   },
   headerSubtitle: {
     fontSize: 14,
@@ -1239,7 +1257,7 @@ const getStyles = (theme) => StyleSheet.create({
     flexDirection: "row",
     backgroundColor: theme.colors.surface,
     padding: 5,
-    borderRadius: 14,
+    borderRadius: radius.xl,
     gap: 4,
     borderWidth: 1,
     borderColor: theme.colors.border,
@@ -1247,10 +1265,10 @@ const getStyles = (theme) => StyleSheet.create({
   tab: {
     paddingVertical: 9,
     paddingHorizontal: 16,
-    borderRadius: 10,
+    borderRadius: radius.xxl,
   },
   activeTab: {
-    backgroundColor: theme.colors.brand,
+    backgroundColor: theme.colors.accentCommunity,
   },
   tabText: {
     fontSize: 13,
@@ -1259,20 +1277,20 @@ const getStyles = (theme) => StyleSheet.create({
     fontFamily: "PlusJakartaSans_600SemiBold",
   },
   activeTabText: {
-    color: "#1A1A14",
+    color: "#fff",
     fontFamily: "PlusJakartaSans_700Bold",
   },
   createButton: {
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: 9,
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
     backgroundColor: theme.colors.brand,
-    borderRadius: 14,
+    borderRadius: radius.xxl,
     gap: 4,
   },
   createButtonText: {
-    color: "#1A1A14",
+    color: theme.colors.textOnBrand,
     fontSize: 13,
     fontWeight: "700",
     fontFamily: "PlusJakartaSans_700Bold",
@@ -1319,15 +1337,16 @@ const getStyles = (theme) => StyleSheet.create({
     color: theme.colors.text,
   },
   codeJoinButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
+    paddingVertical: 9,
+    paddingHorizontal: 18,
     backgroundColor: theme.colors.brand,
-    borderRadius: 12,
+    borderRadius: radius.xxl,
   },
   codeJoinButtonText: {
-    color: theme.colors.surface,
+    color: theme.colors.textOnBrand,
     fontSize: 14,
     fontWeight: "700",
+    fontFamily: "PlusJakartaSans_700Bold",
   },
   communitiesContainer: {
     gap: 24,
@@ -1369,7 +1388,9 @@ const getStyles = (theme) => StyleSheet.create({
     paddingVertical: 4,
     paddingHorizontal: 10,
     backgroundColor: theme.colors.surface,
-    borderRadius: 999,
+    borderRadius: radius.full,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
   },
   sectionCountText: {
     fontSize: 12,
@@ -1389,7 +1410,7 @@ const getStyles = (theme) => StyleSheet.create({
     width: "100%",
   },
   communityCard: {
-    borderRadius: 24,
+    borderRadius: radius.xl,
     overflow: "hidden",
     borderWidth: 1,
     shadowColor: "#000",
@@ -1519,7 +1540,7 @@ const getStyles = (theme) => StyleSheet.create({
     justifyContent: "center",
     gap: 6,
     paddingVertical: 12,
-    borderRadius: 14,
+    borderRadius: radius.xxl,
   },
   actionButtonText: {
     fontSize: 13,
@@ -1527,9 +1548,9 @@ const getStyles = (theme) => StyleSheet.create({
     fontFamily: "PlusJakartaSans_700Bold",
   },
   iconAction: {
-    width: 42,
-    height: 42,
-    borderRadius: 14,
+    width: 44,
+    height: 44,
+    borderRadius: radius.md,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1607,8 +1628,8 @@ const getStyles = (theme) => StyleSheet.create({
   },
   modalContainer: {
     backgroundColor: theme.colors.surface,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderTopLeftRadius: radius.xl,
+    borderTopRightRadius: radius.xl,
     padding: 24,
     paddingBottom: 48,
     maxHeight: "80%",
@@ -1621,8 +1642,10 @@ const getStyles = (theme) => StyleSheet.create({
   },
   modalTitle: {
     fontSize: 20,
-    fontWeight: "800",
+    fontWeight: "700",
+    fontFamily: "SpaceGrotesk_700Bold",
     color: theme.colors.text,
+    letterSpacing: -0.3,
   },
   modalCloseButton: {
     padding: 4,
@@ -1643,10 +1666,13 @@ const getStyles = (theme) => StyleSheet.create({
     width: "100%",
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: theme.colors.surface,
-    borderRadius: 16,
+    backgroundColor: theme.colors.surfaceMuted,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
     fontSize: 16,
     color: theme.colors.text,
+    fontFamily: "PlusJakartaSans_400Regular",
   },
   textArea: {
     height: 100,
@@ -1657,12 +1683,12 @@ const getStyles = (theme) => StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: 14,
-    borderRadius: 16,
+    borderRadius: radius.xxl,
     backgroundColor: theme.colors.brand,
     marginTop: 8,
   },
   nextButtonText: {
-    color: "#1A1A14",
+    color: theme.colors.textOnBrand,
     fontSize: 16,
     fontWeight: "700",
     fontFamily: "PlusJakartaSans_700Bold",
@@ -1673,7 +1699,7 @@ const getStyles = (theme) => StyleSheet.create({
     justifyContent: "center",
     paddingVertical: 14,
     paddingHorizontal: 24,
-    borderRadius: 16,
+    borderRadius: radius.xxl,
   },
   backButtonText: {
     fontSize: 16,
@@ -1716,8 +1742,10 @@ const getStyles = (theme) => StyleSheet.create({
   iconOption: {
     width: 56,
     height: 56,
-    borderRadius: 16,
-    backgroundColor: theme.colors.surface,
+    borderRadius: radius.md,
+    backgroundColor: theme.colors.surfaceMuted,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1734,9 +1762,9 @@ const getStyles = (theme) => StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: 12,
-    borderRadius: 16,
-    borderWidth: 2,
-    borderColor: "#e5e7eb",
+    borderRadius: radius.lg,
+    borderWidth: 1.5,
+    borderColor: theme.colors.border,
     borderStyle: "dashed",
     marginBottom: 16,
   },
@@ -1751,7 +1779,7 @@ const getStyles = (theme) => StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: 14,
-    borderRadius: 16,
+    borderRadius: radius.xxl,
     backgroundColor: theme.colors.success,
   },
   createButtonFinalText: {

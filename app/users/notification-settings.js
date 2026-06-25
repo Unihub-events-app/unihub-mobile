@@ -26,6 +26,7 @@ import {
   AlertCircle,
 } from "lucide-react-native";
 import { useTheme } from "../../theme/ThemeProvider.js";
+import { radius, spacing } from "../../theme/tokens.js";
 import { API_URL } from "../../lib/config.js";
 import { getUserToken } from "../../lib/auth.js";
 import { registerForPushNotifications } from "../../lib/pushNotifications.js";
@@ -43,7 +44,7 @@ const NOTIF_CATEGORIES = [
   {
     id: "events",
     icon: Ticket,
-    color: "#3D9E4A",
+    color: "#22c55e",
     label: "Events",
     desc: "Ticket purchases, event updates",
   },
@@ -195,13 +196,13 @@ export default function NotificationSettingsScreen() {
       {/* Toast */}
       {msg.text ? (
         <View style={[styles.toast, {
-          backgroundColor: msg.type === "error" ? "rgba(220,38,38,0.1)" : "rgba(61,158,74,0.1)",
-          borderColor: msg.type === "error" ? theme.colors.error : "#3D9E4A",
+          backgroundColor: msg.type === "error" ? "rgba(220,38,38,0.1)" : theme.colors.successTint,
+          borderColor: msg.type === "error" ? theme.colors.error : theme.colors.success,
         }]}>
           {msg.type === "error"
             ? <AlertCircle size={14} color={theme.colors.error} />
-            : <CheckCircle size={14} color="#3D9E4A" />}
-          <Text style={[styles.toastText, { color: msg.type === "error" ? theme.colors.error : "#3D9E4A" }]}>{msg.text}</Text>
+            : <CheckCircle size={14} color={theme.colors.success} />}
+          <Text style={[styles.toastText, { color: msg.type === "error" ? theme.colors.error : theme.colors.success }]}>{msg.text}</Text>
         </View>
       ) : null}
 
@@ -286,7 +287,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   backBtn: {
-    width: 40, height: 40, borderRadius: 14,
+    width: 40, height: 40, borderRadius: radius.xxl,
     alignItems: "center", justifyContent: "center",
   },
   headerTitle: {
@@ -301,7 +302,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginTop: 10,
     padding: 12,
-    borderRadius: 12,
+    borderRadius: radius.md,
     borderWidth: 1,
   },
   toastText: {
@@ -310,12 +311,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scroll: {
-    padding: 16,
+    paddingHorizontal: spacing.page,
+    paddingVertical: 16,
     gap: 16,
   },
   pushCard: {
-    borderRadius: 20,
-    borderWidth: 1.5,
+    borderRadius: radius.xl,
+    borderWidth: 1,
     padding: 18,
     gap: 14,
   },
@@ -327,7 +329,7 @@ const styles = StyleSheet.create({
   pushIconWrap: {
     width: 46,
     height: 46,
-    borderRadius: 16,
+    borderRadius: radius.md,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -343,8 +345,8 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   pushEnableBtn: {
-    paddingVertical: 13,
-    borderRadius: 14,
+    paddingVertical: 14,
+    borderRadius: radius.xxl,
     alignItems: "center",
   },
   pushEnableBtnText: {
@@ -374,13 +376,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 14,
     padding: 14,
-    borderRadius: 16,
+    borderRadius: radius.lg,
     borderWidth: 1,
   },
   notifIcon: {
     width: 42,
     height: 42,
-    borderRadius: 14,
+    borderRadius: radius.md,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -396,7 +398,7 @@ const styles = StyleSheet.create({
     fontFamily: "PlusJakartaSans_400Regular",
   },
   infoBox: {
-    borderRadius: 14,
+    borderRadius: radius.md,
     borderWidth: 1,
     padding: 14,
   },

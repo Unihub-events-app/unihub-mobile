@@ -30,6 +30,7 @@ import {
   X,
 } from "lucide-react-native";
 import { useTheme } from "../../theme/ThemeProvider.js";
+import { radius, spacing } from "../../theme/tokens.js";
 import { API_URL } from "../../lib/config.js";
 import { getUserToken } from "../../lib/auth.js";
 import { useSessionStore } from "../../lib/auth.js";
@@ -131,12 +132,12 @@ function ChangePasswordModal({ visible, onClose, theme }) {
               {msg.text ? (
                 <View style={[styles.modalToast, {
                   backgroundColor: msg.type === "error" ? "rgba(220,38,38,0.1)" : "rgba(61,158,74,0.1)",
-                  borderColor: msg.type === "error" ? theme.colors.error : "#3D9E4A",
+                  borderColor: msg.type === "error" ? theme.colors.error : theme.colors.success,
                 }]}>
                   {msg.type === "error"
                     ? <AlertCircle size={13} color={theme.colors.error} />
-                    : <CheckCircle size={13} color="#3D9E4A" />}
-                  <Text style={{ fontSize: 13, fontFamily: "PlusJakartaSans_500Medium", color: msg.type === "error" ? theme.colors.error : "#3D9E4A", flex: 1 }}>
+                    : <CheckCircle size={13} color=theme.colors.success />}
+                  <Text style={{ fontSize: 13, fontFamily: "PlusJakartaSans_500Medium", color: msg.type === "error" ? theme.colors.error : theme.colors.success, flex: 1 }}>
                     {msg.text}
                   </Text>
                 </View>
@@ -262,12 +263,12 @@ export default function PrivacySettingsScreen() {
       {msg.text ? (
         <View style={[styles.toast, {
           backgroundColor: msg.type === "error" ? "rgba(220,38,38,0.1)" : "rgba(61,158,74,0.1)",
-          borderColor: msg.type === "error" ? theme.colors.error : "#3D9E4A",
+          borderColor: msg.type === "error" ? theme.colors.error : theme.colors.success,
         }]}>
           {msg.type === "error"
             ? <AlertCircle size={14} color={theme.colors.error} />
-            : <CheckCircle size={14} color="#3D9E4A" />}
-          <Text style={[styles.toastText, { color: msg.type === "error" ? theme.colors.error : "#3D9E4A" }]}>{msg.text}</Text>
+            : <CheckCircle size={14} color=theme.colors.success />}
+          <Text style={[styles.toastText, { color: msg.type === "error" ? theme.colors.error : theme.colors.success }]}>{msg.text}</Text>
         </View>
       ) : null}
 
@@ -421,7 +422,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   backBtn: {
-    width: 40, height: 40, borderRadius: 14,
+    width: 40, height: 40, borderRadius: radius.xxl,
     alignItems: "center", justifyContent: "center",
   },
   headerTitle: {
@@ -436,7 +437,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginTop: 10,
     padding: 12,
-    borderRadius: 12,
+    borderRadius: radius.md,
     borderWidth: 1,
   },
   toastText: {
@@ -445,7 +446,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scroll: {
-    padding: 16,
+    paddingHorizontal: spacing.page,
+    paddingVertical: 16,
     gap: 10,
   },
   sectionLabel: {
@@ -461,13 +463,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 14,
     padding: 16,
-    borderRadius: 18,
+    borderRadius: radius.lg,
     borderWidth: 1,
   },
   secRowIcon: {
     width: 42,
     height: 42,
-    borderRadius: 14,
+    borderRadius: radius.md,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -487,13 +489,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 14,
     padding: 16,
-    borderRadius: 18,
+    borderRadius: radius.lg,
     borderWidth: 1,
   },
   deleteIconWrap: {
     width: 42,
     height: 42,
-    borderRadius: 14,
+    borderRadius: radius.md,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -517,8 +519,8 @@ const styles = StyleSheet.create({
   },
   modalSheet: {
     width: "100%",
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
+    borderTopLeftRadius: radius.xl,
+    borderTopRightRadius: radius.xl,
     padding: 24,
     gap: 16,
     paddingBottom: 40,
@@ -553,8 +555,8 @@ const styles = StyleSheet.create({
   pwField: {
     flexDirection: "row",
     alignItems: "center",
-    borderWidth: 1.5,
-    borderRadius: 14,
+    borderWidth: 1,
+    borderRadius: radius.md,
     paddingHorizontal: 14,
     paddingVertical: 12,
   },
@@ -568,12 +570,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
     padding: 10,
-    borderRadius: 10,
+    borderRadius: radius.sm,
     borderWidth: 1,
   },
   modalSubmitBtn: {
     paddingVertical: 14,
-    borderRadius: 16,
+    borderRadius: radius.xxl,
     alignItems: "center",
   },
   modalSubmitText: {
@@ -586,7 +588,7 @@ const styles = StyleSheet.create({
   /* Delete modals */
   deleteModal: {
     margin: 24,
-    borderRadius: 28,
+    borderRadius: radius.xl,
     padding: 28,
     gap: 16,
     alignItems: "center",
@@ -596,7 +598,7 @@ const styles = StyleSheet.create({
   deleteModalIcon: {
     width: 64,
     height: 64,
-    borderRadius: 24,
+    borderRadius: radius.xl,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -620,7 +622,7 @@ const styles = StyleSheet.create({
   deleteModalBtn: {
     flex: 1,
     paddingVertical: 13,
-    borderRadius: 14,
+    borderRadius: radius.xxl,
     alignItems: "center",
   },
   deleteModalBtnText: {
@@ -631,7 +633,7 @@ const styles = StyleSheet.create({
   deleteModalFullBtn: {
     width: "100%",
     paddingVertical: 14,
-    borderRadius: 16,
+    borderRadius: radius.xxl,
     alignItems: "center",
   },
 });

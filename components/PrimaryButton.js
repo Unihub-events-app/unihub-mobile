@@ -1,8 +1,15 @@
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
-import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
+import Animated, { useAnimatedStyle, useSharedValue, withSpring } from "react-native-reanimated";
 import { useTheme } from "../theme/ThemeProvider";
+import { springs } from "../theme/tokens";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
+const SIZE_CONFIG = {
+  sm: { height: 40, paddingHorizontal: 16, fontSize: 13, borderRadius: 20 },
+  md: { height: 50, paddingHorizontal: 20, fontSize: 15, borderRadius: 25 },
+  lg: { height: 58, paddingHorizontal: 24, fontSize: 16, borderRadius: 29 },
+};
 
 export function PrimaryButton({
   label,
@@ -10,44 +17,56 @@ export function PrimaryButton({
   loading = false,
   icon = null,
   variant = "primary",
+  size = "md",
   style,
   textStyle,
   disabled = false,
   fullWidth = true,
+  accentColor,
 }) {
   const { theme } = useTheme();
   const scale = useSharedValue(1);
+  const sizeConfig = SIZE_CONFIG[size] || SIZE_CONFIG.md;
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
   }));
 
-  const isPrimary = variant === "primary";
+  const isPrimary     = variant === "primary";
+  const isSecondary   = variant === "secondary";
+  const isGhost       = variant === "ghost";
   const isDestructive = variant === "destructive";
-  const isGhost = variant === "ghost";
-  const isSubtle = variant === "subtle" || variant === "secondary";
+  const isAccent      = variant === "accent";
 
-  const backgroundColor = isPrimary
-    ? theme.colors.brand
-    : isDestructive
-      ? theme.colors.error
-      : isSubtle
-        ? theme.colors.surfaceElevated
-        : "transparent";
+  const backgroundColor =
+    isPrimary     ? theme.colors.brand :
+    isDestructive ? theme.colors.error :
+    isAccent      ? (accentColor || theme.colors.accentCommunity) :
+    isSecondary   ? theme.colors.surfaceElevated :
+    "transparent";
 
-  // Lime is a light color — dark text on primary, white on destructive
-  const textColor = isPrimary
-    ? "#1A1A14"
-    : isDestructive
-      ? "#ffffff"
-      : theme.colors.text;
+  const borderColor =
+    isPrimary || isDestructive || isAccent
+      ? "transparent"
+      : theme.colors.borderStrong;
+
+  const textColor =
+    isPrimary     ? theme.colors.textOnBrand :
+    isDestructive ? "#ffffff" :
+    isAccent      ? "#ffffff" :
+    theme.colors.text;
+
+  const shadowColor =
+    isPrimary  ? theme.colors.brand :
+    isAccent   ? (accentColor || theme.colors.accentCommunity) :
+    "transparent";
 
   const handlePressIn = () => {
-    scale.value = withTiming(0.97, { duration: 120, easing: Easing.out(Easing.cubic) });
+    scale.value = withSpring(0.96, springs.snappy);
   };
 
   const handlePressOut = () => {
-    scale.value = withTiming(1, { duration: 120, easing: Easing.out(Easing.cubic) });
+    scale.value = withSpring(1, springs.snappy);
   };
 
   return (
@@ -61,22 +80,33 @@ export function PrimaryButton({
         styles.button,
         fullWidth && styles.fullWidth,
         {
+          height: sizeConfig.height,
+          borderRadius: sizeConfig.borderRadius,
+          paddingHorizontal: sizeConfig.paddingHorizontal,
           backgroundColor,
-          borderColor: isPrimary || isDestructive ? backgroundColor : theme.colors.border,
-          shadowColor: isPrimary ? theme.colors.brand : theme.colors.shadow,
+          borderColor,
+          shadowColor,
         },
-        isGhost && styles.ghost,
+        (isPrimary || isAccent) && styles.shadow,
         disabled && styles.disabled,
         style,
       ]}
     >
       <View style={styles.content}>
         {loading ? (
-          <ActivityIndicator color={textColor} />
+          <ActivityIndicator color={textColor} size="small" />
         ) : (
           <>
             {icon ? <View style={styles.icon}>{icon}</View> : null}
-            <Text style={[styles.label, { color: textColor }, textStyle]}>{label}</Text>
+            <Text
+              style={[
+                styles.label,
+                { color: textColor, fontSize: sizeConfig.fontSize },
+                textStyle,
+              ]}
+            >
+              {label}
+            </Text>
           </>
         )}
       </View>
@@ -86,38 +116,33 @@ export function PrimaryButton({
 
 const styles = StyleSheet.create({
   button: {
-    minHeight: 52,
-    borderRadius: 16,
+    borderWidth: 1.5,
     overflow: "hidden",
-    borderWidth: 1,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.22,
-    shadowRadius: 16,
-    elevation: 5,
+    alignItems: "center",
+    justifyContent: "center",
   },
   fullWidth: {
     width: "100%",
   },
-  ghost: {
-    borderWidth: 1,
+  shadow: {
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 5,
   },
   disabled: {
-    opacity: 0.55,
+    opacity: 0.45,
   },
   content: {
-    flex: 1,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 18,
     gap: 8,
   },
-  icon: {
-    marginRight: 0,
-  },
+  icon: {},
   label: {
-    fontSize: 15,
     fontWeight: "700",
     fontFamily: "PlusJakartaSans_700Bold",
+    letterSpacing: 0.1,
   },
 });

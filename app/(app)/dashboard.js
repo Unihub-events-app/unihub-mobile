@@ -2,69 +2,64 @@ import { useTheme } from "../../theme/ThemeProvider.js";
 import {
   View,
   Text,
+  TextInput,
   ScrollView,
   StyleSheet,
   Pressable,
   ActivityIndicator,
   Image,
 } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
-import { Plus, Search, X, Lock, Users, SlidersHorizontal } from "lucide-react-native";
+import { Plus, Search, X, Lock, Users, SlidersHorizontal, MapPin, Clock, Heart } from "lucide-react-native";
 import { useEffect, useState, useRef } from "react";
+import Animated, {
+  useSharedValue, useAnimatedStyle,
+  withRepeat, withSequence, withTiming, withSpring,
+  Easing,
+} from "react-native-reanimated";
 import {
   Screen,
-  TextField,
-  PrimaryButton,
   NeuCard,
-  NeuInset,
   EventCard,
-  PageLoader,
+  SkeletonLoader,
+  EmptyState,
 } from "../../components/index.js";
 import { useSessionStore } from "../../lib/auth.js";
 import { API_URL } from "../../lib/config.js";
 import { FilterModal, DEFAULT_FILTERS } from "../../components/FilterModal.js";
+import { radius, spacing, springs } from "../../theme/tokens.js";
 
 const CATEGORIES = ["All", "Near Me", "Today", "Trending", "Tech", "Music", "Sports", "Business", "Art"];
-
 const PRIVATE_CODE_REGEX = /^UHB[A-Z0-9]{4}$/i;
-
-function getDateString() {
-  const now = new Date();
-  const weekdays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-  const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-  return `${weekdays[now.getDay()]}, ${now.getDate()} ${months[now.getMonth()]}`;
-}
+const MONTHS_SHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
 function getGreeting() {
-  const hour = new Date().getHours();
-  if (hour < 12) return "Good Morning";
-  if (hour < 18) return "Good Afternoon";
-  return "Good Evening";
+  const h = new Date().getHours();
+  if (h < 12) return "Good morning";
+  if (h < 18) return "Good afternoon";
+  return "Good evening";
 }
 
 function parseEventDateTime(dateStr, timeStr) {
   if (!dateStr || !timeStr) return null;
-  const dateParts = dateStr.split("/");
-  if (dateParts.length !== 3) return null;
-  const day = parseInt(dateParts[0], 10);
-  const month = parseInt(dateParts[1], 10) - 1;
-  const year = parseInt(dateParts[2], 10);
-  const timeStrTrimmed = timeStr.trim();
+  const parts = dateStr.split("/");
+  if (parts.length !== 3) return null;
+  const [day, month, year] = parts.map(Number);
+  const t = timeStr.trim();
   let hours = 0, minutes = 0;
-  if (timeStrTrimmed.includes("AM") || timeStrTrimmed.includes("PM")) {
-    const [timePart, period] = timeStrTrimmed.split(" ");
-    const [h, m] = timePart.split(":").map((v) => parseInt(v, 10));
+  if (t.includes("AM") || t.includes("PM")) {
+    const [tp, period] = t.split(" ");
+    const [h, m] = tp.split(":").map(Number);
     hours = period === "PM" && h !== 12 ? h + 12 : period === "AM" && h === 12 ? 0 : h;
     minutes = m || 0;
   } else {
-    const [h, m] = timeStrTrimmed.split(":").map((v) => parseInt(v, 10));
-    hours = h;
-    minutes = m || 0;
+    const [h, m] = t.split(":").map(Number);
+    hours = h; minutes = m || 0;
   }
-  return new Date(year, month, day, hours, minutes);
+  return new Date(year, month - 1, day, hours, minutes);
 }
 
-const MONTHS_SHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 function parseDayMonth(dateStr) {
   if (!dateStr) return null;
   const parts = dateStr.split("/");
@@ -72,94 +67,216 @@ function parseDayMonth(dateStr) {
   return { day: parts[0], month: MONTHS_SHORT[parseInt(parts[1]) - 1] || "" };
 }
 
-function EventListRow({ event, theme, forYou }) {
-  const dm = parseDayMonth(event.date);
-  const isFree = event.price === 0 || event.price === "0";
+// ─── Animated live pulse dot ─────────────────────────────────────────────────
+function LivePulse({ color }) {
+  const scale   = useSharedValue(1);
+  const opacity = useSharedValue(1);
+
+  useEffect(() => {
+    scale.value = withRepeat(
+      withSequence(
+        withTiming(1.7, { duration: 800, easing: Easing.out(Easing.ease) }),
+        withTiming(1.0, { duration: 800, easing: Easing.in(Easing.ease) })
+      ), -1, false
+    );
+    opacity.value = withRepeat(
+      withSequence(
+        withTiming(0, { duration: 800 }),
+        withTiming(1, { duration: 800 })
+      ), -1, false
+    );
+  }, []);
+
+  const ringStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+    opacity: opacity.value,
+  }));
+
   return (
-    <Pressable
-      onPress={() => router.push(`/event/${event.event_id}`)}
-      style={({ pressed }) => [
-        {
-          flexDirection: "row", alignItems: "center", gap: 14,
-          padding: 12, borderRadius: 18, marginBottom: 10,
-          backgroundColor: theme.colors.surface,
-          borderWidth: 1, borderColor: theme.colors.border,
-          opacity: pressed ? 0.85 : 1,
-        },
-      ]}
-    >
-      {/* Thumbnail */}
-      <View style={{ width: 72, height: 72, borderRadius: 14, overflow: "hidden", flexShrink: 0 }}>
-        {event.profile ? (
-          <Image source={{ uri: event.profile }} style={{ width: "100%", height: "100%" }} resizeMode="cover" />
-        ) : (
-          <View style={{ width: "100%", height: "100%", backgroundColor: theme.colors.navSurface, alignItems: "center", justifyContent: "center" }}>
-            <Text style={{ fontSize: 24 }}>🎉</Text>
-          </View>
-        )}
-      </View>
-
-      {/* Info */}
-      <View style={{ flex: 1, minWidth: 0 }}>
-        <Text style={{ fontSize: 15, fontWeight: "700", fontFamily: "SpaceGrotesk_700Bold", color: theme.colors.text, marginBottom: 3 }} numberOfLines={1}>
-          {event.name}
-        </Text>
-        <Text style={{ fontSize: 12, color: theme.colors.textSubtle, fontFamily: "PlusJakartaSans_400Regular", marginBottom: 6 }} numberOfLines={1}>
-          {event.venue}
-        </Text>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-          {dm ? (
-            <Text style={{ fontSize: 11, fontWeight: "700", color: theme.colors.brand, fontFamily: "PlusJakartaSans_700Bold" }}>
-              {dm.day} {dm.month}
-            </Text>
-          ) : null}
-          {event.time ? <Text style={{ fontSize: 11, color: theme.colors.textSubtle }}>· {event.time}</Text> : null}
-          {forYou ? (
-            <View style={{ paddingHorizontal: 7, paddingVertical: 2, borderRadius: 6, backgroundColor: "rgba(217,119,6,0.14)" }}>
-              <Text style={{ fontSize: 9, fontWeight: "800", color: "#D97706", letterSpacing: 0.5 }}>FOR YOU</Text>
-            </View>
-          ) : null}
-        </View>
-      </View>
-
-      {/* Price */}
-      <View style={{
-        paddingVertical: 5, paddingHorizontal: 10, borderRadius: 10,
-        backgroundColor: isFree ? theme.colors.brandTint : theme.colors.navSurface,
-      }}>
-        <Text style={{
-          fontSize: 11, fontWeight: "800", fontFamily: "PlusJakartaSans_700Bold",
-          color: isFree ? theme.colors.brand : "#F0EFE0",
-        }}>
-          {isFree ? "Free" : `₦${parseInt(event.price || 0).toLocaleString()}`}
-        </Text>
-      </View>
-    </Pressable>
+    <View style={{ width: 14, height: 14, alignItems: "center", justifyContent: "center" }}>
+      <Animated.View
+        style={[
+          StyleSheet.absoluteFill,
+          { borderRadius: 7, backgroundColor: color, opacity: 0.3 },
+          ringStyle,
+        ]}
+      />
+      <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: color }} />
+    </View>
   );
 }
 
+// ─── Event list row ──────────────────────────────────────────────────────────
+function EventListRow({ event, theme, forYou }) {
+  const dm    = parseDayMonth(event.date);
+  const isFree = event.price === 0 || event.price === "0" || !event.price;
+  const scale = useSharedValue(1);
+
+  const animStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+
+  return (
+    <Animated.View style={animStyle}>
+      <Pressable
+        onPress={() => router.push(`/event/${event.event_id}`)}
+        onPressIn={() => { scale.value = withSpring(0.98, springs.snappy); }}
+        onPressOut={() => { scale.value = withSpring(1.00, springs.snappy); }}
+        style={({ pressed }) => [
+          styles(theme).listRow,
+          pressed && { backgroundColor: theme.colors.surfaceMuted },
+        ]}
+      >
+        {/* Thumbnail */}
+        <View style={styles(theme).listThumb}>
+          {event.profile ? (
+            <Image source={{ uri: event.profile }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+          ) : (
+            <View style={[StyleSheet.absoluteFill, { backgroundColor: theme.colors.surfaceMuted, alignItems: "center", justifyContent: "center" }]}>
+              <Text style={{ fontSize: 22 }}>🎉</Text>
+            </View>
+          )}
+          {forYou && (
+            <View style={styles(theme).forYouDot} />
+          )}
+        </View>
+
+        {/* Info */}
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <Text style={styles(theme).listTitle} numberOfLines={1}>{event.name}</Text>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: 3 }}>
+            <MapPin size={11} color={theme.colors.textSubtle} />
+            <Text style={styles(theme).listVenue} numberOfLines={1}>{event.venue}</Text>
+          </View>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 6 }}>
+            {dm ? (
+              <View style={styles(theme).dateBadge}>
+                <Text style={styles(theme).dateBadgeText}>{dm.day} {dm.month}</Text>
+              </View>
+            ) : null}
+            {event.time ? (
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 3 }}>
+                <Clock size={10} color={theme.colors.textSubtle} />
+                <Text style={styles(theme).listTime}>{event.time}</Text>
+              </View>
+            ) : null}
+          </View>
+        </View>
+
+        {/* Price */}
+        <View style={[
+          styles(theme).priceBadge,
+          { backgroundColor: isFree ? theme.colors.brandTint : theme.colors.navSurface },
+        ]}>
+          <Text style={[
+            styles(theme).priceText,
+            { color: isFree ? theme.colors.brand : theme.colors.textOnDark },
+          ]}>
+            {isFree ? "Free" : `₦${parseInt(event.price || 0).toLocaleString()}`}
+          </Text>
+        </View>
+      </Pressable>
+    </Animated.View>
+  );
+}
+
+// ─── Hero featured card ──────────────────────────────────────────────────────
+function HeroCard({ event, theme }) {
+  const isFree  = event.price === 0 || event.price === "0" || !event.price;
+  const scale   = useSharedValue(1);
+  const animStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+
+  return (
+    <Animated.View style={[styles(theme).heroWrap, animStyle]}>
+      <Pressable
+        onPress={() => router.push(`/event/${event.event_id}`)}
+        onPressIn={() => { scale.value = withSpring(0.97, springs.smooth); }}
+        onPressOut={() => { scale.value = withSpring(1.00, springs.smooth); }}
+        style={styles(theme).heroCard}
+      >
+        {/* Image */}
+        {event.profile ? (
+          <Image source={{ uri: event.profile }} style={StyleSheet.absoluteFill} resizeMode="cover"
+            onError={() => {}} />
+        ) : (
+          <View style={[StyleSheet.absoluteFill, { backgroundColor: theme.colors.navSurface, alignItems: "center", justifyContent: "center" }]}>
+            <Text style={{ fontSize: 56 }}>🎉</Text>
+          </View>
+        )}
+
+        {/* Gradient overlay */}
+        <LinearGradient
+          colors={["transparent", "rgba(0,0,0,0.20)", "rgba(0,0,0,0.78)"]}
+          style={StyleSheet.absoluteFill}
+          locations={[0.3, 0.55, 1]}
+        />
+
+        {/* Top badges */}
+        <View style={styles(theme).heroTopRow}>
+          {event.isPremium && (
+            <View style={styles(theme).premiumBadge}>
+              <Text style={styles(theme).premiumBadgeText}>⭐ Premium</Text>
+            </View>
+          )}
+          <Pressable
+            style={styles(theme).heartBtn}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            accessibilityLabel="Save event"
+          >
+            <Heart size={16} color="#fff" />
+          </Pressable>
+        </View>
+
+        {/* Content */}
+        <View style={styles(theme).heroContent}>
+          {event.category ? (
+            <View style={styles(theme).heroCatBadge}>
+              <Text style={styles(theme).heroCatText}>{event.category}</Text>
+            </View>
+          ) : null}
+          <Text style={styles(theme).heroTitle} numberOfLines={2}>{event.name}</Text>
+          <View style={styles(theme).heroMeta}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 5, flex: 1 }}>
+              <MapPin size={12} color="rgba(255,255,255,0.75)" />
+              <Text style={styles(theme).heroLocation} numberOfLines={1}>{event.venue}</Text>
+            </View>
+            <View style={[
+              styles(theme).heroPriceBadge,
+              { backgroundColor: isFree ? theme.colors.brand : "rgba(255,255,255,0.18)" },
+            ]}>
+              <Text style={[
+                styles(theme).heroPriceText,
+                { color: isFree ? theme.colors.textOnBrand : "#fff" },
+              ]}>
+                {isFree ? "Free" : `₦${parseInt(event.price || 0).toLocaleString()}`}
+              </Text>
+            </View>
+          </View>
+        </View>
+      </Pressable>
+    </Animated.View>
+  );
+}
+
+// ─── Dashboard screen ────────────────────────────────────────────────────────
 export default function DashboardScreen() {
   const { theme } = useTheme();
-  const styles = getStyles(theme);
   const token = useSessionStore((state) => state.userToken);
-  const [loading, setLoading] = useState(true);
-  const [allEvents, setAllEvents] = useState([]);
-  const [userName, setUserName] = useState("Explorer");
-  const [userInterests, setUserInterests] = useState([]);
-  const [keyword, setKeyword] = useState("");
-  const [activeCategory, setActiveCategory] = useState("All");
-  const [privateCodeEvent, setPrivateCodeEvent] = useState(null);
-  const [privateCodeError, setPrivateCodeError] = useState("");
-  const [fetchingCode, setFetchingCode] = useState(false);
-  const [userResults, setUserResults] = useState([]);
-  const [fetchingUsers, setFetchingUsers] = useState(false);
-  const [userCountry, setUserCountry] = useState("");
-  const [userUniversity, setUserUniversity] = useState("");
-  const [filters, setFilters] = useState(DEFAULT_FILTERS);
+  const [loading,         setLoading]         = useState(true);
+  const [allEvents,       setAllEvents]       = useState([]);
+  const [userName,        setUserName]        = useState("Explorer");
+  const [userInterests,   setUserInterests]   = useState([]);
+  const [keyword,         setKeyword]         = useState("");
+  const [activeCategory,  setActiveCategory]  = useState("All");
+  const [privateCodeEvent,  setPrivateCodeEvent]  = useState(null);
+  const [privateCodeError,  setPrivateCodeError]  = useState("");
+  const [fetchingCode,      setFetchingCode]      = useState(false);
+  const [userResults,       setUserResults]       = useState([]);
+  const [fetchingUsers,     setFetchingUsers]     = useState(false);
+  const [userCountry,       setUserCountry]       = useState("");
+  const [userUniversity,    setUserUniversity]    = useState("");
+  const [filters,           setFilters]           = useState(DEFAULT_FILTERS);
   const [filterModalVisible, setFilterModalVisible] = useState(false);
   const codeSearchTimeout = useRef(null);
   const userSearchTimeout = useRef(null);
-
   const USER_SEARCH_REGEX = /^@/;
 
   useEffect(() => {
@@ -172,17 +289,14 @@ export default function DashboardScreen() {
           });
           if (userRes.ok) {
             const data = await userRes.json();
-            if (data.firstName) setUserName(data.firstName);
-            if (data.interests) setUserInterests(data.interests);
-            if (data.country) setUserCountry(data.country);
+            if (data.firstName)  setUserName(data.firstName);
+            if (data.interests)  setUserInterests(data.interests);
+            if (data.country)    setUserCountry(data.country);
             if (data.university) setUserUniversity(data.university);
           }
         }
         const eventsRes = await fetch(`${API_URL}/event/getallevents`);
-        if (eventsRes.ok) {
-          const data = await eventsRes.json();
-          setAllEvents(data);
-        }
+        if (eventsRes.ok) setAllEvents(await eventsRes.json());
       } catch (err) {
         console.error("Fetch error:", err);
       } finally {
@@ -192,7 +306,6 @@ export default function DashboardScreen() {
     fetchData();
   }, [token]);
 
-  // Auto-detect private event code in search input
   useEffect(() => {
     const trimmed = keyword.trim().toUpperCase();
     if (PRIVATE_CODE_REGEX.test(trimmed)) {
@@ -205,19 +318,10 @@ export default function DashboardScreen() {
           const res = await fetch(`${API_URL}/event/access/${trimmed}`, {
             headers: token ? { Authorization: `Bearer ${token}` } : {},
           });
-          if (res.ok) {
-            const data = await res.json();
-            setPrivateCodeEvent(data);
-            setPrivateCodeError("");
-          } else {
-            setPrivateCodeEvent(null);
-            setPrivateCodeError("No private event found for this code.");
-          }
-        } catch {
-          setPrivateCodeError("Failed to look up event code.");
-        } finally {
-          setFetchingCode(false);
-        }
+          if (res.ok) { setPrivateCodeEvent(await res.json()); setPrivateCodeError(""); }
+          else        { setPrivateCodeEvent(null); setPrivateCodeError("No private event found for this code."); }
+        } catch { setPrivateCodeError("Failed to look up event code."); }
+        finally  { setFetchingCode(false); }
       }, 600);
     } else {
       setPrivateCodeEvent(null);
@@ -226,13 +330,9 @@ export default function DashboardScreen() {
     return () => clearTimeout(codeSearchTimeout.current);
   }, [keyword]);
 
-  // User search — triggers when query starts with @
   useEffect(() => {
     const trimmed = keyword.trim();
-    if (!USER_SEARCH_REGEX.test(trimmed) || trimmed.length < 2) {
-      setUserResults([]);
-      return;
-    }
+    if (!USER_SEARCH_REGEX.test(trimmed) || trimmed.length < 2) { setUserResults([]); return; }
     const query = trimmed.slice(1);
     clearTimeout(userSearchTimeout.current);
     userSearchTimeout.current = setTimeout(async () => {
@@ -252,284 +352,204 @@ export default function DashboardScreen() {
   }, [keyword]);
 
   const now = new Date();
-  const isCodeMode = PRIVATE_CODE_REGEX.test(keyword.trim().toUpperCase());
+  const isCodeMode       = PRIVATE_CODE_REGEX.test(keyword.trim().toUpperCase());
   const isUserSearchMode = USER_SEARCH_REGEX.test(keyword.trim()) && keyword.trim().length >= 2;
+  const hasActiveFilters = filters.categories.length > 0 ||
+    [filters.date, filters.price, filters.sort].some((v, i) => v !== ["all", "all", "soonest"][i]);
 
-  const applyFilters = (events) => {
-    return events.filter((event) => {
-      // Keyword
-      const kw = keyword.toLowerCase();
-      if (kw && !event.name?.toLowerCase().includes(kw) && !event.category?.toLowerCase().includes(kw)) return false;
-
-      // Category pill
-      if (activeCategory === "Today") {
-        const start = parseEventDateTime(event.date, event.time);
-        if (!start) return false;
-        const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        return start >= todayStart && start < new Date(todayStart.getTime() + 86400000);
-      }
-      if (activeCategory === "Near Me") {
-        if (!userCountry && !userUniversity) return true;
-        const venue = (event.venue || "").toLowerCase();
-        const country = (event.country || "").toLowerCase();
-        const uni = (event.university || "").toLowerCase();
-        return (userCountry && (country.includes(userCountry.toLowerCase()) || venue.includes(userCountry.toLowerCase()))) ||
-          (userUniversity && (uni.includes(userUniversity.toLowerCase()) || venue.includes(userUniversity.toLowerCase())));
-      }
-      if (activeCategory !== "All" && activeCategory !== "Trending") {
-        if (!event.category?.toLowerCase().includes(activeCategory.toLowerCase())) return false;
-      }
-
-      // Filter modal filters
-      if (filters.price === "free" && !(event.price === 0 || event.price === "0" || !event.price)) return false;
-      if (filters.price === "paid" && (event.price === 0 || event.price === "0" || !event.price)) return false;
-
-      if (filters.categories.length > 0) {
-        const cat = (event.category || "").toLowerCase();
-        if (!filters.categories.some((c) => cat.includes(c.toLowerCase()))) return false;
-      }
-
-      if (filters.date !== "all") {
-        const start = parseEventDateTime(event.date, event.time);
-        if (!start) return false;
-        const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        if (filters.date === "today") {
-          if (!(start >= todayStart && start < new Date(todayStart.getTime() + 86400000))) return false;
-        } else if (filters.date === "week") {
-          const weekEnd = new Date(todayStart.getTime() + 7 * 86400000);
-          if (!(start >= todayStart && start < weekEnd)) return false;
-        } else if (filters.date === "month") {
-          const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-          if (!(start >= todayStart && start < monthEnd)) return false;
-        }
-      }
-
-      return true;
-    });
-  };
+  const applyFilters = (events) => events.filter((event) => {
+    const kw = keyword.toLowerCase();
+    if (kw && !event.name?.toLowerCase().includes(kw) && !event.category?.toLowerCase().includes(kw)) return false;
+    if (activeCategory === "Today") {
+      const start = parseEventDateTime(event.date, event.time);
+      if (!start) return false;
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      return start >= todayStart && start < new Date(todayStart.getTime() + 86400000);
+    }
+    if (activeCategory === "Near Me") {
+      if (!userCountry && !userUniversity) return true;
+      const venue = (event.venue || "").toLowerCase();
+      const country = (event.country || "").toLowerCase();
+      const uni = (event.university || "").toLowerCase();
+      return (userCountry && (country.includes(userCountry.toLowerCase()) || venue.includes(userCountry.toLowerCase()))) ||
+        (userUniversity && (uni.includes(userUniversity.toLowerCase()) || venue.includes(userUniversity.toLowerCase())));
+    }
+    if (activeCategory !== "All" && activeCategory !== "Trending") {
+      if (!event.category?.toLowerCase().includes(activeCategory.toLowerCase())) return false;
+    }
+    if (filters.price === "free" && !(event.price === 0 || event.price === "0" || !event.price)) return false;
+    if (filters.price === "paid" && (event.price === 0 || event.price === "0" || !event.price)) return false;
+    if (filters.categories.length > 0) {
+      const cat = (event.category || "").toLowerCase();
+      if (!filters.categories.some((c) => cat.includes(c.toLowerCase()))) return false;
+    }
+    if (filters.date !== "all") {
+      const start = parseEventDateTime(event.date, event.time);
+      if (!start) return false;
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      if (filters.date === "today") { if (!(start >= todayStart && start < new Date(todayStart.getTime() + 86400000))) return false; }
+      else if (filters.date === "week") { if (!(start >= todayStart && start < new Date(todayStart.getTime() + 7 * 86400000))) return false; }
+      else if (filters.date === "month") { if (!(start >= todayStart && start < new Date(now.getFullYear(), now.getMonth() + 1, 1))) return false; }
+    }
+    return true;
+  });
 
   const applySorting = (events) => {
-    if (filters.sort === "popular") {
-      return [...events].sort((a, b) => (b.attendees?.length || 0) - (a.attendees?.length || 0));
-    }
-    if (filters.sort === "price_asc") {
-      return [...events].sort((a, b) => (Number(a.price) || 0) - (Number(b.price) || 0));
-    }
-    if (filters.sort === "price_desc") {
-      return [...events].sort((a, b) => (Number(b.price) || 0) - (Number(a.price) || 0));
-    }
+    if (filters.sort === "popular")    return [...events].sort((a, b) => (b.attendees?.length || 0) - (a.attendees?.length || 0));
+    if (filters.sort === "price_asc")  return [...events].sort((a, b) => (Number(a.price) || 0) - (Number(b.price) || 0));
+    if (filters.sort === "price_desc") return [...events].sort((a, b) => (Number(b.price) || 0) - (Number(a.price) || 0));
     return events;
   };
 
   const filteredEvents = isCodeMode ? [] : applyFilters(allEvents);
+  const matchesInterests = (e) => userInterests.length > 0 && e.category && userInterests.includes(e.category);
+  const sortByInterests = (events) => [...events.filter(matchesInterests), ...events.filter((e) => !matchesInterests(e))];
 
-  const premiumEvents = allEvents.filter((e) => {
-    if (!e.isPremium) return false;
-    const eventStart = parseEventDateTime(e.date, e.time);
-    if (!eventStart) return true;
-    return now < eventStart;
-  });
+  const premiumEvents   = allEvents.filter((e) => { if (!e.isPremium) return false; const s = parseEventDateTime(e.date, e.time); return !s || now < s; });
+  const liveEvents      = filteredEvents.filter((e) => { const s = parseEventDateTime(e.date, e.time); if (!s) return false; return now >= s && now <= new Date(s.getTime() + 3 * 3600000); });
+  const upcomingEvents  = filteredEvents.filter((e) => { const s = parseEventDateTime(e.date, e.time); return s ? now < s : false; });
+  const trendingEvents  = activeCategory === "Trending" ? [...filteredEvents].sort((a, b) => (b.attendees?.length || 0) - (a.attendees?.length || 0)).slice(0, 10) : [];
 
-  const liveEvents = filteredEvents.filter((e) => {
-    const eventStart = parseEventDateTime(e.date, e.time);
-    if (!eventStart) return false;
-    const eventEnd = new Date(eventStart.getTime() + 3 * 60 * 60 * 1000);
-    return now >= eventStart && now <= eventEnd;
-  });
+  const sortedLive     = applySorting(sortByInterests(liveEvents));
+  const sortedUpcoming = applySorting(sortByInterests(upcomingEvents));
+  const featured       = premiumEvents[0] || sortedUpcoming[0];
+  const S = styles(theme);
 
-  const upcomingEvents = filteredEvents.filter((e) => {
-    const eventStart = parseEventDateTime(e.date, e.time);
-    if (!eventStart) return false;
-    return now < eventStart;
-  });
-
-  const trendingEvents = activeCategory === "Trending"
-    ? [...filteredEvents].sort((a, b) => (b.attendees?.length || 0) - (a.attendees?.length || 0)).slice(0, 10)
-    : [];
-
-  const matchesInterests = (event) =>
-    userInterests.length > 0 && event.category && userInterests.includes(event.category);
-
-  const sortByInterests = (events) => {
-    const matching = events.filter(matchesInterests);
-    const others = events.filter((e) => !matchesInterests(e));
-    return [...matching, ...others];
-  };
-
-  const sortedLiveEvents = applySorting(sortByInterests(liveEvents));
-  const sortedUpcomingEvents = applySorting(sortByInterests(upcomingEvents));
-
-  if (loading) return <PageLoader />;
+  // Loading state — skeleton
+  if (loading) {
+    return (
+      <Screen padded>
+        <View style={S.headerRow}>
+          <View>
+            <View style={{ width: 100, height: 12, borderRadius: radius.xs, backgroundColor: theme.colors.surfaceMuted, marginBottom: 8 }} />
+            <View style={{ width: 180, height: 28, borderRadius: radius.sm, backgroundColor: theme.colors.surfaceMuted }} />
+          </View>
+          <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: theme.colors.surfaceMuted }} />
+        </View>
+        <View style={{ width: "100%", height: 52, borderRadius: radius.xxl, backgroundColor: theme.colors.surfaceMuted, marginBottom: 16 }} />
+        <SkeletonLoader variant="card" count={1} />
+        <View style={{ marginTop: 24 }}>
+          <SkeletonLoader variant="row" count={3} style={{ gap: 12 }} />
+        </View>
+      </Screen>
+    );
+  }
 
   return (
-    <Screen padded={true}>
-      {/* Header */}
-      <View style={styles.headerRow}>
-        <View>
-          <Text style={styles.dateText}>{getDateString()}</Text>
-          <Text style={styles.greetingText}>
-            {getGreeting()},{" "}
-            <Text style={styles.userNameText}>{userName}</Text>
-          </Text>
+    <Screen padded>
+      {/* ── Header ── */}
+      <View style={S.headerRow}>
+        <View style={{ flex: 1, marginRight: 12 }}>
+          <Text style={S.greetingLabel}>{getGreeting()},</Text>
+          <Text style={S.greetingName} numberOfLines={1}>{userName} 👋</Text>
+          {sortedUpcoming.length > 0 && (
+            <Text style={S.eventStat}>
+              <Text style={{ color: theme.colors.brand, fontWeight: "700" }}>{sortedUpcoming.length}</Text>
+              {" upcoming event{sortedUpcoming.length === 1 ? '' : 's'}"}
+            </Text>
+          )}
         </View>
         <Pressable
-          style={styles.createBtn}
+          style={S.createBtn}
           onPress={() => router.push("/(app)/eventform")}
+          accessibilityLabel="Create event"
         >
-          <Plus size={18} color="#1A1A14" strokeWidth={2.5} />
+          <Plus size={20} color={theme.colors.textOnBrand} strokeWidth={2.5} />
         </Pressable>
       </View>
 
-      {/* Search Bar */}
-      <View style={styles.searchRow}>
-        <View style={styles.searchInputWrap}>
-          <Search size={17} color={theme.colors.textSubtle} style={styles.searchIcon} />
-          <TextField
-            placeholder="Search events, @users, or a private code..."
+      {/* ── Search ── */}
+      <View style={S.searchRow}>
+        <View style={S.searchWrap}>
+          <Search size={17} color={theme.colors.textSubtle} />
+          <TextInput
+            placeholder="Search events, @users, or a private code…"
+            placeholderTextColor={theme.colors.textSubtle}
             value={keyword}
             onChangeText={setKeyword}
-            containerStyle={styles.searchField}
-            style={styles.searchFieldInput}
+            style={S.searchInput}
           />
           {keyword.length > 0 && (
-            <Pressable onPress={() => setKeyword("")} style={styles.clearBtn}>
-              <X size={15} color={theme.colors.textSubtle} />
+            <Pressable
+              onPress={() => setKeyword("")}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              accessibilityLabel="Clear search"
+            >
+              <X size={16} color={theme.colors.textSubtle} />
             </Pressable>
           )}
         </View>
-        {/* Filter button */}
         <Pressable
           onPress={() => setFilterModalVisible(true)}
-          style={[
-            styles.filterBtn,
-            {
-              backgroundColor: [filters.date, filters.price, filters.sort].some((v, i) => v !== ["all", "all", "soonest"][i]) || filters.categories.length > 0
-                ? theme.colors.brand
-                : theme.colors.surfaceMuted,
-              borderColor: theme.colors.border,
-            },
-          ]}
+          style={[S.filterBtn, hasActiveFilters && { backgroundColor: theme.colors.brand }]}
+          accessibilityLabel="Filter events"
         >
-          <SlidersHorizontal
-            size={18}
-            color={[filters.date, filters.price, filters.sort].some((v, i) => v !== ["all", "all", "soonest"][i]) || filters.categories.length > 0
-              ? "#1A1A14"
-              : theme.colors.textMuted}
-          />
+          <SlidersHorizontal size={18} color={hasActiveFilters ? theme.colors.textOnBrand : theme.colors.textMuted} />
         </Pressable>
       </View>
 
-      {/* Category pills */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.categoryRow}
-      >
-        {CATEGORIES.map((cat) => (
-          <Pressable
-            key={cat}
-            style={[
-              styles.categoryPill,
-              activeCategory === cat && styles.categoryPillActive,
-            ]}
-            onPress={() => setActiveCategory(cat)}
-          >
-            <Text
-              style={[
-                styles.categoryPillText,
-                activeCategory === cat && styles.categoryPillTextActive,
-              ]}
-            >
-              {cat}
-            </Text>
-          </Pressable>
-        ))}
-      </ScrollView>
-
-      {/* Featured Event Hero */}
-      {!isCodeMode && !isUserSearchMode && (premiumEvents[0] || sortedUpcomingEvents[0]) && (
-        (() => {
-          const featured = premiumEvents[0] || sortedUpcomingEvents[0];
-          const isFree = featured.price === 0 || featured.price === "0";
+      {/* ── Category pills ── */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={S.pillRow}>
+        {CATEGORIES.map((cat) => {
+          const active = activeCategory === cat;
           return (
             <Pressable
-              style={({ pressed }) => [styles.featuredCard, { opacity: pressed ? 0.92 : 1 }]}
-              onPress={() => router.push(`/event/${featured.event_id}`)}
+              key={cat}
+              style={[S.pill, active && S.pillActive]}
+              onPress={() => setActiveCategory(cat)}
             >
-              {featured.profile ? (
-                <Image source={{ uri: featured.profile }} style={StyleSheet.absoluteFill} resizeMode="cover" />
-              ) : (
-                <View style={[StyleSheet.absoluteFill, { backgroundColor: theme.colors.navSurface, alignItems: "center", justifyContent: "center" }]}>
-                  <Text style={{ fontSize: 48 }}>🎉</Text>
-                </View>
-              )}
-              <View style={styles.featuredOverlay} />
-              <View style={styles.featuredContent}>
-                {featured.isPremium && (
-                  <View style={styles.featuredBadge}>
-                    <Text style={styles.featuredBadgeText}>⭐ Premium</Text>
-                  </View>
-                )}
-                <Text style={styles.featuredTitle} numberOfLines={2}>{featured.name}</Text>
-                <View style={styles.featuredMeta}>
-                  <Text style={styles.featuredDate}>{featured.date} · {featured.time}</Text>
-                  <View style={[styles.featuredPrice, { backgroundColor: isFree ? theme.colors.brand : "rgba(255,255,255,0.18)" }]}>
-                    <Text style={[styles.featuredPriceText, { color: isFree ? "#1A1A14" : "#fff" }]}>
-                      {isFree ? "Free" : `₦${parseInt(featured.price || 0).toLocaleString()}`}
-                    </Text>
-                  </View>
-                </View>
-              </View>
+              <Text style={[S.pillText, active && S.pillTextActive]}>{cat}</Text>
             </Pressable>
           );
-        })()
+        })}
+      </ScrollView>
+
+      {/* ── Hero card ── */}
+      {!isCodeMode && !isUserSearchMode && featured && (
+        <View style={{ marginBottom: spacing.xxl }}>
+          <HeroCard event={featured} theme={theme} />
+        </View>
       )}
 
-      {/* Private code result */}
+      {/* ── Private code result ── */}
       {isCodeMode && (
-        <View style={styles.privateResultSection}>
-          <View style={styles.privateResultHeader}>
-            <Lock size={15} color={theme.colors.brand} />
-            <Text style={styles.privateResultLabel}>Private Event</Text>
+        <View style={S.section}>
+          <View style={S.sectionHeader}>
+            <Lock size={14} color={theme.colors.brand} />
+            <Text style={S.sectionTitle}>Private Event</Text>
           </View>
           {fetchingCode && (
-            <View style={styles.privateLoading}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 12 }}>
               <ActivityIndicator size="small" color={theme.colors.brand} />
-              <Text style={styles.privateLoadingText}>Looking up code…</Text>
+              <Text style={{ fontSize: 13, color: theme.colors.textSubtle, fontFamily: "PlusJakartaSans_400Regular" }}>Looking up code…</Text>
             </View>
           )}
           {!fetchingCode && privateCodeError ? (
-            <Text style={styles.privateErrorText}>{privateCodeError}</Text>
+            <Text style={{ fontSize: 13, color: theme.colors.error, fontFamily: "PlusJakartaSans_400Regular" }}>{privateCodeError}</Text>
           ) : null}
           {!fetchingCode && privateCodeEvent ? (
             <EventCard
-              title={privateCodeEvent.name}
-              date={privateCodeEvent.date}
-              time={privateCodeEvent.time}
-              location={privateCodeEvent.venue}
-              imageSrc={privateCodeEvent.profile}
-              eventId={privateCodeEvent.event_id}
-              price={privateCodeEvent.price}
-              category={privateCodeEvent.category}
+              title={privateCodeEvent.name} date={privateCodeEvent.date}
+              time={privateCodeEvent.time} location={privateCodeEvent.venue}
+              imageSrc={privateCodeEvent.profile} eventId={privateCodeEvent.event_id}
+              price={privateCodeEvent.price} category={privateCodeEvent.category}
               isPremium={privateCodeEvent.isPremium}
             />
           ) : null}
         </View>
       )}
 
-      {/* User search results */}
+      {/* ── User search results ── */}
       {isUserSearchMode && (
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
+        <View style={S.section}>
+          <View style={S.sectionHeader}>
             <Users size={14} color={theme.colors.brand} />
-            <Text style={[styles.sectionTitle, { marginLeft: 6 }]}>People</Text>
+            <Text style={S.sectionTitle}>People</Text>
           </View>
           {fetchingUsers ? (
-            <ActivityIndicator size="small" color={theme.colors.brand} style={{ marginTop: 12 }} />
+            <SkeletonLoader variant="row" count={3} />
           ) : userResults.length === 0 ? (
-            <NeuInset style={styles.emptyBox}>
-              <Text style={styles.emptyText}>No users found for "{keyword.slice(1)}"</Text>
-            </NeuInset>
+            <EmptyState emoji="👤" title="No users found" subtitle={`No results for "${keyword.slice(1)}"`} />
           ) : (
             <View style={{ gap: 10 }}>
               {userResults.map((user) => {
@@ -538,21 +558,19 @@ export default function DashboardScreen() {
                   <Pressable
                     key={user._id || user.user_id || user.username}
                     onPress={() => router.push(`/users/u/${user._id || user.user_id}`)}
-                    style={[styles.userRow, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
+                    style={[S.userRow, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
                   >
                     {user.avatar ? (
-                      <Image source={{ uri: user.avatar }} style={styles.userAvatar} />
+                      <Image source={{ uri: user.avatar }} style={S.userAvatar} />
                     ) : (
-                      <View style={[styles.userAvatar, { backgroundColor: theme.colors.brandTint, alignItems: "center", justifyContent: "center" }]}>
-                        <Text style={[styles.userAvatarInitials, { color: theme.colors.brand }]}>{initials}</Text>
+                      <View style={[S.userAvatar, { backgroundColor: theme.colors.brandTint, alignItems: "center", justifyContent: "center" }]}>
+                        <Text style={{ fontSize: 15, fontWeight: "700", color: theme.colors.brand }}>{initials}</Text>
                       </View>
                     )}
                     <View style={{ flex: 1 }}>
-                      <Text style={[styles.userDisplayName, { color: theme.colors.text }]}>{user.displayName || user.username}</Text>
-                      <Text style={[styles.userUsername, { color: theme.colors.textSubtle }]}>@{user.username}</Text>
-                      {user.university ? (
-                        <Text style={[styles.userMeta, { color: theme.colors.textMuted }]}>{user.university}</Text>
-                      ) : null}
+                      <Text style={[S.userDisplayName, { color: theme.colors.text }]}>{user.displayName || user.username}</Text>
+                      <Text style={[S.userUsername,    { color: theme.colors.textSubtle }]}>@{user.username}</Text>
+                      {user.university ? <Text style={{ fontSize: 11, color: theme.colors.textMuted, fontFamily: "PlusJakartaSans_400Regular", marginTop: 2, lineHeight: 15 }}>{user.university}</Text> : null}
                     </View>
                   </Pressable>
                 );
@@ -562,21 +580,17 @@ export default function DashboardScreen() {
         </View>
       )}
 
-      {/* Trending (if active) */}
+      {/* ── Trending ── */}
       {!isCodeMode && !isUserSearchMode && activeCategory === "Trending" && (
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Trending Now 🔥</Text>
-            <View style={styles.countBadge}>
-              <Text style={styles.countBadgeText}>{trendingEvents.length}</Text>
-            </View>
+        <View style={S.section}>
+          <View style={S.sectionHeader}>
+            <Text style={S.sectionTitle}>Trending Now 🔥</Text>
+            <View style={S.countPill}><Text style={S.countPillText}>{trendingEvents.length}</Text></View>
           </View>
           {trendingEvents.length === 0 ? (
-            <NeuInset style={styles.emptyBox}>
-              <Text style={styles.emptyText}>No trending events right now.</Text>
-            </NeuInset>
+            <EmptyState emoji="🔥" title="Nothing trending yet" subtitle="Check back soon!" />
           ) : (
-            <View>
+            <View style={{ gap: 10 }}>
               {trendingEvents.map((event) => (
                 <EventListRow key={event.event_id} event={event} theme={theme} forYou={matchesInterests(event)} />
               ))}
@@ -585,34 +599,22 @@ export default function DashboardScreen() {
         </View>
       )}
 
-      {/* Premium Picks (only when not in code/user search/trending/near-me mode) */}
+      {/* ── Premium picks ── */}
       {!isCodeMode && !isUserSearchMode && activeCategory !== "Trending" && activeCategory !== "Near Me" && (
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Premium Picks ⭐</Text>
+        <View style={S.section}>
+          <View style={S.sectionHeader}>
+            <Text style={S.sectionTitle}>Premium Picks ⭐</Text>
           </View>
           {premiumEvents.length === 0 ? (
-            <NeuInset style={styles.emptyBox}>
-              <Text style={styles.emptyText}>No premium events yet.</Text>
-            </NeuInset>
+            <EmptyState emoji="⭐" title="No premium events yet" subtitle="They'll show up here when they're live." />
           ) : (
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ gap: 12, paddingRight: 4 }}
-            >
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingRight: 4 }}>
               {premiumEvents.map((event) => (
                 <View key={event.event_id} style={{ width: 220 }}>
                   <EventCard
-                    title={event.name}
-                    date={event.date}
-                    time={event.time}
-                    location={event.venue}
-                    imageSrc={event.profile}
-                    eventId={event.event_id}
-                    price={event.price}
-                    category={event.category}
-                    isPremium
+                    title={event.name} date={event.date} time={event.time}
+                    location={event.venue} imageSrc={event.profile} eventId={event.event_id}
+                    price={event.price} category={event.category} isPremium
                   />
                 </View>
               ))}
@@ -621,38 +623,20 @@ export default function DashboardScreen() {
         </View>
       )}
 
-      {/* Live Now */}
-      {!isCodeMode && !isUserSearchMode && sortedLiveEvents.length > 0 && (
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Live Now</Text>
-            <View style={styles.liveDotContainer}>
-              <View style={styles.liveDotOuter} />
-              <View style={styles.liveDot} />
-            </View>
+      {/* ── Live Now ── */}
+      {!isCodeMode && !isUserSearchMode && sortedLive.length > 0 && (
+        <View style={S.section}>
+          <View style={S.sectionHeader}>
+            <LivePulse color={theme.colors.error} />
+            <Text style={S.sectionTitle}>Live Now</Text>
           </View>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ gap: 12, paddingRight: 4 }}
-          >
-            {sortedLiveEvents.map((event) => (
-              <View key={event.event_id} style={{ width: 220, position: "relative" }}>
-                {matchesInterests(event) && (
-                  <View style={styles.forYouBadge}>
-                    <Text style={styles.forYouText}>For You</Text>
-                  </View>
-                )}
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingRight: 4 }}>
+            {sortedLive.map((event) => (
+              <View key={event.event_id} style={{ width: 220 }}>
                 <EventCard
-                  title={event.name}
-                  date={event.date}
-                  time={event.time}
-                  location={event.venue}
-                  imageSrc={event.profile}
-                  eventId={event.event_id}
-                  price={event.price}
-                  category={event.category}
-                  isPremium={event.isPremium}
+                  title={event.name} date={event.date} time={event.time}
+                  location={event.venue} imageSrc={event.profile} eventId={event.event_id}
+                  price={event.price} category={event.category} isPremium={event.isPremium}
                 />
               </View>
             ))}
@@ -660,39 +644,35 @@ export default function DashboardScreen() {
         </View>
       )}
 
-      {/* Upcoming / Today / Near Me / Category results */}
+      {/* ── Upcoming / filtered list ── */}
       {!isCodeMode && !isUserSearchMode && activeCategory !== "Trending" && (
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>
-              {activeCategory === "Today" ? "Today's Events" : activeCategory === "All" ? "Upcoming Events" : activeCategory === "Near Me" ? "Near You" : activeCategory}
+        <View style={S.section}>
+          <View style={S.sectionHeader}>
+            <Text style={S.sectionTitle}>
+              {activeCategory === "Today"   ? "Today's Events"  :
+               activeCategory === "All"    ? "Upcoming Events" :
+               activeCategory === "Near Me"? "Near You"        : activeCategory}
             </Text>
-            <View style={styles.countBadge}>
-              <Text style={styles.countBadgeText}>{sortedUpcomingEvents.length}</Text>
+            <View style={S.countPill}>
+              <Text style={S.countPillText}>{sortedUpcoming.length}</Text>
             </View>
           </View>
-          {sortedUpcomingEvents.length === 0 ? (
-            <NeuInset style={styles.emptyBox}>
-              <Text style={{ fontSize: 32, marginBottom: 12 }}>🔍</Text>
-              <Text style={styles.emptyTitle}>No events found</Text>
-              <Text style={styles.emptyText}>
-                {keyword ? "Try a different search term." : "Check back later!"}
-              </Text>
-            </NeuInset>
+          {sortedUpcoming.length === 0 ? (
+            <EmptyState
+              emoji="🔍"
+              title="No events found"
+              subtitle={keyword ? "Try a different search term." : "Check back later — events are coming!"}
+            />
           ) : (
-            <View>
-              {sortedUpcomingEvents.map((event) => (
-                <EventListRow
-                  key={event.event_id}
-                  event={event}
-                  theme={theme}
-                  forYou={matchesInterests(event)}
-                />
+            <View style={{ gap: 10 }}>
+              {sortedUpcoming.map((event) => (
+                <EventListRow key={event.event_id} event={event} theme={theme} forYou={matchesInterests(event)} />
               ))}
             </View>
           )}
         </View>
       )}
+
       <FilterModal
         visible={filterModalVisible}
         onClose={() => setFilterModalVisible(false)}
@@ -703,333 +683,355 @@ export default function DashboardScreen() {
   );
 }
 
-const getStyles = (theme) =>
-  StyleSheet.create({
-    headerRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
-      marginBottom: 20,
-    },
-    dateText: {
-      fontSize: 11,
-      fontWeight: "700",
-      textTransform: "uppercase",
-      letterSpacing: 1.2,
-      color: theme.colors.brand,
-      marginBottom: 4,
-      fontFamily: "PlusJakartaSans_700Bold",
-    },
-    greetingText: {
-      fontSize: 26,
-      fontWeight: "800",
-      fontFamily: "SpaceGrotesk_700Bold",
-      color: theme.colors.text,
-      letterSpacing: -0.5,
-    },
-    userNameText: {
-      fontWeight: "800",
-      color: theme.colors.text,
-    },
-    createBtn: {
-      width: 44,
-      height: 44,
-      borderRadius: 14,
-      backgroundColor: theme.colors.brand,
-      alignItems: "center",
-      justifyContent: "center",
-      shadowColor: theme.colors.brand,
-      shadowOpacity: 0.35,
-      shadowRadius: 10,
-      shadowOffset: { width: 0, height: 4 },
-      elevation: 4,
-    },
-    featuredCard: {
-      height: 210,
-      borderRadius: 24,
-      overflow: "hidden",
-      marginBottom: 20,
-      position: "relative",
-    },
-    featuredOverlay: {
-      ...StyleSheet.absoluteFillObject,
-      backgroundColor: "rgba(0,0,0,0.48)",
-    },
-    featuredContent: {
-      position: "absolute",
-      bottom: 0,
-      left: 0,
-      right: 0,
-      padding: 18,
-    },
-    featuredBadge: {
-      alignSelf: "flex-start",
-      backgroundColor: "rgba(200,230,48,0.2)",
-      borderRadius: 8,
-      paddingHorizontal: 8,
-      paddingVertical: 3,
-      marginBottom: 8,
-    },
-    featuredBadgeText: {
-      fontSize: 11,
-      fontWeight: "700",
-      color: theme.colors.brand,
-      fontFamily: "PlusJakartaSans_700Bold",
-    },
-    featuredTitle: {
-      fontSize: 20,
-      fontWeight: "800",
-      fontFamily: "SpaceGrotesk_700Bold",
-      color: "#fff",
-      letterSpacing: -0.3,
-      marginBottom: 10,
-    },
-    featuredMeta: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
-    },
-    featuredDate: {
-      fontSize: 12,
-      color: "rgba(255,255,255,0.75)",
-      fontFamily: "PlusJakartaSans_400Regular",
-    },
-    featuredPrice: {
-      paddingHorizontal: 10,
-      paddingVertical: 4,
-      borderRadius: 8,
-    },
-    featuredPriceText: {
-      fontSize: 12,
-      fontWeight: "800",
-      fontFamily: "PlusJakartaSans_700Bold",
-    },
-    searchRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 10,
-      marginBottom: 14,
-    },
-    filterBtn: {
-      width: 46,
-      height: 46,
-      borderRadius: 14,
-      alignItems: "center",
-      justifyContent: "center",
-      borderWidth: 1,
-      flexShrink: 0,
-    },
-    searchInputWrap: {
-      flex: 1,
-      flexDirection: "row",
-      alignItems: "center",
-      backgroundColor: theme.colors.surface,
-      borderRadius: 18,
-      borderWidth: 1.5,
-      borderColor: theme.colors.border,
-      paddingHorizontal: 14,
-      height: 52,
-    },
-    searchIcon: {
-      marginRight: 8,
-    },
-    searchField: {
-      flex: 1,
-      backgroundColor: "transparent",
-      borderWidth: 0,
-      paddingHorizontal: 0,
-      height: 50,
-    },
-    searchFieldInput: {
-      fontSize: 14,
-      color: theme.colors.text,
-    },
-    clearBtn: {
-      padding: 4,
-    },
-    categoryRow: {
-      paddingBottom: 16,
-      gap: 8,
-    },
-    categoryPill: {
-      paddingHorizontal: 16,
-      paddingVertical: 8,
-      borderRadius: 99,
-      backgroundColor: theme.colors.surface,
-      borderWidth: 1,
-      borderColor: theme.colors.border,
-    },
-    categoryPillActive: {
-      backgroundColor: theme.colors.brand,
-      borderColor: theme.colors.brand,
-    },
-    categoryPillText: {
-      fontSize: 13,
-      fontWeight: "600",
-      color: theme.colors.textMuted,
-      fontFamily: "PlusJakartaSans_600SemiBold",
-    },
-    categoryPillTextActive: {
-      color: "#1A1A14",
-    },
-    privateResultSection: {
-      marginBottom: 24,
-      gap: 12,
-    },
-    privateResultHeader: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 6,
-    },
-    privateResultLabel: {
-      fontSize: 12,
-      fontWeight: "700",
-      textTransform: "uppercase",
-      letterSpacing: 0.8,
-      color: theme.colors.brand,
-      fontFamily: "PlusJakartaSans_700Bold",
-    },
-    privateLoading: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 10,
-      paddingVertical: 12,
-    },
-    privateLoadingText: {
-      fontSize: 13,
-      color: theme.colors.textSubtle,
-    },
-    privateErrorText: {
-      fontSize: 13,
-      color: theme.colors.error,
-    },
-    section: {
-      marginBottom: 32,
-    },
-    sectionHeader: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 10,
-      marginBottom: 16,
-    },
-    sectionDot: {
-      width: 8,
-      height: 8,
-      borderRadius: 4,
-    },
-    liveDotContainer: {
-      position: "relative",
-      width: 12,
-      height: 12,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    liveDot: {
-      width: 10,
-      height: 10,
-      borderRadius: 5,
-      backgroundColor: theme.colors.error,
-    },
-    liveDotOuter: {
-      position: "absolute",
-      width: 16,
-      height: 16,
-      borderRadius: 8,
-      backgroundColor: "rgba(190, 18, 60, 0.3)",
-    },
-    sectionTitle: {
-      fontSize: 17,
-      fontWeight: "800",
-      fontFamily: "SpaceGrotesk_700Bold",
-      color: theme.colors.text,
-      letterSpacing: -0.3,
-    },
-    countBadge: {
-      marginLeft: "auto",
-      paddingHorizontal: 9,
-      paddingVertical: 3,
-      borderRadius: 99,
-      backgroundColor: theme.colors.surfaceMuted,
-      borderWidth: 1,
-      borderColor: theme.colors.border,
-    },
-    countBadgeText: {
-      fontSize: 11,
-      fontWeight: "700",
-      fontFamily: "PlusJakartaSans_700Bold",
-      color: theme.colors.textMuted,
-    },
-    emptyBox: {
-      padding: 32,
-      alignItems: "center",
-      borderRadius: 24,
-      gap: 8,
-    },
-    emptyTitle: {
-      fontSize: 15,
-      fontWeight: "700",
-      color: theme.colors.text,
-    },
-    emptyText: {
-      fontSize: 13,
-      color: theme.colors.textSubtle,
-      textAlign: "center",
-    },
-    forYouBadge: {
-      position: "absolute",
-      top: 16,
-      right: 16,
-      zIndex: 20,
-      backgroundColor: theme.colors.warning,
-      paddingHorizontal: 8,
-      paddingVertical: 4,
-      borderRadius: 12,
-      shadowColor: theme.colors.text,
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.2,
-      shadowRadius: 8,
-      elevation: 8,
-    },
-    forYouText: {
-      fontSize: 10,
-      fontWeight: "800",
-      color: theme.colors.text,
-      letterSpacing: 0.3,
-    },
-    upcomingGrid: {
-      gap: 16,
-    },
-    userRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 12,
-      padding: 12,
-      borderRadius: 16,
-      borderWidth: 1,
-    },
-    userAvatar: {
-      width: 48,
-      height: 48,
-      borderRadius: 16,
-    },
-    userAvatarInitials: {
-      fontSize: 16,
-      fontWeight: "800",
-      fontFamily: "SpaceGrotesk_700Bold",
-    },
-    userDisplayName: {
-      fontSize: 15,
-      fontWeight: "600",
-      fontFamily: "PlusJakartaSans_600SemiBold",
-    },
-    userUsername: {
-      fontSize: 13,
-      fontFamily: "PlusJakartaSans_400Regular",
-      marginTop: 1,
-    },
-    userMeta: {
-      fontSize: 11,
-      fontFamily: "PlusJakartaSans_400Regular",
-      marginTop: 2,
-    },
-  });
+// ─── Styles ──────────────────────────────────────────────────────────────────
+const styles = (theme) => StyleSheet.create({
+  // Header
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    marginBottom: spacing.xl,
+  },
+  greetingLabel: {
+    fontSize: 14,
+    fontWeight: "500",
+    fontFamily: "PlusJakartaSans_500Medium",
+    color: theme.colors.textMuted,
+    lineHeight: 20,
+    marginBottom: 2,
+  },
+  greetingName: {
+    fontSize: 30,
+    fontWeight: "700",
+    fontFamily: "SpaceGrotesk_700Bold",
+    color: theme.colors.text,
+    letterSpacing: -0.5,
+    lineHeight: 36,
+  },
+  eventStat: {
+    fontSize: 13,
+    fontFamily: "PlusJakartaSans_500Medium",
+    color: theme.colors.textMuted,
+    lineHeight: 19,
+    marginTop: 4,
+  },
+  createBtn: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    backgroundColor: theme.colors.brand,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 4,
+    shadowColor: theme.colors.brand,
+    shadowOpacity: 0.30,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
+  },
+
+  // Search
+  searchRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginBottom: spacing.lg,
+  },
+  searchWrap: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    backgroundColor: theme.colors.surface,
+    borderRadius: radius.xxl,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    paddingHorizontal: 16,
+    height: 52,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 14,
+    fontFamily: "PlusJakartaSans_400Regular",
+    color: theme.colors.text,
+    lineHeight: 20,
+  },
+  filterBtn: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: theme.colors.surfaceMuted,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    flexShrink: 0,
+  },
+
+  // Pills
+  pillRow: {
+    paddingBottom: spacing.lg,
+    gap: 8,
+  },
+  pill: {
+    height: 36,
+    paddingHorizontal: 16,
+    borderRadius: radius.xxl,
+    backgroundColor: theme.colors.surface,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  pillActive: {
+    backgroundColor: theme.colors.brand,
+    borderColor: theme.colors.brand,
+  },
+  pillText: {
+    fontSize: 13,
+    fontWeight: "600",
+    fontFamily: "PlusJakartaSans_600SemiBold",
+    color: theme.colors.textMuted,
+    lineHeight: 18,
+  },
+  pillTextActive: {
+    color: theme.colors.textOnBrand,
+  },
+
+  // Hero card
+  heroWrap: { borderRadius: radius.xl, overflow: "hidden" },
+  heroCard: {
+    height: 260,
+    borderRadius: radius.xl,
+    overflow: "hidden",
+    position: "relative",
+  },
+  heroTopRow: {
+    position: "absolute",
+    top: 14,
+    left: 14,
+    right: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    zIndex: 2,
+  },
+  premiumBadge: {
+    backgroundColor: "rgba(200,230,48,0.22)",
+    borderRadius: radius.xxl,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderWidth: 1,
+    borderColor: "rgba(200,230,48,0.35)",
+  },
+  premiumBadgeText: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: theme.colors.brand,
+    fontFamily: "PlusJakartaSans_700Bold",
+    lineHeight: 15,
+  },
+  heartBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "rgba(0,0,0,0.35)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  heroContent: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 18,
+    zIndex: 2,
+  },
+  heroCatBadge: {
+    alignSelf: "flex-start",
+    backgroundColor: "rgba(255,255,255,0.18)",
+    borderRadius: radius.xxl,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.25)",
+  },
+  heroCatText: {
+    fontSize: 11,
+    fontWeight: "700",
+    fontFamily: "PlusJakartaSans_700Bold",
+    color: "#fff",
+    lineHeight: 15,
+  },
+  heroTitle: {
+    fontSize: 22,
+    fontWeight: "700",
+    fontFamily: "SpaceGrotesk_700Bold",
+    color: "#fff",
+    letterSpacing: -0.3,
+    lineHeight: 28,
+    marginBottom: 10,
+  },
+  heroMeta: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+  },
+  heroLocation: {
+    fontSize: 12,
+    color: "rgba(255,255,255,0.75)",
+    fontFamily: "PlusJakartaSans_400Regular",
+    flex: 1,
+    lineHeight: 17,
+  },
+  heroPriceBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: radius.xxl,
+  },
+  heroPriceText: {
+    fontSize: 13,
+    fontWeight: "700",
+    fontFamily: "PlusJakartaSans_700Bold",
+    lineHeight: 17,
+  },
+
+  // Sections
+  section: { marginBottom: spacing.section },
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: spacing.lg,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    fontFamily: "SpaceGrotesk_700Bold",
+    color: theme.colors.text,
+    letterSpacing: -0.3,
+    lineHeight: 26,
+    flex: 1,
+  },
+  countPill: {
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: radius.xxl,
+    backgroundColor: theme.colors.surfaceMuted,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  countPillText: {
+    fontSize: 12,
+    fontWeight: "700",
+    fontFamily: "PlusJakartaSans_700Bold",
+    color: theme.colors.textMuted,
+    lineHeight: 17,
+  },
+
+  // Event list row
+  listRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    padding: 12,
+    borderRadius: radius.lg,
+    backgroundColor: theme.colors.surface,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  listThumb: {
+    width: 72,
+    height: 72,
+    borderRadius: radius.md,
+    overflow: "hidden",
+    flexShrink: 0,
+    position: "relative",
+  },
+  forYouDot: {
+    position: "absolute",
+    top: 6,
+    right: 6,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: theme.colors.brand,
+    borderWidth: 1.5,
+    borderColor: theme.colors.surface,
+  },
+  listTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    fontFamily: "SpaceGrotesk_700Bold",
+    color: theme.colors.text,
+    lineHeight: 20,
+  },
+  listVenue: {
+    fontSize: 12,
+    color: theme.colors.textSubtle,
+    fontFamily: "PlusJakartaSans_400Regular",
+    flex: 1,
+    lineHeight: 17,
+  },
+  dateBadge: {
+    backgroundColor: theme.colors.brandTint,
+    borderRadius: radius.xs,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  dateBadgeText: {
+    fontSize: 11,
+    fontWeight: "700",
+    fontFamily: "PlusJakartaSans_700Bold",
+    color: theme.colors.brand,
+    lineHeight: 15,
+  },
+  listTime: {
+    fontSize: 11,
+    color: theme.colors.textSubtle,
+    fontFamily: "PlusJakartaSans_400Regular",
+    lineHeight: 15,
+  },
+  priceBadge: {
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderRadius: radius.sm,
+    flexShrink: 0,
+  },
+  priceText: {
+    fontSize: 12,
+    fontWeight: "700",
+    fontFamily: "PlusJakartaSans_700Bold",
+    lineHeight: 16,
+  },
+
+  // User search
+  userRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    padding: 12,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+  },
+  userAvatar: {
+    width: 48,
+    height: 48,
+    borderRadius: radius.md,
+    overflow: "hidden",
+  },
+  userDisplayName: {
+    fontSize: 15,
+    fontWeight: "600",
+    fontFamily: "PlusJakartaSans_600SemiBold",
+    lineHeight: 20,
+  },
+  userUsername: {
+    fontSize: 13,
+    fontFamily: "PlusJakartaSans_400Regular",
+    marginTop: 1,
+    lineHeight: 18,
+  },
+});

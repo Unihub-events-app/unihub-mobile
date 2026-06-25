@@ -22,6 +22,7 @@ import {
   Info,
 } from "lucide-react-native";
 import { Screen, NeuCard, PrimaryButton } from "../../components/index.js";
+import { radius, spacing } from "../../theme/tokens.js";
 import { useSessionStore } from "../../lib/auth.js";
 import Constants from "expo-constants";
 
@@ -92,6 +93,7 @@ export default function SettingsScreen() {
         contentContainerStyle={styles.scrollContainer}
         showsVerticalScrollIndicator={false}
       >
+        <Text style={styles.headerEyebrow}>Preferences</Text>
         <Text style={styles.headerTitle}>Settings</Text>
 
         <SettingsSection title="Account">
@@ -173,22 +175,33 @@ const getStyles = (theme) => StyleSheet.create({
   scrollContainer: {
     paddingTop: 24,
     paddingBottom: 24,
-    paddingHorizontal: 16,
+    paddingHorizontal: spacing.page,
+  },
+  headerEyebrow: {
+    fontSize: 11,
+    fontWeight: "700",
+    fontFamily: "PlusJakartaSans_700Bold",
+    color: theme.colors.textSubtle,
+    textTransform: "uppercase",
+    letterSpacing: 1.2,
+    marginBottom: 4,
+    lineHeight: 16,
   },
   headerTitle: {
-    fontSize: 28,
-    fontWeight: "800",
+    fontSize: 32,
+    fontWeight: "700",
     fontFamily: "SpaceGrotesk_700Bold",
     color: theme.colors.text,
     letterSpacing: -0.5,
-    marginBottom: 24,
+    marginBottom: 28,
+    lineHeight: 38,
   },
   sectionContainer: {
     marginBottom: 20,
   },
   sectionTitle: {
     fontSize: 11,
-    fontWeight: "800",
+    fontWeight: "700",
     fontFamily: "PlusJakartaSans_700Bold",
     textTransform: "uppercase",
     letterSpacing: 1.2,
@@ -198,7 +211,7 @@ const getStyles = (theme) => StyleSheet.create({
   },
   sectionCard: {
     paddingVertical: 4,
-    borderRadius: 20,
+    borderRadius: radius.xl,
   },
   settingsItem: {
     flexDirection: "row",
@@ -206,12 +219,12 @@ const getStyles = (theme) => StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 16,
     gap: 14,
-    borderRadius: 16,
+    borderRadius: radius.lg,
   },
   settingsIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 14,
+    width: 42,
+    height: 42,
+    borderRadius: radius.md,
     backgroundColor: theme.colors.brandTint,
     alignItems: "center",
     justifyContent: "center",

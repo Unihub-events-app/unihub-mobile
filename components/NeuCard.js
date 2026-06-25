@@ -1,18 +1,24 @@
 import { View, StyleSheet } from "react-native";
 import { useTheme } from "../theme/ThemeProvider";
+import { radius, elevation } from "../theme/tokens";
 
-export function NeuCard({ children, style, small = false, elevated = false, ...props }) {
+export function NeuCard({ children, style, variant = "base", accentBorder, ...props }) {
   const { theme } = useTheme();
-  const cardStyle = small ? styles.small : styles.base;
-  const backgroundColor = elevated ? theme.colors.surfaceElevated : theme.colors.surface;
+
+  const variantStyle = VARIANTS[variant] || VARIANTS.base;
+  const bg =
+    variant === "elevated" ? theme.colors.surfaceElevated :
+    variant === "dark"     ? "#1C1C18" :
+    theme.colors.surface;
 
   return (
     <View
       style={[
-        cardStyle,
+        styles.common,
+        variantStyle,
         {
-          backgroundColor,
-          borderColor: theme.colors.border,
+          backgroundColor: bg,
+          borderColor: accentBorder || theme.colors.border,
           shadowColor: theme.colors.shadow,
         },
         style,
@@ -24,21 +30,44 @@ export function NeuCard({ children, style, small = false, elevated = false, ...p
   );
 }
 
-const styles = StyleSheet.create({
+const VARIANTS = {
   base: {
-    borderRadius: 20,
+    borderRadius: radius.lg,
     borderWidth: 1,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    elevation: 3,
+    ...elevation.card,
   },
-  small: {
-    borderRadius: 16,
+  elevated: {
+    borderRadius: radius.xl,
     borderWidth: 1,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 24,
+    elevation: 8,
   },
+  flat: {
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  pill: {
+    borderRadius: radius.full,
+    borderWidth: 1,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  dark: {
+    borderRadius: radius.xl,
+    borderWidth: 0,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.30,
+    shadowRadius: 24,
+    elevation: 10,
+  },
+};
+
+const styles = StyleSheet.create({
+  common: {},
 });
