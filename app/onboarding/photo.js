@@ -45,7 +45,7 @@ export default function OnboardingPhoto() {
     try {
       const token = await getUserToken();
       const formData = new FormData();
-      formData.append("image", { uri: photo.uri, name: "avatar.jpg", type: "image/jpeg" });
+      formData.append("file", { uri: photo.uri, name: "avatar.jpg", type: "image/jpeg" });
       const uploadRes = await fetch(`${API_URL}/upload/image`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
