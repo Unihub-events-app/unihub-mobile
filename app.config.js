@@ -1,6 +1,8 @@
+const IS_DEV = process.env.APP_VARIANT === "dev";
+
 module.exports = ({ config }) => ({
   ...config,
-  name: "UniHub",
+  name: IS_DEV ? "UniHub Dev" : "UniHub",
   slug: "unihub-mobile",
   scheme: "UniHub Events",
   version: "1.3.0",

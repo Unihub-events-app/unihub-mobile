@@ -39,6 +39,8 @@ jobs:
 
       - name: Expo Prebuild
         run: npx expo prebuild --platform android --no-install
+        env:
+          APP_VARIANT: dev
 
       - name: Make gradlew executable
         run: chmod +x android/gradlew
