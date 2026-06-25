@@ -3,7 +3,7 @@ module.exports = ({ config }) => ({
   name: "UniHub",
   slug: "unihub-mobile",
   scheme: "UniHub Events",
-  version: "1.2.1",
+  version: "1.2.5",
   icon: "./assets/images/mobile-logo.png",
   orientation: "default",
   userInterfaceStyle: "automatic",
@@ -33,11 +33,17 @@ module.exports = ({ config }) => ({
     "expo-calendar",
     [
       "expo-camera",
-      { cameraPermission: "Allow UniHub to access your camera for event check-in." }
+      {
+        cameraPermission:
+          "Allow UniHub to access your camera for event check-in.",
+      },
     ],
     [
       "expo-location",
-      { locationAlwaysAndWhenInUsePermission: "Allow UniHub to show nearby events." }
+      {
+        locationAlwaysAndWhenInUsePermission:
+          "Allow UniHub to show nearby events.",
+      },
     ],
   ],
 });
