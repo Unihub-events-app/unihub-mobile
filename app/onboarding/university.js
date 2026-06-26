@@ -33,7 +33,14 @@ export default function OnboardingUniversity() {
     fetch(`${API_URL}/universities/all`)
       .then((r) => r.json())
       .then((data) => {
-        const list = Array.isArray(data) ? data : data.universities || [];
+        let list = [];
+        if (Array.isArray(data)) {
+          list = data;
+        } else if (data && typeof data === "object") {
+          // server returns { Nigeria: [...], Ghana: [...], ... }
+          list = Object.values(data).flat();
+        }
+        list = list.map((u) => (typeof u === "string" ? u : u.name || u.university || "")).filter(Boolean);
         setUniversities(list);
         setFiltered(list.slice(0, 30));
       })

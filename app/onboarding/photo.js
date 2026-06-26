@@ -45,26 +45,34 @@ export default function OnboardingPhoto() {
     try {
       const token = await getUserToken();
       const formData = new FormData();
-      formData.append("file", { uri: photo.uri, name: "avatar.jpg", type: "image/jpeg" });
+      formData.append("file", {
+        uri: photo.uri,
+        name: "avatar.jpg",
+        type: photo.mimeType || "image/jpeg",
+      });
       const uploadRes = await fetch(`${API_URL}/upload/image`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: formData,
       });
-      const uploadData = await uploadRes.json();
-      if (uploadRes.ok && uploadData.url) {
-        await fetch(`${API_URL}/user/update`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ avatar: uploadData.url, user_token: token }),
-        });
+      if (uploadRes.ok) {
+        const uploadData = await uploadRes.json();
+        if (uploadData.url) {
+          await fetch(`${API_URL}/user/update`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ avatar: uploadData.url, user_token: token }),
+          });
+        }
+      } else {
+        setError("Upload failed. You can always add a photo later.");
       }
-      router.replace("/users/dashboard");
     } catch {
       setError("Upload failed. You can always add a photo later.");
     } finally {
       setUploading(false);
     }
+    router.replace("/users/dashboard");
   };
 
   return (
