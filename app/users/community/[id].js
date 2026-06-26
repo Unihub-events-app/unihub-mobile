@@ -180,6 +180,7 @@ export default function CommunityChatScreen() {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [imageUri, setImageUri] = useState(null);
+  const [imageMimeType, setImageMimeType] = useState(null);
   const [fileUri, setFileUri] = useState(null);
   const [fileName, setFileName] = useState(null);
   const [fileType, setFileType] = useState(null);
@@ -219,6 +220,7 @@ export default function CommunityChatScreen() {
       });
       if (!result.canceled && result.assets?.length > 0) {
         setImageUri(result.assets[0].uri);
+        setImageMimeType(result.assets[0].mimeType || null);
         setFileUri(null); setFileName(null); setFileType(null); setFileSize(null);
       }
     } catch (e) {
@@ -250,7 +252,7 @@ export default function CommunityChatScreen() {
   };
 
   const clearAttachment = () => {
-    setImageUri(null); setFileUri(null);
+    setImageUri(null); setImageMimeType(null); setFileUri(null);
     setFileName(null); setFileType(null); setFileSize(null);
   };
 
@@ -258,11 +260,18 @@ export default function CommunityChatScreen() {
     const fd = new FormData();
     const uriParts = uri.split("/");
     const name = uriParts[uriParts.length - 1] || (isImage ? "image.jpg" : "file");
-    const type = isImage ? "image/jpeg" : (fileType || "application/octet-stream");
+    // Use the mimeType reported by the image picker when available; fallback for files
+    const type = isImage
+      ? (imageMimeType || "image/jpeg")
+      : (fileType || "application/octet-stream");
     fd.append("file", { uri, name, type });
     const endpoint = isImage ? `${API_URL}/upload/image` : `${API_URL}/upload/file`;
     const res = await fetch(endpoint, { method: "POST", body: fd });
-    if (!res.ok) throw new Error(`Upload failed with status ${res.status}`);
+    if (!res.ok) {
+      let errMsg = `Upload failed (${res.status})`;
+      try { const b = await res.json(); errMsg = b.error || b.msg || errMsg; } catch {}
+      throw new Error(errMsg);
+    }
     return await res.json();
   };
 
@@ -411,7 +420,7 @@ export default function CommunityChatScreen() {
         Alert.alert("Error", errorData.msg || "Failed to send message");
       }
     } catch (e) {
-      Alert.alert("Error", "An error occurred while sending your message.");
+      Alert.alert("Error", e?.message || "An error occurred while sending your message.");
     } finally {
       setSending(false);
       setUploadingAttachment(false);

@@ -251,7 +251,12 @@ export default function ProfileEditScreen() {
       const res = await fetch(`${API_URL}/universities/${encodeURIComponent(country)}`);
       if (res.ok) {
         const data = await res.json();
-        setUniversities(Array.isArray(data) ? data.map((u) => (typeof u === "string" ? u : u.name)) : []);
+        const list = Array.isArray(data.universities)
+          ? data.universities
+          : Array.isArray(data)
+          ? data
+          : [];
+        setUniversities(list.map((u) => (typeof u === "string" ? u : u.name || u.university || "")).filter(Boolean));
       }
     } catch {}
   };
