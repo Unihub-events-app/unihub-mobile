@@ -275,7 +275,7 @@ export default function ProfileEditScreen() {
       fd.append("file", { uri: asset.uri, name: "avatar.jpg", type: asset.mimeType || "image/jpeg" });
       const res = await fetch(`${API_URL}/upload/image`, {
         method: "POST",
-        headers: { "Content-Type": "multipart/form-data", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: fd,
       });
       if (res.ok) {

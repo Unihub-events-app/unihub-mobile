@@ -179,10 +179,7 @@ export default function CreateEventForm() {
 
       const res = await fetch(`${API_URL}/upload/image`, {
         method: "POST",
-        headers: {
-          "Content-Type": "multipart/form-data",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: formData,
       });
 

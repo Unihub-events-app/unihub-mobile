@@ -43,6 +43,9 @@ import { API_URL } from "../../lib/config";
 import { getUserToken } from "../../lib/auth";
 import { authenticatedFetch } from "../../lib/api";
 
+let ImagePicker = null;
+try { ImagePicker = require("expo-image-picker"); } catch {}
+
 const COMMUNITY_STEP_NAMES = ["Identity", "Details", "Icon"];
 const COMMUNITY_CATEGORIES = [
   "Tech", "Music", "Sports", "Art", "Science", "Business",
@@ -416,6 +419,53 @@ export default function CommunityScreen() {
     setNewIsPrivate(false);
     setCreateStep(1);
     setShowCreateConfirm(false);
+  };
+
+  const handleUploadCommunityImage = async () => {
+    if (!ImagePicker) {
+      alert("Image picker not available. Please rebuild the app.");
+      return;
+    }
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      alert("Permission to access photos is required.");
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.85,
+    });
+    if (result.canceled) return;
+    const asset = result.assets[0];
+    setIsUploading(true);
+    try {
+      const token = await getUserToken();
+      const fd = new FormData();
+      fd.append("file", { uri: asset.uri, name: "community_icon.jpg", type: asset.mimeType || "image/jpeg" });
+      const res = await fetch(`${API_URL}/upload/image`, {
+        method: "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: fd,
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const url = data.url || data.secure_url;
+        if (url) {
+          setNewImage(url);
+          setIsCustomImage(true);
+        } else {
+          alert("Upload succeeded but no URL returned.");
+        }
+      } else {
+        alert("Image upload failed. Please try again.");
+      }
+    } catch {
+      alert("Upload error. Check your connection.");
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const handleCreate = async () => {
@@ -1140,16 +1190,27 @@ export default function CommunityScreen() {
                 </View>
 
                 <TouchableOpacity
-                  style={[styles.cmUploadBtn, { borderColor: theme.colors.border }]}
-                  onPress={() => alert("Image upload coming soon!")}
+                  style={[styles.cmUploadBtn, { borderColor: theme.colors.border, opacity: isUploading ? 0.5 : 1 }]}
+                  onPress={handleUploadCommunityImage}
+                  disabled={isUploading}
                 >
-                  <Upload size={18} color={theme.colors.brand} />
-                  <Text style={[styles.cmUploadText, { color: theme.colors.brand }]}>Upload Custom Image</Text>
+                  {isUploading ? (
+                    <ActivityIndicator size="small" color={theme.colors.brand} />
+                  ) : (
+                    <Upload size={18} color={theme.colors.brand} />
+                  )}
+                  <Text style={[styles.cmUploadText, { color: theme.colors.brand }]}>
+                    {isUploading ? "Uploading…" : isCustomImage ? "Change Image" : "Upload Custom Image"}
+                  </Text>
                 </TouchableOpacity>
 
                 <View style={[styles.cmPreviewCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
-                  <View style={[styles.cmPreviewIcon, { backgroundColor: theme.colors.navSurface }]}>
-                    <Text style={{ fontSize: 34 }}>{newImage}</Text>
+                  <View style={[styles.cmPreviewIcon, { backgroundColor: theme.colors.navSurface, overflow: "hidden" }]}>
+                    {isCustomImage && newImage?.startsWith("http") ? (
+                      <Image source={{ uri: newImage }} style={{ width: "100%", height: "100%", borderRadius: radius.md }} resizeMode="cover" />
+                    ) : (
+                      <Text style={{ fontSize: 34 }}>{newImage}</Text>
+                    )}
                   </View>
                   <View style={{ flex: 1, gap: 2 }}>
                     <Text style={[styles.cmPreviewName, { color: theme.colors.text }]} numberOfLines={1}>

@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { router } from "expo-router";
 import {
-  View, Text, Pressable, TextInput, StyleSheet, ScrollView, useWindowDimensions,
+  View, Text, Pressable, TextInput, StyleSheet, ScrollView,
+  KeyboardAvoidingView, Platform, useWindowDimensions,
 } from "react-native";
 import Animated, { FadeInUp } from "react-native-reanimated";
 import {
@@ -170,7 +171,10 @@ export default function SignupScreen() {
   const topH = SCREEN_HEIGHT * 0.40;
 
   return (
-    <View style={{ flex: 1, backgroundColor: theme.colors.brand }}>
+    <KeyboardAvoidingView
+      style={{ flex: 1, backgroundColor: theme.colors.brand }}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+    >
       {/* Brand top section */}
       <View style={[styles.topSection, { height: topH }]}>
         <View style={styles.logoRow}>
@@ -336,7 +340,8 @@ export default function SignupScreen() {
                       value={digit}
                       onChangeText={(v) => handleOtpChange(v, i)}
                       onKeyPress={(e) => handleOtpKeyPress(e, i)}
-                      keyboardType="number-pad"
+                      keyboardType="default"
+                      autoCapitalize="characters"
                       maxLength={1}
                       style={[styles.otpBox, {
                         backgroundColor: theme.colors.surfaceMuted,
@@ -443,7 +448,7 @@ export default function SignupScreen() {
           )}
         </Animated.View>
       </ScrollView>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
