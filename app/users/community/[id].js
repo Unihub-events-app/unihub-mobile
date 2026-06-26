@@ -51,7 +51,7 @@ const formatDate = (dateStr) => {
   return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 };
 
-function LinkPreview({ url, theme }) {
+function LinkPreview({ url, theme, isMe = false, compact = false }) {
   const [meta, setMeta] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -71,10 +71,17 @@ function LinkPreview({ url, theme }) {
     return () => { alive = false; };
   }, [url]);
 
+  const bg = isMe ? "rgba(26,26,20,0.12)" : "rgba(255,255,255,0.14)";
+  const border = isMe ? "rgba(26,26,20,0.18)" : "rgba(255,255,255,0.22)";
+  const titleColor = isMe ? "#1A1A14" : "#fff";
+  const descColor = isMe ? "rgba(26,26,20,0.65)" : "rgba(255,255,255,0.7)";
+  const domainColor = isMe ? "rgba(26,26,20,0.45)" : "rgba(255,255,255,0.5)";
+  const urlColor = isMe ? theme.colors.text : theme.colors.brand;
+
   if (loading) {
     return (
-      <View style={[lpStyles.container, { backgroundColor: "rgba(255,255,255,0.12)", borderColor: "rgba(255,255,255,0.2)" }]}>
-        <ActivityIndicator size="small" color="rgba(255,255,255,0.5)" />
+      <View style={[lpStyles.container, { backgroundColor: bg, borderColor: border }]}>
+        <ActivityIndicator size="small" color={isMe ? "rgba(26,26,20,0.4)" : "rgba(255,255,255,0.5)"} />
       </View>
     );
   }
@@ -82,24 +89,24 @@ function LinkPreview({ url, theme }) {
   if (!meta) {
     return (
       <TouchableOpacity onPress={() => Linking.openURL(url)}>
-        <Text style={{ color: theme.colors.brand, fontSize: 13, textDecorationLine: "underline", marginTop: 4 }} numberOfLines={1}>{url}</Text>
+        <Text style={{ color: urlColor, fontSize: 13, textDecorationLine: "underline", marginTop: 4 }} numberOfLines={1}>{url}</Text>
       </TouchableOpacity>
     );
   }
 
   return (
     <TouchableOpacity
-      style={[lpStyles.container, { backgroundColor: "rgba(255,255,255,0.14)", borderColor: "rgba(255,255,255,0.22)" }]}
+      style={[lpStyles.container, { backgroundColor: bg, borderColor: border }]}
       onPress={() => Linking.openURL(url)}
       activeOpacity={0.85}
     >
-      {meta.image ? (
+      {meta.image && !compact ? (
         <Image source={{ uri: meta.image }} style={lpStyles.image} resizeMode="cover" />
       ) : null}
       <View style={lpStyles.textBlock}>
-        {meta.title ? <Text style={lpStyles.title} numberOfLines={2}>{meta.title}</Text> : null}
-        {meta.description ? <Text style={lpStyles.desc} numberOfLines={2}>{meta.description}</Text> : null}
-        <Text style={lpStyles.domain} numberOfLines={1}>{meta.url || url}</Text>
+        {meta.title ? <Text style={[lpStyles.title, { color: titleColor }]} numberOfLines={2}>{meta.title}</Text> : null}
+        {meta.description && !compact ? <Text style={[lpStyles.desc, { color: descColor }]} numberOfLines={2}>{meta.description}</Text> : null}
+        <Text style={[lpStyles.domain, { color: domainColor }]} numberOfLines={1}>{meta.url || url}</Text>
       </View>
     </TouchableOpacity>
   );
@@ -123,16 +130,13 @@ const lpStyles = StyleSheet.create({
   title: {
     fontSize: 13,
     fontWeight: "700",
-    color: "#fff",
   },
   desc: {
     fontSize: 12,
-    color: "rgba(255,255,255,0.7)",
     lineHeight: 17,
   },
   domain: {
     fontSize: 11,
-    color: "rgba(255,255,255,0.5)",
     marginTop: 4,
   },
 });
@@ -184,8 +188,21 @@ export default function CommunityChatScreen() {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [reactionTarget, setReactionTarget] = useState(null);
   const [reactions, setReactions] = useState({});
+  const [composerLinkUrl, setComposerLinkUrl] = useState(null);
+  const [linkPreviewDismissed, setLinkPreviewDismissed] = useState(false);
 
   const flatListRef = useRef(null);
+
+  useEffect(() => {
+    const urls = extractUrls(content);
+    if (urls.length > 0 && urls[0] !== composerLinkUrl) {
+      setComposerLinkUrl(urls[0]);
+      setLinkPreviewDismissed(false);
+    } else if (urls.length === 0) {
+      setComposerLinkUrl(null);
+      setLinkPreviewDismissed(false);
+    }
+  }, [content]);
 
   const handlePickImage = async () => {
     try {
@@ -242,11 +259,7 @@ export default function CommunityChatScreen() {
     const uriParts = uri.split("/");
     const name = uriParts[uriParts.length - 1] || (isImage ? "image.jpg" : "file");
     const type = isImage ? "image/jpeg" : (fileType || "application/octet-stream");
-    fd.append("file", {
-      uri: Platform.OS === "ios" ? uri.replace("file://", "") : uri,
-      name,
-      type,
-    });
+    fd.append("file", { uri, name, type });
     const endpoint = isImage ? `${API_URL}/upload/image` : `${API_URL}/upload/file`;
     const res = await fetch(endpoint, { method: "POST", body: fd });
     if (!res.ok) throw new Error(`Upload failed with status ${res.status}`);
@@ -386,6 +399,8 @@ export default function CommunityChatScreen() {
       if (res.ok) {
         setContent("");
         clearAttachment();
+        setComposerLinkUrl(null);
+        setLinkPreviewDismissed(false);
         const postsRes = await fetch(`${API_URL}/community/posts/${communityId}?parentPostId=null`);
         if (postsRes.ok) {
           setPosts((await postsRes.json()).reverse());
@@ -504,7 +519,7 @@ export default function CommunityChatScreen() {
             ) : null}
 
             {urls.length > 0 && (
-              <LinkPreview url={urls[0]} theme={theme} />
+              <LinkPreview url={urls[0]} theme={theme} isMe={isMe} />
             )}
           </TouchableOpacity>
 
@@ -599,7 +614,11 @@ export default function CommunityChatScreen() {
         </View>
       )}
 
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding" keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? STATUS_BAR_HEIGHT + 76 : 0}
+      >
         <FlatList
           ref={flatListRef}
           data={postsWithSeparators}
@@ -641,6 +660,21 @@ export default function CommunityChatScreen() {
                 <X size={13} color="#fff" />
               </TouchableOpacity>
             </View>
+          </View>
+        )}
+
+        {/* Compose-time link preview (WhatsApp-style) */}
+        {composerLinkUrl && !linkPreviewDismissed && !imageUri && !fileUri && (
+          <View style={[styles.composerLinkContainer, { backgroundColor: theme.colors.surface, borderTopColor: theme.colors.border }]}>
+            <View style={{ flex: 1 }}>
+              <LinkPreview url={composerLinkUrl} theme={theme} isMe={false} compact />
+            </View>
+            <TouchableOpacity
+              style={[styles.composerLinkDismiss, { backgroundColor: theme.colors.surfaceMuted }]}
+              onPress={() => setLinkPreviewDismissed(true)}
+            >
+              <X size={13} color={theme.colors.textSubtle} />
+            </TouchableOpacity>
           </View>
         )}
 
@@ -1010,6 +1044,23 @@ const styles = StyleSheet.create({
     borderRadius: radius.full,
     alignItems: "center",
     justifyContent: "center",
+  },
+  composerLinkContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingTop: 8,
+    paddingBottom: 4,
+    borderTopWidth: 1,
+    gap: 8,
+  },
+  composerLinkDismiss: {
+    width: 26,
+    height: 26,
+    borderRadius: radius.full,
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
   },
   emojiInsertBar: {
     paddingVertical: 8,

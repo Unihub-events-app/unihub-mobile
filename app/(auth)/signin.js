@@ -7,6 +7,9 @@ import {
   TextInput,
   StyleSheet,
   Image,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
   useWindowDimensions,
 } from "react-native";
 import Animated, { FadeInUp } from "react-native-reanimated";
@@ -207,7 +210,10 @@ export default function SignInScreen() {
   const topH = SCREEN_HEIGHT * 0.42;
 
   return (
-    <View style={{ flex: 1, backgroundColor: theme.colors.brand }}>
+    <KeyboardAvoidingView
+      style={{ flex: 1, backgroundColor: theme.colors.brand }}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+    >
       {/* Brand top section */}
       <View style={[styles.topSection, { height: topH }]}>
         {/* Logo */}
@@ -252,7 +258,12 @@ export default function SignInScreen() {
       </View>
 
       {/* White bottom panel */}
-      <View style={[styles.bottomPanel, { backgroundColor: theme.colors.background }]}>
+      <ScrollView
+        style={[styles.bottomPanel, { backgroundColor: theme.colors.background }]}
+        contentContainerStyle={{ paddingBottom: 40 }}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
         {/* Tab row */}
         <View style={[styles.tabRow, { borderBottomColor: theme.colors.border }]}>
           <View style={styles.tabActive}>
@@ -365,7 +376,8 @@ export default function SignInScreen() {
                     value={digit}
                     onChangeText={(v) => handleOtpChange(v, i)}
                     onKeyPress={(e) => handleOtpKeyPress(e, i)}
-                    keyboardType="number-pad"
+                    keyboardType="default"
+                    autoCapitalize="characters"
                     maxLength={1}
                     style={[styles.otpBox, {
                       backgroundColor: theme.colors.surfaceMuted,
@@ -395,8 +407,8 @@ export default function SignInScreen() {
             </View>
           )}
         </Animated.View>
-      </View>
-    </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
