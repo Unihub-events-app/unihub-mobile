@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  StatusBar,
   Image,
   Alert,
   Linking,
@@ -17,12 +18,15 @@ import {
   ScrollView,
   Pressable,
 } from "react-native";
+
+const STATUS_BAR_HEIGHT = Platform.OS === "android" ? StatusBar.currentHeight || 24 : 44;
 import {
   Send, Info, Users, Paperclip, X, FileText,
   Mic, Smile, ChevronLeft, UserPlus,
 } from "lucide-react-native";
 import { Share } from "react-native";
 import { useTheme } from "../../../theme/ThemeProvider";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { radius, spacing } from "../../../theme/tokens.js";
 import { getUserToken } from "../../../lib/auth";
 import { API_URL } from "../../../lib/config";
@@ -142,6 +146,7 @@ export default function CommunityChatScreen() {
   const { id: communityId } = useLocalSearchParams();
   const router = useRouter();
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
 
   const [community, setCommunity] = useState(null);
   const [posts, setPosts] = useState([]);
@@ -594,7 +599,7 @@ export default function CommunityChatScreen() {
         </View>
       )}
 
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined} keyboardVerticalOffset={0}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding" keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}>
         <FlatList
           ref={flatListRef}
           data={postsWithSeparators}
@@ -657,7 +662,7 @@ export default function CommunityChatScreen() {
         )}
 
         {/* Composer */}
-        <View style={[styles.composer, { backgroundColor: theme.colors.surface, borderTopColor: theme.colors.border }]}>
+        <View style={[styles.composer, { backgroundColor: theme.colors.surface, borderTopColor: theme.colors.border, paddingBottom: Math.max(insets.bottom, 10) }]}>
           <TouchableOpacity style={[styles.composerIconBtn, { backgroundColor: theme.colors.surfaceMuted }]} onPress={handleAttachmentPress} disabled={uploadingAttachment}>
             <Paperclip size={19} color={theme.colors.textSubtle} />
           </TouchableOpacity>
@@ -716,7 +721,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 14,
-    paddingTop: Platform.OS === "ios" ? 54 : 18,
+    paddingTop: STATUS_BAR_HEIGHT + (Platform.OS === "ios" ? 10 : 10),
     paddingBottom: 14,
     gap: 10,
   },

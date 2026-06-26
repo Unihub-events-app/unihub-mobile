@@ -142,8 +142,8 @@ function InterestPill({ interest, active, onPress }) {
   return (
     <Pressable
       onPress={onPress}
-      onPressIn={() => { scale.value = withSpring(0.88, { damping: 14, stiffness: 260 }); }}
-      onPressOut={() => { scale.value = withSpring(active ? 1.04 : 1.0, { damping: 22, stiffness: 280 }); }}
+      onPressIn={() => { scale.value = withSpring(0.92, { damping: 20, stiffness: 600 }); }}
+      onPressOut={() => { scale.value = withSpring(1.0, { damping: 20, stiffness: 600 }); }}
     >
       <Reanimated.View
         style={[

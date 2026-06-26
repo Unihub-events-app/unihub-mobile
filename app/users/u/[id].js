@@ -1,15 +1,80 @@
 import React, { useEffect, useState } from "react";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Image, Pressable, Linking, Alert } from "react-native";
-import { User, MapPin, Link as LinkIcon, Calendar, Clock, AlertCircle, MoreVertical } from "lucide-react-native";
+import {
+  useLocalSearchParams,
+  useRouter,
+} from "expo-router";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  ActivityIndicator,
+  Image,
+  Pressable,
+  Linking,
+  Alert,
+  TextInput,
+  TouchableOpacity,
+} from "react-native";
+import {
+  User,
+  MapPin,
+  Link as LinkIcon,
+  Calendar,
+  Clock,
+  AlertCircle,
+  MoreVertical,
+  GraduationCap,
+  Users,
+  Zap,
+  Trash2,
+  Send,
+} from "lucide-react-native";
 import { Screen, BackButton, NeuCard, PrimaryButton } from "../../../components";
 import { useTheme } from "../../../theme/ThemeProvider";
 import { getUserToken } from "../../../lib/auth";
 import { API_URL } from "../../../lib/config";
 import { ReportModal } from "../../../components/ReportModal";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { radius, spacing } from "../../../theme/tokens";
 
 const BLOCKED_KEY = "unihub_blocked_users";
+
+function SectionHeader({ title, icon: Icon, color, theme }) {
+  return (
+    <View style={[sectionStyles.header]}>
+      <View style={[sectionStyles.iconWrap, { backgroundColor: color + "22" }]}>
+        <Icon size={14} color={color} />
+      </View>
+      <Text style={[sectionStyles.title, { color: theme.colors.textSubtle }]}>
+        {title}
+      </Text>
+    </View>
+  );
+}
+
+const sectionStyles = StyleSheet.create({
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 14,
+  },
+  iconWrap: {
+    width: 26,
+    height: 26,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  title: {
+    fontSize: 11,
+    fontWeight: "800",
+    textTransform: "uppercase",
+    letterSpacing: 1.2,
+    fontFamily: "PlusJakartaSans_700Bold",
+  },
+});
 
 export default function PublicProfileScreen() {
   const { id } = useLocalSearchParams();
@@ -95,7 +160,6 @@ export default function PublicProfileScreen() {
 
   useEffect(() => {
     if (!profile?.timezone) return;
-
     const updateTime = () => {
       try {
         const time = new Date().toLocaleTimeString("en-US", {
@@ -109,7 +173,6 @@ export default function PublicProfileScreen() {
         console.error("Invalid timezone", e);
       }
     };
-
     updateTime();
     const interval = setInterval(updateTime, 60000);
     return () => clearInterval(interval);
@@ -119,7 +182,6 @@ export default function PublicProfileScreen() {
     if (!profile || !currentUser) return;
     const isFollowing = currentUser?.following?.includes(profile._id);
     const endpoint = isFollowing ? "/social/unfollow" : "/social/follow";
-
     try {
       const token = await getUserToken();
       const res = await fetch(`${API_URL}${endpoint}`, {
@@ -130,18 +192,16 @@ export default function PublicProfileScreen() {
         },
         body: JSON.stringify({ targetUserId: profile._id, user_token: token }),
       });
-
       if (res.ok) {
-        // Refresh local states
-        setProfile(prev => ({
+        setProfile((prev) => ({
           ...prev,
           followersCount: isFollowing
             ? Math.max(0, (prev.followersCount || 0) - 1)
-            : (prev.followersCount || 0) + 1
+            : (prev.followersCount || 0) + 1,
         }));
-        setCurrentUser(prev => {
+        setCurrentUser((prev) => {
           const updatedFollowing = isFollowing
-            ? (prev.following || []).filter(fid => fid !== profile._id)
+            ? (prev.following || []).filter((fid) => fid !== profile._id)
             : [...(prev.following || []), profile._id];
           return { ...prev, following: updatedFollowing };
         });
@@ -178,6 +238,9 @@ export default function PublicProfileScreen() {
 
   const isFollowing = currentUser?.following?.includes(profile._id);
   const isMe = currentUser?._id === profile._id;
+  const attendedEvents = profile.registeredEvents || [];
+  const communities = profile.communitiesJoined || [];
+  const updates = profile.updates || [];
 
   return (
     <Screen padded={false}>
@@ -192,8 +255,9 @@ export default function PublicProfileScreen() {
         </View>
 
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+
+          {/* ── PROFILE CARD ─────────────────────────────── */}
           <NeuCard style={[styles.profileCard, { backgroundColor: theme.colors.surface }]}>
-            {/* Header banner or gradient */}
             <View style={[styles.banner, { backgroundColor: theme.colors.surfaceElevated }]} />
 
             <View style={styles.avatarContainer}>
@@ -209,15 +273,28 @@ export default function PublicProfileScreen() {
             </View>
 
             <View style={styles.infoSection}>
-              <Text style={[styles.name, { color: theme.colors.text }]}>{profile.name || profile.username}</Text>
-              <Text style={[styles.username, { color: theme.colors.textSubtle }]}>@{profile.username}</Text>
+              <Text style={[styles.name, { color: theme.colors.text }]}>
+                {profile.displayName || profile.name || profile.username}
+              </Text>
+              <Text style={[styles.username, { color: theme.colors.textSubtle }]}>
+                @{profile.username}
+              </Text>
 
               {profile.bio ? (
                 <Text style={[styles.bio, { color: theme.colors.textMuted }]}>{profile.bio}</Text>
               ) : null}
 
-              {/* Meta details list */}
+              {/* Meta details */}
               <View style={styles.metaList}>
+                {profile.university ? (
+                  <View style={styles.metaItem}>
+                    <GraduationCap size={16} color={theme.colors.brand} />
+                    <Text style={[styles.metaLabel, { color: theme.colors.text, fontFamily: "PlusJakartaSans_600SemiBold" }]}>
+                      {profile.university}
+                    </Text>
+                  </View>
+                ) : null}
+
                 {profile.location ? (
                   <View style={styles.metaItem}>
                     <MapPin size={16} color={theme.colors.textSubtle} />
@@ -253,7 +330,7 @@ export default function PublicProfileScreen() {
                 ) : null}
               </View>
 
-              {/* Stats Row */}
+              {/* Stats */}
               <View style={[styles.statsRow, { borderTopColor: theme.colors.border, borderBottomColor: theme.colors.border }]}>
                 <View style={styles.statCell}>
                   <Text style={[styles.statValue, { color: theme.colors.text }]}>{profile.followersCount || 0}</Text>
@@ -261,17 +338,17 @@ export default function PublicProfileScreen() {
                 </View>
                 <View style={[styles.statDivider, { backgroundColor: theme.colors.border }]} />
                 <View style={styles.statCell}>
-                  <Text style={[styles.statValue, { color: theme.colors.text }]}>{profile.followingCount || 0}</Text>
-                  <Text style={[styles.statName, { color: theme.colors.textSubtle }]}>Following</Text>
+                  <Text style={[styles.statValue, { color: theme.colors.text }]}>{attendedEvents.length}</Text>
+                  <Text style={[styles.statName, { color: theme.colors.textSubtle }]}>Events</Text>
                 </View>
                 <View style={[styles.statDivider, { backgroundColor: theme.colors.border }]} />
                 <View style={styles.statCell}>
-                  <Text style={[styles.statValue, { color: theme.colors.text }]}>{profile.eventsCount || 0}</Text>
-                  <Text style={[styles.statName, { color: theme.colors.textSubtle }]}>Events</Text>
+                  <Text style={[styles.statValue, { color: theme.colors.text }]}>{communities.length}</Text>
+                  <Text style={[styles.statName, { color: theme.colors.textSubtle }]}>Communities</Text>
                 </View>
               </View>
 
-              {/* CTA actions */}
+              {/* CTA */}
               {!isMe && currentUser ? (
                 <PrimaryButton
                   label={isFollowing ? "Following" : "Follow"}
@@ -289,19 +366,132 @@ export default function PublicProfileScreen() {
               ) : null}
             </View>
           </NeuCard>
+
+          {/* ── DAILY UPDATES ────────────────────────────── */}
+          <View style={[styles.section, { backgroundColor: theme.colors.surface }]}>
+            <SectionHeader title="Daily Updates" icon={Zap} color={theme.colors.brand} theme={theme} />
+            {updates.length === 0 ? (
+              <Text style={[styles.emptyText, { color: theme.colors.textSubtle }]}>
+                No updates yet.
+              </Text>
+            ) : (
+              <View style={styles.updatesList}>
+                {updates.map((u) => (
+                  <View
+                    key={u._id}
+                    style={[styles.updateCard, { backgroundColor: theme.colors.surfaceElevated, borderColor: theme.colors.border }]}
+                  >
+                    <Text style={[styles.updateContent, { color: theme.colors.text }]}>
+                      {u.content}
+                    </Text>
+                    <Text style={[styles.updateTime, { color: theme.colors.textSubtle }]}>
+                      {formatRelativeTime(u.createdAt)}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            )}
+          </View>
+
+          {/* ── EVENTS ATTENDED ──────────────────────────── */}
+          <View style={[styles.section, { backgroundColor: theme.colors.surface }]}>
+            <SectionHeader title="Events Attended" icon={Calendar} color="#F97316" theme={theme} />
+            {attendedEvents.length === 0 ? (
+              <Text style={[styles.emptyText, { color: theme.colors.textSubtle }]}>
+                No events attended yet.
+              </Text>
+            ) : (
+              <View style={styles.itemList}>
+                {attendedEvents.slice(0, 5).map((event, idx) => (
+                  <TouchableOpacity
+                    key={event.event_id || idx}
+                    style={[styles.itemRow, { borderColor: theme.colors.border }]}
+                    onPress={() => router.push(`/event/${event.event_id}`)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={[styles.itemThumb, { backgroundColor: "#F9731622" }]}>
+                      <Calendar size={18} color="#F97316" />
+                    </View>
+                    <View style={styles.itemInfo}>
+                      <Text style={[styles.itemName, { color: theme.colors.text }]} numberOfLines={1}>
+                        {event.name}
+                      </Text>
+                      {event.venue ? (
+                        <Text style={[styles.itemSub, { color: theme.colors.textSubtle }]} numberOfLines={1}>
+                          {event.venue}
+                        </Text>
+                      ) : null}
+                    </View>
+                  </TouchableOpacity>
+                ))}
+                {attendedEvents.length > 5 ? (
+                  <Text style={[styles.moreLabel, { color: theme.colors.textSubtle }]}>
+                    +{attendedEvents.length - 5} more events
+                  </Text>
+                ) : null}
+              </View>
+            )}
+          </View>
+
+          {/* ── COMMUNITIES ──────────────────────────────── */}
+          <View style={[styles.section, { backgroundColor: theme.colors.surface }]}>
+            <SectionHeader title="Communities" icon={Users} color="#7C3AED" theme={theme} />
+            {communities.length === 0 ? (
+              <Text style={[styles.emptyText, { color: theme.colors.textSubtle }]}>
+                Not part of any communities yet.
+              </Text>
+            ) : (
+              <View style={styles.communityGrid}>
+                {communities.map((c) => (
+                  <View
+                    key={c._id}
+                    style={[styles.communityChip, { backgroundColor: theme.colors.surfaceElevated, borderColor: theme.colors.border }]}
+                  >
+                    {c.profileImage ? (
+                      <Image source={{ uri: c.profileImage }} style={styles.communityThumb} />
+                    ) : (
+                      <View style={[styles.communityThumbFallback, { backgroundColor: "#7C3AED22" }]}>
+                        <Users size={12} color="#7C3AED" />
+                      </View>
+                    )}
+                    <Text style={[styles.communityName, { color: theme.colors.text }]} numberOfLines={1}>
+                      {c.name}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            )}
+          </View>
+
+          <View style={{ height: 40 }} />
         </ScrollView>
-      {profile && (
-        <ReportModal
-          visible={reportVisible}
-          onClose={() => setReportVisible(false)}
-          targetId={profile._id}
-          targetType="user"
-          targetName={profile.username}
-        />
-      )}
+
+        {profile && (
+          <ReportModal
+            visible={reportVisible}
+            onClose={() => setReportVisible(false)}
+            targetId={profile._id}
+            targetType="user"
+            targetName={profile.username}
+          />
+        )}
       </View>
     </Screen>
   );
+}
+
+function formatRelativeTime(dateStr) {
+  const now = new Date();
+  const date = new Date(dateStr);
+  const diffMs = now - date;
+  const diffMins = Math.floor(diffMs / 60000);
+  if (diffMins < 1) return "just now";
+  if (diffMins < 60) return `${diffMins}m ago`;
+  const diffHrs = Math.floor(diffMins / 60);
+  if (diffHrs < 24) return `${diffHrs}h ago`;
+  const diffDays = Math.floor(diffHrs / 24);
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return date.toLocaleDateString([], { month: "short", day: "numeric" });
 }
 
 const styles = StyleSheet.create({
@@ -318,13 +508,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
   },
-  moreBtn: {
-    padding: 8,
-  },
+  moreBtn: { padding: 8 },
   scrollContent: {
     padding: 16,
     paddingBottom: 40,
+    gap: 12,
   },
+  // Profile card
   profileCard: {
     borderRadius: 24,
     overflow: "hidden",
@@ -346,10 +536,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     overflow: "hidden",
   },
-  avatarImg: {
-    width: "100%",
-    height: "100%",
-  },
+  avatarImg: { width: "100%", height: "100%" },
   avatarText: {
     fontSize: 32,
     fontWeight: "800",
@@ -400,10 +587,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     marginBottom: 24,
   },
-  statCell: {
-    flex: 1,
-    alignItems: "center",
-  },
+  statCell: { flex: 1, alignItems: "center" },
   statValue: {
     fontSize: 18,
     fontWeight: "800",
@@ -419,9 +603,105 @@ const styles = StyleSheet.create({
     height: "80%",
     alignSelf: "center",
   },
-  actionBtn: {
-    width: "100%",
+  actionBtn: { width: "100%" },
+
+  // Sections below profile card
+  section: {
+    borderRadius: radius.lg,
+    padding: 18,
   },
+  emptyText: {
+    fontSize: 13,
+    fontFamily: "PlusJakartaSans_400Regular",
+    fontStyle: "italic",
+  },
+
+  // Updates
+  updatesList: { gap: 10 },
+  updateCard: {
+    borderRadius: radius.md,
+    borderWidth: 1,
+    padding: 14,
+    gap: 8,
+  },
+  updateContent: {
+    fontSize: 14,
+    fontFamily: "PlusJakartaSans_400Regular",
+    lineHeight: 21,
+  },
+  updateTime: {
+    fontSize: 11,
+    fontFamily: "PlusJakartaSans_500Medium",
+  },
+
+  // Events / generic item list
+  itemList: { gap: 8 },
+  itemRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+  },
+  itemThumb: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.sm,
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  itemInfo: { flex: 1, minWidth: 0 },
+  itemName: {
+    fontSize: 14,
+    fontWeight: "600",
+    fontFamily: "PlusJakartaSans_600SemiBold",
+  },
+  itemSub: {
+    fontSize: 12,
+    fontFamily: "PlusJakartaSans_400Regular",
+    marginTop: 2,
+  },
+  moreLabel: {
+    fontSize: 12,
+    fontFamily: "PlusJakartaSans_500Medium",
+    paddingTop: 6,
+    textAlign: "center",
+  },
+
+  // Communities grid
+  communityGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  communityChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: radius.full,
+    borderWidth: 1,
+  },
+  communityThumb: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+  },
+  communityThumbFallback: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  communityName: {
+    fontSize: 12,
+    fontFamily: "PlusJakartaSans_600SemiBold",
+    maxWidth: 120,
+  },
+
   errorTitle: {
     fontSize: 20,
     fontWeight: "800",

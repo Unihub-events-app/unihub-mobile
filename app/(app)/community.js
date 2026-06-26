@@ -11,6 +11,7 @@ import {
   Modal,
   Image,
 } from "react-native";
+import { BlurView } from "expo-blur";
 import { useRouter } from "expo-router";
 import {
   Users,
@@ -98,10 +99,13 @@ const CommunityCard = ({
           </View>
         )}
         {hasImageUrl && <View style={styles.cardBannerScrim} />}
+        {hasImageUrl && (
+          <BlurView intensity={55} tint="dark" style={styles.cardBannerBlur} />
+        )}
         <View style={styles.cardBannerContent}>
           <View style={{ flex: 1 }}>
             <Text
-              style={[styles.cardBannerTitle, { color: hasImageUrl ? "#fff" : theme.colors.text }]}
+              style={[styles.cardBannerTitle, { color: hasImageUrl ? "#fff" : "#374151" }]}
               numberOfLines={1}
             >{community.name}</Text>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 4, flexWrap: "wrap" }}>
@@ -869,7 +873,7 @@ export default function CommunityScreen() {
               </View>
             )}
             {joinedCommunities.length > 0 && (
-              <View style={styles.section}>
+              <View style={[styles.section, { marginTop: 6 }]}>
                 <View style={styles.sectionHeader}>
                   <Text style={styles.sectionTitle}>Joined</Text>
                   <View style={styles.sectionCount}>
@@ -1442,7 +1446,15 @@ const getStyles = (theme) => StyleSheet.create({
   },
   cardBannerScrim: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.44)",
+    backgroundColor: "rgba(0,0,0,0.28)",
+  },
+  cardBannerBlur: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 80,
+    overflow: "hidden",
   },
   cardBannerContent: {
     position: "absolute",

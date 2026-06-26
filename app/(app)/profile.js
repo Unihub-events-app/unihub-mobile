@@ -1,8 +1,8 @@
 import { useTheme } from "../../theme/ThemeProvider.js";
-import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator } from "react-native";
+import React, { useState, useEffect, useRef } from "react";
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, TextInput, Alert, KeyboardAvoidingView, Platform } from "react-native";
 import { router } from "expo-router";
-import { User, MapPin, Edit, Calendar, Users, Bookmark } from "lucide-react-native";
+import { User, MapPin, Edit, Calendar, Users, Bookmark, Zap, Send, Trash2 } from "lucide-react-native";
 import { Screen, InterestsModal, SkeletonLoader, EmptyState } from "../../components/index.js";
 import { radius, spacing } from "../../theme/tokens.js";
 import { BadgeRow } from "../../components/BadgeRow.js";
@@ -25,6 +25,10 @@ export default function ProfileScreen() {
   ]);
   const [followers, setFollowers] = useState([]);
   const [followersLoading, setFollowersLoading] = useState(false);
+  const [updates, setUpdates] = useState([]);
+  const [updatesLoading, setUpdatesLoading] = useState(false);
+  const [updateDraft, setUpdateDraft] = useState("");
+  const [postingUpdate, setPostingUpdate] = useState(false);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -44,9 +48,10 @@ export default function ProfileScreen() {
           const data = await res.json();
           setUser(data);
           setEditableInterests(data.interests || []);
-          // Fetch followers
+          // Fetch followers and updates
           if (data._id) {
             fetchFollowers(data._id);
+            fetchUpdates(data._id);
           }
         }
       } catch (e) {
@@ -71,6 +76,73 @@ export default function ProfileScreen() {
     } finally {
       setFollowersLoading(false);
     }
+  };
+
+  const fetchUpdates = async (userId) => {
+    setUpdatesLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/social/updates/${userId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setUpdates(Array.isArray(data) ? data : []);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setUpdatesLoading(false);
+    }
+  };
+
+  const handlePostUpdate = async () => {
+    const trimmed = updateDraft.trim();
+    if (!trimmed || !token) return;
+    if (trimmed.length > 300) {
+      Alert.alert("Too long", "Updates can be at most 300 characters.");
+      return;
+    }
+    setPostingUpdate(true);
+    try {
+      const res = await fetch(`${API_URL}/social/updates`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ content: trimmed }),
+      });
+      if (res.ok) {
+        const newUpdate = await res.json();
+        setUpdates((prev) => [newUpdate, ...prev]);
+        setUpdateDraft("");
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setPostingUpdate(false);
+    }
+  };
+
+  const handleDeleteUpdate = (updateId) => {
+    Alert.alert("Delete update?", "This cannot be undone.", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            const res = await fetch(`${API_URL}/social/updates/${updateId}`, {
+              method: "DELETE",
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            if (res.ok) {
+              setUpdates((prev) => prev.filter((u) => u._id !== updateId));
+            }
+          } catch (e) {
+            console.error(e);
+          }
+        },
+      },
+    ]);
   };
 
   const toggleInterest = (interest) => {
@@ -179,6 +251,7 @@ export default function ProfileScreen() {
         <View style={styles.tabBar}>
           {[
             { key: "overview", label: "Overview" },
+            { key: "updates", label: "Updates" },
             { key: "events", label: "Hosted" },
             { key: "past", label: "Attending" },
             { key: "followers", label: "Followers" },
@@ -236,6 +309,85 @@ export default function ProfileScreen() {
                 <Text style={styles.inlineEmptyText}>No communities joined yet.</Text>
               </View>
             </>
+          )}
+
+          {activeTab === "updates" && (
+            <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined}>
+              {/* Compose box */}
+              <View style={[styles.composeBox, { backgroundColor: theme.colors.surfaceElevated, borderColor: theme.colors.border }]}>
+                <View style={[styles.composeAvatar, { backgroundColor: theme.colors.brandTint }]}>
+                  {user?.avatar ? (
+                    <ExpoImage source={{ uri: user.avatar }} style={styles.composeAvatarImg} contentFit="cover" />
+                  ) : (
+                    <Zap size={14} color={theme.colors.brand} />
+                  )}
+                </View>
+                <View style={styles.composeRight}>
+                  <TextInput
+                    style={[styles.composeInput, { color: theme.colors.text }]}
+                    placeholder="What's on your mind today?"
+                    placeholderTextColor={theme.colors.textSubtle}
+                    value={updateDraft}
+                    onChangeText={setUpdateDraft}
+                    multiline
+                    maxLength={300}
+                  />
+                  <View style={styles.composeFooter}>
+                    <Text style={[styles.charCount, { color: updateDraft.length > 270 ? theme.colors.error : theme.colors.textSubtle }]}>
+                      {updateDraft.length}/300
+                    </Text>
+                    <TouchableOpacity
+                      style={[
+                        styles.sendBtn,
+                        { backgroundColor: updateDraft.trim().length > 0 ? theme.colors.brand : theme.colors.surfaceMuted },
+                      ]}
+                      onPress={handlePostUpdate}
+                      disabled={!updateDraft.trim() || postingUpdate}
+                    >
+                      {postingUpdate ? (
+                        <ActivityIndicator size={14} color={theme.colors.text} />
+                      ) : (
+                        <Send size={14} color={updateDraft.trim().length > 0 ? theme.colors.textOnBrand : theme.colors.textSubtle} />
+                      )}
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </View>
+
+              <View style={styles.divider} />
+
+              {/* Updates list */}
+              {updatesLoading ? (
+                <View style={styles.emptyState}>
+                  <ActivityIndicator color={theme.colors.brand} />
+                </View>
+              ) : updates.length === 0 ? (
+                <View style={styles.emptyState}>
+                  <Zap size={40} color={theme.colors.textSubtle} />
+                  <Text style={styles.emptyTitle}>No updates yet</Text>
+                  <Text style={styles.emptyText}>Share what's on your mind. Your followers will see it.</Text>
+                </View>
+              ) : (
+                <View style={{ gap: 10 }}>
+                  {updates.map((u) => (
+                    <View
+                      key={u._id}
+                      style={[styles.updateCard, { backgroundColor: theme.colors.surfaceElevated, borderColor: theme.colors.border }]}
+                    >
+                      <Text style={[styles.updateContent, { color: theme.colors.text }]}>{u.content}</Text>
+                      <View style={styles.updateMeta}>
+                        <Text style={[styles.updateTime, { color: theme.colors.textSubtle }]}>
+                          {formatRelativeTime(u.createdAt)}
+                        </Text>
+                        <TouchableOpacity onPress={() => handleDeleteUpdate(u._id)} hitSlop={8}>
+                          <Trash2 size={14} color={theme.colors.textSubtle} />
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </KeyboardAvoidingView>
           )}
 
           {activeTab === "events" && (
@@ -368,6 +520,20 @@ export default function ProfileScreen() {
       />
     </Screen>
   );
+}
+
+function formatRelativeTime(dateStr) {
+  const now = new Date();
+  const date = new Date(dateStr);
+  const diffMs = now - date;
+  const diffMins = Math.floor(diffMs / 60000);
+  if (diffMins < 1) return "just now";
+  if (diffMins < 60) return `${diffMins}m ago`;
+  const diffHrs = Math.floor(diffMins / 60);
+  if (diffHrs < 24) return `${diffHrs}h ago`;
+  const diffDays = Math.floor(diffHrs / 24);
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return date.toLocaleDateString([], { month: "short", day: "numeric" });
 }
 
 const getStyles = (theme) =>
@@ -732,5 +898,75 @@ const getStyles = (theme) =>
       fontSize: 12,
       fontFamily: "PlusJakartaSans_400Regular",
       marginTop: 2,
+    },
+
+    // ── UPDATES ───────────────────────────────────────
+    composeBox: {
+      flexDirection: "row",
+      gap: 12,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      padding: 14,
+      marginBottom: 4,
+    },
+    composeAvatar: {
+      width: 38,
+      height: 38,
+      borderRadius: 19,
+      alignItems: "center",
+      justifyContent: "center",
+      overflow: "hidden",
+      flexShrink: 0,
+    },
+    composeAvatarImg: {
+      width: 38,
+      height: 38,
+    },
+    composeRight: {
+      flex: 1,
+      gap: 10,
+    },
+    composeInput: {
+      fontSize: 14,
+      fontFamily: "PlusJakartaSans_400Regular",
+      lineHeight: 20,
+      minHeight: 60,
+      textAlignVertical: "top",
+    },
+    composeFooter: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+    },
+    charCount: {
+      fontSize: 11,
+      fontFamily: "PlusJakartaSans_500Medium",
+    },
+    sendBtn: {
+      width: 34,
+      height: 34,
+      borderRadius: 17,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    updateCard: {
+      borderRadius: radius.md,
+      borderWidth: 1,
+      padding: 14,
+      gap: 8,
+    },
+    updateContent: {
+      fontSize: 14,
+      fontFamily: "PlusJakartaSans_400Regular",
+      lineHeight: 21,
+    },
+    updateMeta: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+    },
+    updateTime: {
+      fontSize: 11,
+      fontFamily: "PlusJakartaSans_500Medium",
     },
   });
