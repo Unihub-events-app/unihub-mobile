@@ -33,6 +33,7 @@ module.exports = ({ config }) => ({
     "expo-font",
     "expo-sharing",
     "expo-calendar",
+    "@react-native-community/datetimepicker",
     [
       "expo-camera",
       {
