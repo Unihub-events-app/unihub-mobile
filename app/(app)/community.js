@@ -11,7 +11,6 @@ import {
   Modal,
   Image,
 } from "react-native";
-import { BlurView } from "expo-blur";
 import { useRouter } from "expo-router";
 import {
   Users,
@@ -99,9 +98,7 @@ const CommunityCard = ({
           </View>
         )}
         {hasImageUrl && <View style={styles.cardBannerScrim} />}
-        {hasImageUrl && (
-          <BlurView intensity={55} tint="dark" style={styles.cardBannerBlur} />
-        )}
+        {hasImageUrl && <View style={styles.cardBannerBlur} />}
         <View style={styles.cardBannerContent}>
           <View style={{ flex: 1 }}>
             <Text
@@ -1454,7 +1451,9 @@ const getStyles = (theme) => StyleSheet.create({
     left: 0,
     right: 0,
     height: 80,
-    overflow: "hidden",
+    backgroundColor: "rgba(10,10,10,0.45)",
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.1)",
   },
   cardBannerContent: {
     position: "absolute",
