@@ -10,7 +10,7 @@ module.exports = ({ config }) => ({
   orientation: "default",
   userInterfaceStyle: "automatic",
   android: {
-    package: "click.tryunihub.mobile",
+    package: IS_DEV ? "click.tryunihub.mobile.dev" : "click.tryunihub.mobile",
     adaptiveIcon: {
       foregroundImage: "./assets/images/mobile-logo.png",
       backgroundColor: "#ffffff",
