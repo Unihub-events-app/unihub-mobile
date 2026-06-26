@@ -10,13 +10,16 @@ import {
   ActivityIndicator,
   Modal,
   Image,
+  Platform,
+  StatusBar,
 } from "react-native";
-import { BlurView } from "expo-blur";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import {
   Users,
   Plus,
   ChevronRight,
+  ChevronLeft,
   Search,
   AddUser,
   CheckSquare,
@@ -39,6 +42,13 @@ import CommunityAvatar from "../../components/CommunityAvatar";
 import { API_URL } from "../../lib/config";
 import { getUserToken } from "../../lib/auth";
 import { authenticatedFetch } from "../../lib/api";
+
+const COMMUNITY_STEP_NAMES = ["Identity", "Details", "Icon"];
+const COMMUNITY_CATEGORIES = [
+  "Tech", "Music", "Sports", "Art", "Science", "Business",
+  "Gaming", "Health", "Food", "Travel", "Politics", "Education",
+  "Fashion", "Film", "Literature", "Dance", "Comedy", "Other",
+];
 
 const PRESET_ICONS = [
   "🏛️",
@@ -99,9 +109,7 @@ const CommunityCard = ({
           </View>
         )}
         {hasImageUrl && <View style={styles.cardBannerScrim} />}
-        {hasImageUrl && (
-          <BlurView intensity={55} tint="dark" style={styles.cardBannerBlur} />
-        )}
+        {hasImageUrl && <View style={styles.cardBannerBlur} />}
         <View style={styles.cardBannerContent}>
           <View style={{ flex: 1 }}>
             <Text
@@ -294,7 +302,9 @@ export default function CommunityScreen() {
     useState(null);
   const [searchingCode, setSearchingCode] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
   const [message, setMessage] = useState(null);
+  const insets = useSafeAreaInsets();
   const [confirmModal, setConfirmModal] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [recentMessages, setRecentMessages] = useState({});
@@ -980,205 +990,217 @@ export default function CommunityScreen() {
         )}
       </ScrollView>
 
-      <Modal visible={showCreateModal} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Create Community</Text>
-              <TouchableOpacity
-                onPress={() => {
-                  setShowCreateModal(false);
-                  resetCreateForm();
-                }}
-                style={styles.modalCloseButton}
-              >
-                <Delete size={24} color={theme.colors.textSubtle} />
-              </TouchableOpacity>
+      <Modal visible={showCreateModal} transparent={false} animationType="slide" statusBarTranslucent>
+        <View style={[styles.cmScreen, { backgroundColor: theme.colors.background }]}>
+          {/* Header */}
+          <View style={[styles.cmHeader, { paddingTop: insets.top + 12, backgroundColor: theme.colors.navSurface }]}>
+            <TouchableOpacity
+              style={styles.cmBackBtn}
+              onPress={() => {
+                if (createStep > 1) setCreateStep(s => s - 1);
+                else { setShowCreateModal(false); resetCreateForm(); }
+              }}
+            >
+              <ChevronLeft size={22} color={theme.colors.text} />
+            </TouchableOpacity>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.cmStepLabel, { color: theme.colors.brand }]}>Step {createStep} of 3</Text>
+              <Text style={[styles.cmStepName, { color: theme.colors.text }]}>{COMMUNITY_STEP_NAMES[createStep - 1]}</Text>
             </View>
+            <View style={styles.cmPills}>
+              {[1, 2, 3].map(s => (
+                <View key={s} style={[
+                  styles.cmPill,
+                  s === createStep && styles.cmPillActive,
+                  s < createStep && styles.cmPillDone,
+                  s > createStep && styles.cmPillTodo,
+                ]} />
+              ))}
+            </View>
+          </View>
 
+          {/* Progress bar */}
+          <View style={[styles.cmProgressTrack, { backgroundColor: theme.colors.border }]}>
+            <View style={[styles.cmProgressFill, { width: `${(createStep / 3) * 100}%`, backgroundColor: theme.colors.brand }]} />
+          </View>
+
+          {/* Step content */}
+          <ScrollView
+            style={{ flex: 1 }}
+            contentContainerStyle={styles.cmContent}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
+            {/* Step 1: Identity */}
             {createStep === 1 && (
-              <ScrollView style={styles.stepContainer}>
-                <View style={styles.formGroup}>
-                  <Text style={styles.formLabel}>Community Name</Text>
+              <View style={styles.cmStepBody}>
+                <View style={styles.cmField}>
+                  <Text style={[styles.cmLabel, { color: theme.colors.textMuted }]}>Community Name</Text>
                   <TextInput
-                    style={styles.formInput}
+                    style={[styles.cmInput, { color: theme.colors.text, backgroundColor: theme.colors.surfaceMuted, borderColor: theme.colors.border }]}
                     value={newName}
                     onChangeText={setNewName}
-                    placeholder="Enter community name"
+                    placeholder="e.g. Tech Enthusiasts Club"
+                    placeholderTextColor={theme.colors.textSubtle}
                   />
                 </View>
-                <View style={styles.formGroup}>
-                  <Text style={styles.formLabel}>Description</Text>
+                <View style={styles.cmField}>
+                  <Text style={[styles.cmLabel, { color: theme.colors.textMuted }]}>Description</Text>
                   <TextInput
-                    style={[styles.formInput, styles.textArea]}
+                    style={[styles.cmInput, styles.cmTextArea, { color: theme.colors.text, backgroundColor: theme.colors.surfaceMuted, borderColor: theme.colors.border }]}
                     value={newDesc}
                     onChangeText={setNewDesc}
-                    placeholder="Describe your community"
+                    placeholder="What's this community about?"
+                    placeholderTextColor={theme.colors.textSubtle}
                     multiline
                     numberOfLines={4}
+                    textAlignVertical="top"
                   />
                 </View>
-                <TouchableOpacity
-                  style={styles.nextButton}
-                  onPress={() => setCreateStep(2)}
-                  disabled={!newName.trim()}
-                >
-                  <Text style={styles.nextButtonText}>Next Step</Text>
-                  <ChevronRight
-                    size={20}
-                    color="#1A1A14"
-                    style={{ marginLeft: 4 }}
-                  />
-                </TouchableOpacity>
-              </ScrollView>
+              </View>
             )}
 
+            {/* Step 2: Details */}
             {createStep === 2 && (
-              <ScrollView style={styles.stepContainer}>
-                <View style={styles.formGroup}>
-                  <Text style={styles.formLabel}>Category</Text>
-                  <TextInput
-                    style={styles.formInput}
-                    value={newCategory}
-                    onChangeText={setNewCategory}
-                    placeholder="e.g. Tech, Music, Sports"
-                  />
+              <View style={styles.cmStepBody}>
+                <View style={styles.cmField}>
+                  <Text style={[styles.cmLabel, { color: theme.colors.textMuted }]}>Category</Text>
+                  <TouchableOpacity
+                    style={[styles.cmDropdownBtn, { backgroundColor: theme.colors.surfaceMuted, borderColor: theme.colors.border }]}
+                    onPress={() => setShowCategoryDropdown(v => !v)}
+                  >
+                    <Text style={newCategory ? [styles.cmDropdownText, { color: theme.colors.text }] : [styles.cmDropdownText, { color: theme.colors.textSubtle }]}>
+                      {newCategory || "Select a category"}
+                    </Text>
+                    <ChevronRight size={16} color={theme.colors.textSubtle} style={{ transform: [{ rotate: showCategoryDropdown ? "270deg" : "90deg" }] }} />
+                  </TouchableOpacity>
+                  {showCategoryDropdown && (
+                    <NeuInset style={styles.cmDropdown}>
+                      {COMMUNITY_CATEGORIES.map(c => (
+                        <TouchableOpacity
+                          key={c}
+                          style={[styles.cmDropdownItem, { borderBottomColor: theme.colors.border }, newCategory === c && { backgroundColor: theme.colors.brandTint }]}
+                          onPress={() => { setNewCategory(c); setShowCategoryDropdown(false); }}
+                        >
+                          <Text style={[styles.cmDropdownItemText, { color: theme.colors.text }, newCategory === c && { color: theme.colors.brand, fontWeight: "700" }]}>{c}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </NeuInset>
+                  )}
                 </View>
-                <View style={styles.formGroup}>
-                  <Text style={styles.formLabel}>Rules (one per line)</Text>
+
+                <View style={styles.cmField}>
+                  <Text style={[styles.cmLabel, { color: theme.colors.textMuted }]}>
+                    Rules <Text style={[styles.cmOptional, { color: theme.colors.textSubtle }]}>(optional)</Text>
+                  </Text>
                   <TextInput
-                    style={[styles.formInput, styles.textArea]}
+                    style={[styles.cmInput, styles.cmTextArea, { color: theme.colors.text, backgroundColor: theme.colors.surfaceMuted, borderColor: theme.colors.border }]}
                     value={newRules}
                     onChangeText={setNewRules}
-                    placeholder="Enter community rules"
+                    placeholder={"One rule per line:\n• Be respectful\n• No spam"}
+                    placeholderTextColor={theme.colors.textSubtle}
                     multiline
                     numberOfLines={4}
+                    textAlignVertical="top"
                   />
                 </View>
+
                 <TouchableOpacity
-                  style={[styles.checkboxRow, { marginTop: 8 }]}
-                  onPress={() => setNewIsPrivate(!newIsPrivate)}
+                  style={[styles.cmPrivateRow, { borderColor: newIsPrivate ? theme.colors.brand : theme.colors.border, backgroundColor: newIsPrivate ? theme.colors.brandTint : theme.colors.surfaceMuted }]}
+                  onPress={() => setNewIsPrivate(v => !v)}
                 >
-                  <View
-                    style={[
-                      styles.checkbox,
-                      newIsPrivate && styles.checkedCheckbox,
-                    ]}
-                  >
-                    {newIsPrivate && <CheckSquare size={12} color="#fff" />}
+                  <Lock size={18} color={newIsPrivate ? theme.colors.brand : theme.colors.textSubtle} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.cmPrivateTitle, { color: newIsPrivate ? theme.colors.brand : theme.colors.text }]}>Private Community</Text>
+                    <Text style={[styles.cmPrivateSub, { color: theme.colors.textSubtle }]}>Members join via invite code only</Text>
                   </View>
-                  <Text style={styles.checkboxLabel}>
-                    Make community private
-                  </Text>
+                  <View style={[styles.cmToggle, { backgroundColor: newIsPrivate ? theme.colors.brand : theme.colors.border }]}>
+                    <View style={[styles.cmToggleThumb, { transform: [{ translateX: newIsPrivate ? 18 : 2 }] }]} />
+                  </View>
                 </TouchableOpacity>
-                <View style={styles.stepActionsRow}>
-                  <TouchableOpacity
-                    style={styles.backButton}
-                    onPress={() => setCreateStep(1)}
-                  >
-                    <ChevronRight
-                      size={20}
-                      color={theme.colors.brand}
-                      style={{
-                        transform: [{ rotate: "180deg" }],
-                        marginRight: 4,
-                      }}
-                    />
-                    <Text style={styles.backButtonText}>Back</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.nextButton}
-                    onPress={() => setCreateStep(3)}
-                    disabled={!newCategory.trim()}
-                  >
-                    <Text style={styles.nextButtonText}>Next Step</Text>
-                    <ChevronRight
-                      size={20}
-                      color="#fff"
-                      style={{ marginLeft: 4 }}
-                    />
-                  </TouchableOpacity>
-                </View>
-              </ScrollView>
+              </View>
             )}
 
+            {/* Step 3: Icon */}
             {createStep === 3 && (
-              <ScrollView style={styles.stepContainer}>
-                <View style={styles.formGroup}>
-                  <Text style={styles.formLabel}>Icon</Text>
-                  <View style={styles.iconsGrid}>
-                    {PRESET_ICONS.map((icon) => (
+              <View style={styles.cmStepBody}>
+                <View style={styles.cmField}>
+                  <Text style={[styles.cmLabel, { color: theme.colors.textMuted }]}>Choose an Icon</Text>
+                  <View style={styles.cmIconGrid}>
+                    {PRESET_ICONS.map(icon => (
                       <TouchableOpacity
                         key={icon}
-                        style={[
-                          styles.iconOption,
-                          newImage === icon && styles.selectedIconOption,
-                        ]}
-                        onPress={() => {
-                          setNewImage(icon);
-                          setIsCustomImage(false);
-                        }}
+                        style={[styles.cmIconOpt, { backgroundColor: theme.colors.surfaceMuted, borderColor: theme.colors.border }, newImage === icon && { backgroundColor: theme.colors.brandTint, borderColor: theme.colors.brand, borderWidth: 2 }]}
+                        onPress={() => { setNewImage(icon); setIsCustomImage(false); }}
                       >
-                        <Text style={styles.iconOptionText}>{icon}</Text>
+                        <Text style={styles.cmIconEmoji}>{icon}</Text>
                       </TouchableOpacity>
                     ))}
                   </View>
                 </View>
+
                 <TouchableOpacity
-                  style={styles.uploadButton}
-                  onPress={() => {
-                    alert("Image upload coming soon!");
-                  }}
+                  style={[styles.cmUploadBtn, { borderColor: theme.colors.border }]}
+                  onPress={() => alert("Image upload coming soon!")}
                 >
-                  <Upload
-                    size={20}
-                    color={theme.colors.brand}
-                    style={{ marginRight: 8 }}
-                  />
-                  <Text style={styles.uploadButtonText}>
-                    Upload Custom Image
-                  </Text>
+                  <Upload size={18} color={theme.colors.brand} />
+                  <Text style={[styles.cmUploadText, { color: theme.colors.brand }]}>Upload Custom Image</Text>
                 </TouchableOpacity>
-                <View style={styles.stepActionsRow}>
-                  <TouchableOpacity
-                    style={styles.backButton}
-                    onPress={() => setCreateStep(2)}
-                  >
-                    <ChevronRight
-                      size={20}
-                      color={theme.colors.brand}
-                      style={{
-                        transform: [{ rotate: "180deg" }],
-                        marginRight: 4,
-                      }}
-                    />
-                    <Text style={styles.backButtonText}>Back</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[
-                      styles.createButtonFinal,
-                      isProcessing && { opacity: 0.5 },
-                    ]}
-                    onPress={handleCreate}
-                    disabled={isProcessing}
-                  >
-                    {isProcessing ? (
-                      <ActivityIndicator size="small" color="#fff" />
-                    ) : (
-                      <>
-                        <Text style={styles.createButtonFinalText}>
-                          Create Community
-                        </Text>
-                        <CheckSquare
-                          size={20}
-                          color="#fff"
-                          style={{ marginLeft: 4 }}
-                        />
-                      </>
-                    )}
-                  </TouchableOpacity>
+
+                <View style={[styles.cmPreviewCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+                  <View style={[styles.cmPreviewIcon, { backgroundColor: theme.colors.navSurface }]}>
+                    <Text style={{ fontSize: 34 }}>{newImage}</Text>
+                  </View>
+                  <View style={{ flex: 1, gap: 2 }}>
+                    <Text style={[styles.cmPreviewName, { color: theme.colors.text }]} numberOfLines={1}>
+                      {newName || "Community Name"}
+                    </Text>
+                    <Text style={[styles.cmPreviewCat, { color: theme.colors.brand }]}>
+                      {newCategory || "Category"}
+                    </Text>
+                  </View>
                 </View>
-              </ScrollView>
+              </View>
+            )}
+          </ScrollView>
+
+          {/* Navigation */}
+          <View style={[styles.cmNavRow, { borderTopColor: theme.colors.border, backgroundColor: theme.colors.background, paddingBottom: insets.bottom + 8 }]}>
+            <TouchableOpacity
+              style={styles.cmNavGhost}
+              onPress={() => {
+                if (createStep > 1) setCreateStep(s => s - 1);
+                else { setShowCreateModal(false); resetCreateForm(); }
+              }}
+            >
+              <ChevronLeft size={18} color={theme.colors.brand} />
+              <Text style={[styles.cmNavGhostText, { color: theme.colors.brand }]}>{createStep === 1 ? "Cancel" : "Back"}</Text>
+            </TouchableOpacity>
+
+            {createStep < 3 ? (
+              <TouchableOpacity
+                style={[styles.cmNavPrimary, { backgroundColor: theme.colors.brand }, ((createStep === 1 && !newName.trim()) || (createStep === 2 && !newCategory.trim())) && { opacity: 0.4 }]}
+                onPress={() => setCreateStep(s => Math.min(3, s + 1))}
+                disabled={(createStep === 1 && !newName.trim()) || (createStep === 2 && !newCategory.trim())}
+              >
+                <Text style={styles.cmNavPrimaryText}>Next Step</Text>
+                <ChevronRight size={18} color="#1A1A14" />
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                style={[styles.cmNavPrimary, { backgroundColor: theme.colors.brand }, isProcessing && { opacity: 0.5 }]}
+                onPress={handleCreate}
+                disabled={isProcessing}
+              >
+                {isProcessing ? (
+                  <ActivityIndicator size="small" color="#1A1A14" />
+                ) : (
+                  <>
+                    <Text style={styles.cmNavPrimaryText}>Create Community</Text>
+                    <CheckSquare size={18} color="#1A1A14" />
+                  </>
+                )}
+              </TouchableOpacity>
             )}
           </View>
         </View>
@@ -1454,7 +1476,9 @@ const getStyles = (theme) => StyleSheet.create({
     left: 0,
     right: 0,
     height: 80,
-    overflow: "hidden",
+    backgroundColor: "rgba(10,10,10,0.45)",
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.1)",
   },
   cardBannerContent: {
     position: "absolute",
@@ -1636,171 +1660,243 @@ const getStyles = (theme) => StyleSheet.create({
   friendButtonText: {
     color: theme.colors.success,
   },
-  modalOverlay: {
+  cmScreen: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justifyContent: "flex-end",
   },
-  modalContainer: {
-    backgroundColor: theme.colors.surface,
-    borderTopLeftRadius: radius.xl,
-    borderTopRightRadius: radius.xl,
-    padding: 24,
-    paddingBottom: 48,
-    maxHeight: "80%",
-  },
-  modalHeader: {
+  cmHeader: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 24,
+    paddingHorizontal: 16,
+    paddingBottom: 14,
+    gap: 12,
   },
-  modalTitle: {
-    fontSize: 20,
+  cmBackBtn: {
+    width: 38,
+    height: 38,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: radius.md,
+    backgroundColor: "rgba(128,128,128,0.12)",
+  },
+  cmStepLabel: {
+    fontSize: 11,
     fontWeight: "700",
+    fontFamily: "PlusJakartaSans_700Bold",
+    textTransform: "uppercase",
+    letterSpacing: 1,
+    marginBottom: 2,
+  },
+  cmStepName: {
+    fontSize: 20,
+    fontWeight: "800",
     fontFamily: "SpaceGrotesk_700Bold",
-    color: theme.colors.text,
     letterSpacing: -0.3,
   },
-  modalCloseButton: {
-    padding: 4,
+  cmPills: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
   },
-  stepContainer: {
-    maxHeight: "100%",
+  cmPill: {
+    height: 8,
+    borderRadius: 4,
   },
-  formGroup: {
-    marginBottom: 20,
+  cmPillActive: {
+    width: 28,
+    backgroundColor: theme.colors.brand,
   },
-  formLabel: {
+  cmPillDone: {
+    width: 16,
+    backgroundColor: theme.colors.brand,
+    opacity: 0.5,
+  },
+  cmPillTodo: {
+    width: 16,
+    backgroundColor: theme.colors.border,
+  },
+  cmProgressTrack: {
+    height: 3,
+    borderRadius: 2,
+  },
+  cmProgressFill: {
+    height: "100%",
+    borderRadius: 2,
+  },
+  cmContent: {
+    padding: 24,
+  },
+  cmStepBody: {
+    gap: 20,
+  },
+  cmField: {
+    gap: 8,
+  },
+  cmLabel: {
     fontSize: 14,
     fontWeight: "600",
-    color: theme.colors.textMuted,
-    marginBottom: 8,
   },
-  formInput: {
+  cmOptional: {
+    fontSize: 12,
+    fontWeight: "400",
+  },
+  cmInput: {
     width: "100%",
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: theme.colors.surfaceMuted,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
+    borderWidth: 1.5,
+    borderRadius: 16,
     fontSize: 16,
-    color: theme.colors.text,
     fontFamily: "PlusJakartaSans_400Regular",
   },
-  textArea: {
-    height: 100,
+  cmTextArea: {
+    height: 110,
     textAlignVertical: "top",
   },
-  nextButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 14,
-    borderRadius: radius.xxl,
-    backgroundColor: theme.colors.brand,
-    marginTop: 8,
-  },
-  nextButtonText: {
-    color: theme.colors.textOnBrand,
-    fontSize: 16,
-    fontWeight: "700",
-    fontFamily: "PlusJakartaSans_700Bold",
-  },
-  backButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 14,
-    paddingHorizontal: 24,
-    borderRadius: radius.xxl,
-  },
-  backButtonText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: theme.colors.brand,
-  },
-  stepActionsRow: {
+  cmDropdownBtn: {
     flexDirection: "row",
     justifyContent: "space-between",
-    gap: 12,
-    marginTop: 8,
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderWidth: 1.5,
+    borderRadius: 16,
   },
-  checkboxRow: {
+  cmDropdownText: {
+    fontSize: 16,
+  },
+  cmDropdown: {
+    marginTop: 6,
+    borderRadius: 12,
+    overflow: "hidden",
+    maxHeight: 220,
+  },
+  cmDropdownItem: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+  },
+  cmDropdownItemText: {
+    fontSize: 14,
+  },
+  cmPrivateRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
-    paddingVertical: 4,
+    gap: 14,
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1.5,
   },
-  checkbox: {
-    width: 18,
-    height: 18,
-    borderRadius: 4,
-    borderWidth: 2,
-    borderColor: theme.colors.brand,
+  cmPrivateTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    fontFamily: "PlusJakartaSans_700Bold",
+    marginBottom: 2,
+  },
+  cmPrivateSub: {
+    fontSize: 12,
+  },
+  cmToggle: {
+    width: 42,
+    height: 24,
+    borderRadius: 12,
     justifyContent: "center",
-    alignItems: "center",
   },
-  checkedCheckbox: {
-    backgroundColor: theme.colors.brand,
+  cmToggleThumb: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: "#fff",
   },
-  checkboxLabel: {
-    fontSize: 14,
-    color: theme.colors.textMuted,
-  },
-  iconsGrid: {
+  cmIconGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 12,
+    gap: 10,
   },
-  iconOption: {
-    width: 56,
-    height: 56,
+  cmIconOpt: {
+    width: 58,
+    height: 58,
     borderRadius: radius.md,
-    backgroundColor: theme.colors.surfaceMuted,
     borderWidth: 1,
-    borderColor: theme.colors.border,
     alignItems: "center",
     justifyContent: "center",
   },
-  selectedIconOption: {
-    backgroundColor: theme.colors.brandTint,
-    borderWidth: 2,
-    borderColor: theme.colors.brand,
-  },
-  iconOptionText: {
+  cmIconEmoji: {
     fontSize: 28,
   },
-  uploadButton: {
+  cmUploadBtn: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 12,
-    borderRadius: radius.lg,
+    gap: 8,
+    paddingVertical: 13,
+    borderRadius: 16,
     borderWidth: 1.5,
-    borderColor: theme.colors.border,
     borderStyle: "dashed",
-    marginBottom: 16,
   },
-  uploadButtonText: {
+  cmUploadText: {
     fontSize: 14,
     fontWeight: "600",
-    color: theme.colors.brand,
+    fontFamily: "PlusJakartaSans_600SemiBold",
   },
-  createButtonFinal: {
-    flex: 1,
+  cmPreviewCard: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 14,
-    borderRadius: radius.xxl,
-    backgroundColor: theme.colors.success,
+    gap: 14,
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    marginTop: 4,
   },
-  createButtonFinalText: {
-    color: "#fff",
+  cmPreviewIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  cmPreviewName: {
+    fontSize: 16,
+    fontWeight: "700",
+    fontFamily: "SpaceGrotesk_700Bold",
+  },
+  cmPreviewCat: {
+    fontSize: 12,
+    fontWeight: "600",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  cmNavRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 24,
+    paddingTop: 16,
+    borderTopWidth: 1,
+  },
+  cmNavGhost: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingVertical: 12,
+    paddingHorizontal: 4,
+  },
+  cmNavGhostText: {
+    fontSize: 16,
+    fontWeight: "600",
+    fontFamily: "PlusJakartaSans_600SemiBold",
+  },
+  cmNavPrimary: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingVertical: 12,
+    paddingHorizontal: 22,
+    borderRadius: radius.xxl,
+  },
+  cmNavPrimaryText: {
     fontSize: 16,
     fontWeight: "700",
     fontFamily: "PlusJakartaSans_700Bold",
+    color: "#1A1A14",
   },
 });
