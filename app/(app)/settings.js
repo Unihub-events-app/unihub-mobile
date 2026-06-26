@@ -134,7 +134,7 @@ export default function SettingsScreen() {
             icon={FileText}
             title="Terms of Service"
             subtitle="Read our terms and conditions"
-            onPress={() => Linking.openURL("https://tryunihub.click/terms")}
+            onPress={() => Linking.openURL("https://try-unihub.click/terms-of-service")}
             iconColor="#0ea5e9"
           />
           <View style={styles.divider} />
@@ -142,7 +142,7 @@ export default function SettingsScreen() {
             icon={Shield}
             title="Privacy Policy"
             subtitle="How we handle your data"
-            onPress={() => Linking.openURL("https://tryunihub.click/privacy")}
+            onPress={() => Linking.openURL("https://try-unihub.click/privacy-policy")}
             iconColor="#10b981"
           />
         </SettingsSection>

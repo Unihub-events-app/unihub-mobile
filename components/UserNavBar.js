@@ -30,7 +30,7 @@ export function UserNavBar() {
 
   useEffect(() => {
     if (!token) return;
-    const fetchData = async () => {
+    const fetchUserData = async () => {
       try {
         const res = await fetch(`${API_URL}/user/details`, {
           method: "POST",
@@ -39,7 +39,13 @@ export function UserNavBar() {
         });
         if (res.ok) setUserData(await res.json());
       } catch {}
+    };
+    fetchUserData();
+  }, [token]);
 
+  useEffect(() => {
+    if (!token) return;
+    const fetchNotifications = async () => {
       try {
         const res = await fetch(`${API_URL}/notifications/user`, {
           method: "POST",
@@ -52,8 +58,10 @@ export function UserNavBar() {
         }
       } catch {}
     };
-    fetchData();
-  }, [token, pathname]);
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 30000);
+    return () => clearInterval(interval);
+  }, [token]);
 
   const displayName  = useMemo(
     () => userData?.fullname || userData?.name || userData?.username || "User",
