@@ -97,11 +97,12 @@ export default function SignupScreen() {
   const clearMessages = () => { setError(""); setSuccess(""); };
 
   const handleOtpChange = (val, idx) => {
+    const digit = val.replace(/\D/g, "").slice(-1);
     const next = [...otpDigits];
-    next[idx] = val.slice(-1).toUpperCase();
+    next[idx] = digit;
     setOtpDigits(next);
     setOtp(next.join(""));
-    if (val && idx < 5) otpRefs.current[idx + 1]?.focus();
+    if (digit && idx < 5) otpRefs.current[idx + 1]?.focus();
   };
 
   const handleOtpKeyPress = (e, idx) => {
@@ -340,8 +341,8 @@ export default function SignupScreen() {
                       value={digit}
                       onChangeText={(v) => handleOtpChange(v, i)}
                       onKeyPress={(e) => handleOtpKeyPress(e, i)}
-                      keyboardType="default"
-                      autoCapitalize="characters"
+                      keyboardType="number-pad"
+                      autoCapitalize="none"
                       maxLength={1}
                       style={[styles.otpBox, {
                         backgroundColor: theme.colors.surfaceMuted,
