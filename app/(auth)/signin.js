@@ -68,7 +68,7 @@ export default function SignInScreen() {
 
   const handleOtpChange = (val, idx) => {
     const next = [...otpDigits];
-    next[idx] = val.slice(-1);
+    next[idx] = val.slice(-1).toUpperCase();
     setOtpDigits(next);
     if (val && idx < 5) otpRefs.current[idx + 1]?.focus();
   };
