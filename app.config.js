@@ -56,6 +56,5 @@ module.exports = ({ config }) => ({
         },
       },
     ],
-    "react-native-keyboard-controller",
   ],
 });
