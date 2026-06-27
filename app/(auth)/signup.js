@@ -2,8 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import { router } from "expo-router";
 import {
   View, Text, Pressable, TextInput, StyleSheet, ScrollView,
-  KeyboardAvoidingView, Platform, useWindowDimensions,
+  Platform, useWindowDimensions,
 } from "react-native";
+import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 import Animated, { FadeInUp } from "react-native-reanimated";
 import {
   Mail, User, CheckCircle2, AlertCircle, ArrowRight,
@@ -185,7 +186,7 @@ export default function SignupScreen() {
   return (
     <KeyboardAvoidingView
       style={{ flex: 1, backgroundColor: theme.colors.brand }}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      behavior="padding"
     >
       {/* Brand top section */}
       <View style={[styles.topSection, { height: topH }]}>

@@ -8,7 +8,6 @@ import {
   TextInput,
   TouchableOpacity,
   ActivityIndicator,
-  KeyboardAvoidingView,
   Platform,
   StatusBar,
   Image,
@@ -19,6 +18,7 @@ import {
   Pressable,
   Dimensions,
 } from "react-native";
+import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 
 const STATUS_BAR_HEIGHT = Platform.OS === "android" ? StatusBar.currentHeight || 24 : 44;
 const SCREEN_HEIGHT = Dimensions.get("window").height;
@@ -750,8 +750,8 @@ export default function CommunityChatScreen() {
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        keyboardVerticalOffset={Platform.OS === "ios" ? STATUS_BAR_HEIGHT + 76 : 0}
+        behavior="padding"
+        keyboardVerticalOffset={Platform.OS === "ios" ? STATUS_BAR_HEIGHT + 76 : STATUS_BAR_HEIGHT + 63}
       >
         <FlatList
           ref={flatListRef}
