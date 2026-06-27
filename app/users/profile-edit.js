@@ -44,6 +44,7 @@ import { getUserToken } from "../../lib/auth.js";
 
 let ImagePicker = null;
 try { ImagePicker = require("expo-image-picker"); } catch {}
+const FileSystem = require("expo-file-system/legacy");
 
 const STATUS_BAR_HEIGHT = Platform.OS === "android" ? StatusBar.currentHeight || 24 : 44;
 
@@ -266,7 +267,7 @@ export default function ProfileEditScreen() {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") { Alert.alert("Permission required", "Allow access to your photos to change your avatar."); return; }
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ['images'],
       allowsEditing: true,
       aspect: [1, 1],
       quality: 0.85,
@@ -276,22 +277,23 @@ export default function ProfileEditScreen() {
     try {
       const token = await getUserToken();
       const asset = result.assets[0];
-      const fd = new FormData();
-      fd.append("file", { uri: asset.uri, name: "avatar.jpg", type: asset.mimeType || "image/jpeg" });
-      const res = await fetch(`${API_URL}/upload/image`, {
-        method: "POST",
+      const res = await FileSystem.uploadAsync(`${API_URL}/upload/image`, asset.uri, {
+        httpMethod: "POST",
+        uploadType: 1,
+        fieldName: "file",
+        mimeType: asset.mimeType || "image/jpeg",
         headers: token ? { Authorization: `Bearer ${token}` } : {},
-        body: fd,
       });
-      if (res.ok) {
-        const data = await res.json();
+      if (res.status >= 200 && res.status < 300) {
+        const data = JSON.parse(res.body);
         const url = data.url || data.secure_url || data.imageUrl;
         if (url) setForm((prev) => ({ ...prev, avatar: url }));
         else showMsg("error", "Upload returned no URL.");
       } else {
         showMsg("error", "Avatar upload failed.");
       }
-    } catch {
+    } catch (err) {
+      console.error("[avatar-upload] threw:", err?.message);
       showMsg("error", "Upload error. Check connection.");
     } finally {
       setUploadingAvatar(false);

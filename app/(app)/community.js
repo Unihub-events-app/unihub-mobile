@@ -41,6 +41,7 @@ import { radius, spacing } from "../../theme/tokens";
 import CommunityAvatar from "../../components/CommunityAvatar";
 import { API_URL } from "../../lib/config";
 import { getUserToken } from "../../lib/auth";
+import * as FileSystem from "expo-file-system/legacy";
 import { authenticatedFetch } from "../../lib/api";
 
 let ImagePicker = null;
@@ -432,7 +433,7 @@ export default function CommunityScreen() {
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ['images'],
       allowsEditing: true,
       aspect: [1, 1],
       quality: 0.85,
@@ -442,15 +443,15 @@ export default function CommunityScreen() {
     setIsUploading(true);
     try {
       const token = await getUserToken();
-      const fd = new FormData();
-      fd.append("file", { uri: asset.uri, name: "community_icon.jpg", type: asset.mimeType || "image/jpeg" });
-      const res = await fetch(`${API_URL}/upload/image`, {
-        method: "POST",
+      const res = await FileSystem.uploadAsync(`${API_URL}/upload/image`, asset.uri, {
+        httpMethod: "POST",
+        uploadType: 1,
+        fieldName: "file",
+        mimeType: asset.mimeType || "image/jpeg",
         headers: token ? { Authorization: `Bearer ${token}` } : {},
-        body: fd,
       });
-      if (res.ok) {
-        const data = await res.json();
+      if (res.status >= 200 && res.status < 300) {
+        const data = JSON.parse(res.body);
         const url = data.url || data.secure_url;
         if (url) {
           setNewImage(url);
@@ -537,9 +538,11 @@ export default function CommunityScreen() {
     }
     setIsJoiningByCode(true);
     try {
-      const res = await authenticatedFetch("/community/join-by-code", {
+      const token = await getUserToken();
+      const res = await fetch(`${API_URL}/community/join-by-code`, {
         method: "POST",
-        body: JSON.stringify({ accessCode: code }),
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ accessCode: code, user_token: token, userId: user?._id }),
       });
       const data = await res.json();
       if (res.ok) {
@@ -567,9 +570,13 @@ export default function CommunityScreen() {
 
   const handleJoin = async (communityId) => {
     try {
-      const res = await authenticatedFetch(`/community/join/${communityId}`, {
+      const token = await getUserToken();
+      const res = await fetch(`${API_URL}/community/join/${communityId}`, {
         method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ user_token: token, userId: user?._id }),
       });
+      const data = await res.json();
       if (res.ok) {
         setCommunities((prev) =>
           prev.map((c) => {
@@ -585,7 +592,6 @@ export default function CommunityScreen() {
         );
         setMessage({ type: "success", text: "Joined community successfully" });
       } else {
-        const data = await res.json();
         setMessage({
           type: "error",
           text: data.msg || "Failed to join community",

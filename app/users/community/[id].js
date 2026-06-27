@@ -17,9 +17,11 @@ import {
   Modal,
   ScrollView,
   Pressable,
+  Dimensions,
 } from "react-native";
 
 const STATUS_BAR_HEIGHT = Platform.OS === "android" ? StatusBar.currentHeight || 24 : 44;
+const SCREEN_HEIGHT = Dimensions.get("window").height;
 import {
   Send, Info, Users, Paperclip, X, FileText,
   Mic, Smile, ChevronLeft, UserPlus,
@@ -30,6 +32,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { radius, spacing } from "../../../theme/tokens.js";
 import { getUserToken } from "../../../lib/auth";
 import { API_URL } from "../../../lib/config";
+import * as FileSystem from "expo-file-system/legacy";
 import { getSocket, disconnectSocket, joinCommunity, onMessage, offMessage } from "../../../lib/socket";
 
 const EMOJI_REACTIONS = ["❤️", "😂", "😮", "😢", "🔥", "👏"];
@@ -141,6 +144,105 @@ const lpStyles = StyleSheet.create({
   },
 });
 
+function EventCard({ eventId, theme }) {
+  const [event, setEvent] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const res = await fetch(`${API_URL}/events/${eventId}`);
+        if (res.ok && alive) {
+          const data = await res.json();
+          setEvent(data.event || data);
+        }
+      } catch { /* silent */ } finally {
+        if (alive) setLoading(false);
+      }
+    })();
+    return () => { alive = false; };
+  }, [eventId]);
+
+  const handlePress = () => Linking.openURL(`https://try-unihub.click/event/${eventId}`);
+
+  if (loading) {
+    return (
+      <View style={[evStyles.container, { backgroundColor: theme.colors.surfaceMuted, borderColor: theme.colors.border }]}>
+        <ActivityIndicator size="small" color={theme.colors.brand} style={{ margin: 8 }} />
+      </View>
+    );
+  }
+
+  if (!event) {
+    return (
+      <TouchableOpacity style={[evStyles.container, { backgroundColor: theme.colors.surfaceMuted, borderColor: theme.colors.border }]} onPress={handlePress}>
+        <Text style={[evStyles.fallbackText, { color: theme.colors.brand }]}>📅 Shared an event — tap to view</Text>
+      </TouchableOpacity>
+    );
+  }
+
+  return (
+    <TouchableOpacity
+      style={[evStyles.container, { backgroundColor: theme.colors.surfaceMuted, borderColor: theme.colors.border }]}
+      onPress={handlePress}
+      activeOpacity={0.85}
+    >
+      {event.image && (
+        <Image source={{ uri: event.image }} style={evStyles.image} resizeMode="cover" />
+      )}
+      <View style={evStyles.body}>
+        <Text style={[evStyles.title, { color: theme.colors.text }]} numberOfLines={2}>
+          {event.name || event.title}
+        </Text>
+        {event.date ? (
+          <Text style={[evStyles.meta, { color: theme.colors.textSubtle }]}>
+            📅 {new Date(event.date).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
+          </Text>
+        ) : null}
+        {event.venue ? (
+          <Text style={[evStyles.meta, { color: theme.colors.textSubtle }]} numberOfLines={1}>📍 {event.venue}</Text>
+        ) : null}
+        <Text style={[evStyles.cta, { color: theme.colors.brand }]}>View Event Details →</Text>
+      </View>
+    </TouchableOpacity>
+  );
+}
+
+const evStyles = StyleSheet.create({
+  container: {
+    borderRadius: radius.md,
+    borderWidth: 1,
+    overflow: "hidden",
+    marginTop: 6,
+  },
+  image: {
+    width: "100%",
+    height: 120,
+  },
+  body: {
+    padding: 10,
+    gap: 3,
+  },
+  title: {
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  meta: {
+    fontSize: 12,
+  },
+  cta: {
+    fontSize: 12,
+    fontWeight: "600",
+    marginTop: 4,
+  },
+  fallbackText: {
+    fontSize: 13,
+    fontWeight: "600",
+    padding: 12,
+  },
+});
+
 function extractUrls(text) {
   const urlRegex = /(https?:\/\/[^\s]+)/g;
   return text?.match(urlRegex) || [];
@@ -158,7 +260,7 @@ export default function CommunityChatScreen() {
   const handleInvite = useCallback(async () => {
     if (!community) return;
     const isPrivate = community.isPrivate || community.visibility === "private";
-    const deepLink = `https://tryunihub.click/join/community/${communityId}`;
+    const deepLink = `https://try-unihub.click/join/community/${communityId}`;
     if (isPrivate && community.accessCode) {
       Alert.alert(
         "Invite to Community",
@@ -214,7 +316,7 @@ export default function CommunityChatScreen() {
         return;
       }
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: ['images'],
         allowsEditing: true,
         quality: 0.8,
       });
@@ -257,22 +359,24 @@ export default function CommunityChatScreen() {
   };
 
   const uploadFileToServer = async (uri, isImage) => {
-    const fd = new FormData();
-    const uriParts = uri.split("/");
-    const name = uriParts[uriParts.length - 1] || (isImage ? "image.jpg" : "file");
-    // Use the mimeType reported by the image picker when available; fallback for files
-    const type = isImage
+    const mimeType = isImage
       ? (imageMimeType || "image/jpeg")
       : (fileType || "application/octet-stream");
-    fd.append("file", { uri, name, type });
     const endpoint = isImage ? `${API_URL}/upload/image` : `${API_URL}/upload/file`;
-    const res = await fetch(endpoint, { method: "POST", body: fd });
-    if (!res.ok) {
+    const token = await getUserToken();
+    const res = await FileSystem.uploadAsync(endpoint, uri, {
+      httpMethod: "POST",
+      uploadType: 1,
+      fieldName: "file",
+      mimeType,
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (res.status < 200 || res.status >= 300) {
       let errMsg = `Upload failed (${res.status})`;
-      try { const b = await res.json(); errMsg = b.error || b.msg || errMsg; } catch {}
+      try { const b = JSON.parse(res.body); errMsg = b.error || b.msg || errMsg; } catch {}
       throw new Error(errMsg);
     }
-    return await res.json();
+    return JSON.parse(res.body);
   };
 
   const handleOpenFile = async (url) => {
@@ -374,12 +478,12 @@ export default function CommunityChatScreen() {
       if (imageUri) {
         setUploadingAttachment(true);
         const uploadResult = await uploadFileToServer(imageUri, true);
-        uploadedImageUrl = uploadResult.url;
+        uploadedImageUrl = uploadResult.url || uploadResult.secure_url || uploadResult.imageUrl || "";
         setUploadingAttachment(false);
       } else if (fileUri) {
         setUploadingAttachment(true);
         const uploadResult = await uploadFileToServer(fileUri, false);
-        uploadedFileUrl = uploadResult.url;
+        uploadedFileUrl = uploadResult.url || uploadResult.secure_url || "";
         finalFileName = uploadResult.original_filename || fileName;
         finalFileType = uploadResult.resource_type || fileType;
         finalFileSize = uploadResult.bytes || fileSize;
@@ -488,7 +592,7 @@ export default function CommunityChatScreen() {
 
           <TouchableOpacity
             activeOpacity={0.85}
-            onLongPress={() => setReactionTarget(item._id)}
+            onLongPress={(e) => setReactionTarget({ id: item._id, pageY: e.nativeEvent.pageY })}
             style={[
               styles.messageBubble,
               isMe
@@ -500,6 +604,10 @@ export default function CommunityChatScreen() {
               <TouchableOpacity onPress={() => handleOpenFile(item.image)} style={styles.imageContainer}>
                 <Image source={{ uri: item.image }} style={styles.chatImage} resizeMode="cover" />
               </TouchableOpacity>
+            ) : null}
+
+            {item.eventId ? (
+              <EventCard eventId={item.eventId} theme={theme} />
             ) : null}
 
             {item.fileUrl ? (
@@ -554,7 +662,7 @@ export default function CommunityChatScreen() {
 
         <TouchableOpacity
           style={styles.quickReactBtn}
-          onPress={() => setReactionTarget(reactionTarget === item._id ? null : item._id)}
+          onPress={(e) => setReactionTarget(reactionTarget?.id === item._id ? null : { id: item._id, pageY: e.nativeEvent.pageY })}
         >
           <Smile size={14} color={theme.colors.textSubtle} />
         </TouchableOpacity>
@@ -605,27 +713,44 @@ export default function CommunityChatScreen() {
       {/* Lime accent line */}
       <View style={{ height: 2.5, backgroundColor: theme.colors.brand }} />
 
-      {/* Reaction emoji picker overlay */}
-      {reactionTarget && (
-        <View style={[styles.emojiPickerRow, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
-          {EMOJI_REACTIONS.map((emoji) => (
-            <TouchableOpacity
-              key={emoji}
-              style={styles.emojiPickerBtn}
-              onPress={() => handleAddReaction(reactionTarget, emoji)}
-            >
-              <Text style={styles.emojiPickerEmoji}>{emoji}</Text>
+      {/* Reaction emoji picker — floats near the long-pressed message */}
+      <Modal
+        visible={!!reactionTarget}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setReactionTarget(null)}
+      >
+        <Pressable style={styles.reactionOverlay} onPress={() => setReactionTarget(null)}>
+          <View
+            style={[
+              styles.emojiPickerFloating,
+              {
+                top: Math.max(60, Math.min((reactionTarget?.pageY ?? 300) - 70, SCREEN_HEIGHT - 80)),
+                backgroundColor: theme.colors.surface,
+                borderColor: theme.colors.border,
+              },
+            ]}
+            onStartShouldSetResponder={() => true}
+          >
+            {EMOJI_REACTIONS.map((emoji) => (
+              <TouchableOpacity
+                key={emoji}
+                style={styles.emojiPickerBtn}
+                onPress={() => handleAddReaction(reactionTarget?.id, emoji)}
+              >
+                <Text style={styles.emojiPickerEmoji}>{emoji}</Text>
+              </TouchableOpacity>
+            ))}
+            <TouchableOpacity onPress={() => setReactionTarget(null)} style={styles.emojiPickerClose}>
+              <X size={14} color={theme.colors.textSubtle} />
             </TouchableOpacity>
-          ))}
-          <TouchableOpacity onPress={() => setReactionTarget(null)} style={styles.emojiPickerClose}>
-            <X size={14} color={theme.colors.textSubtle} />
-          </TouchableOpacity>
-        </View>
-      )}
+          </View>
+        </Pressable>
+      </Modal>
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
         keyboardVerticalOffset={Platform.OS === "ios" ? STATUS_BAR_HEIGHT + 76 : 0}
       >
         <FlatList
@@ -805,18 +930,26 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  emojiPickerRow: {
+  reactionOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.45)",
+  },
+  emojiPickerFloating: {
+    position: "absolute",
+    left: 16,
+    right: 16,
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderBottomWidth: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 40,
+    borderWidth: 1,
     gap: 4,
+    elevation: 10,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
   },
   emojiPickerBtn: {
     width: 40,
@@ -923,11 +1056,11 @@ const styles = StyleSheet.create({
   imageContainer: {
     borderRadius: radius.md,
     overflow: "hidden",
+    width: 220,
   },
   chatImage: {
-    width: "100%",
-    height: 180,
-    borderRadius: radius.md,
+    width: 220,
+    height: 200,
   },
   fileCard: {
     flexDirection: "row",

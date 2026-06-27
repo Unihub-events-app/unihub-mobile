@@ -67,11 +67,21 @@ export default function SignInScreen() {
   }, [userToken]);
 
   const handleOtpChange = (val, idx) => {
-    const digit = val.replace(/\D/g, "").slice(-1);
-    const next = [...otpDigits];
-    next[idx] = digit;
-    setOtpDigits(next);
-    if (digit && idx < 5) otpRefs.current[idx + 1]?.focus();
+    const digits = val.replace(/\D/g, "");
+    if (digits.length > 1) {
+      const next = [...otpDigits];
+      for (let i = 0; i < digits.length && idx + i < 6; i++) {
+        next[idx + i] = digits[i];
+      }
+      setOtpDigits(next);
+      otpRefs.current[Math.min(idx + digits.length - 1, 5)]?.focus();
+    } else {
+      const digit = digits.slice(0, 1);
+      const next = [...otpDigits];
+      next[idx] = digit;
+      setOtpDigits(next);
+      if (digit && idx < 5) otpRefs.current[idx + 1]?.focus();
+    }
   };
 
   const handleOtpKeyPress = (e, idx) => {
@@ -213,7 +223,7 @@ export default function SignInScreen() {
   return (
     <KeyboardAvoidingView
       style={{ flex: 1, backgroundColor: theme.colors.brand }}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       {/* Brand top section */}
       <View style={[styles.topSection, { height: topH }]}>
@@ -288,12 +298,6 @@ export default function SignInScreen() {
             {step === 2 ? `Signing in as ${email}.` : STEP_DESCS[step]}
           </Text>
 
-          {message.error ? (
-            <View style={[styles.alertBox, { backgroundColor: "rgba(220,38,38,0.08)", borderColor: theme.colors.error }]}>
-              <AlertCircle size={15} color={theme.colors.error} />
-              <Text style={[styles.alertText, { color: theme.colors.error }]}>{message.error}</Text>
-            </View>
-          ) : null}
           {message.success ? (
             <View style={[styles.alertBox, { backgroundColor: "rgba(61,158,74,0.08)", borderColor: theme.colors.success }]}>
               <CheckCircle2 size={15} color={theme.colors.success} />
@@ -311,6 +315,12 @@ export default function SignInScreen() {
                 autoCapitalize="none"
                 leftIcon={<Mail size={18} color={theme.colors.textSubtle} />}
               />
+              {message.error ? (
+                <View style={[styles.alertBox, { backgroundColor: "rgba(220,38,38,0.08)", borderColor: theme.colors.error, marginTop: -6 }]}>
+                  <AlertCircle size={15} color={theme.colors.error} />
+                  <Text style={[styles.alertText, { color: theme.colors.error }]}>{message.error}</Text>
+                </View>
+              ) : null}
               <PrimaryButton
                 label={loading ? "Checking…" : "Continue"}
                 onPress={handleVerifyEmail}
@@ -354,8 +364,14 @@ export default function SignInScreen() {
                   </Pressable>
                 }
               />
-              <Pressable onPress={() => handleSendOTP()}>
-                <Text style={[styles.linkText, { color: theme.colors.brand }]}>Use OTP instead</Text>
+              {message.error ? (
+                <View style={[styles.alertBox, { backgroundColor: "rgba(220,38,38,0.08)", borderColor: theme.colors.error, marginTop: -6 }]}>
+                  <AlertCircle size={15} color={theme.colors.error} />
+                  <Text style={[styles.alertText, { color: theme.colors.error }]}>{message.error}</Text>
+                </View>
+              ) : null}
+              <Pressable onPress={() => handleSendOTP()} disabled={loading}>
+                <Text style={[styles.linkText, { color: loading ? theme.colors.textSubtle : theme.colors.brand }]}>Use OTP instead</Text>
               </Pressable>
               <PrimaryButton label={loading ? "Signing in…" : "Sign In"} onPress={handlePasswordSubmit} loading={loading} />
             </View>
@@ -365,8 +381,8 @@ export default function SignInScreen() {
             <View style={{ gap: 14 }}>
               <View style={styles.otpHeader}>
                 <Text style={[styles.otpLabel, { color: theme.colors.text }]}>Verification Code</Text>
-                <Pressable onPress={() => handleSendOTP()}>
-                  <Text style={[styles.linkText, { color: theme.colors.brand }]}>Resend</Text>
+                <Pressable onPress={() => handleSendOTP()} disabled={loading}>
+                  <Text style={[styles.linkText, { color: loading ? theme.colors.textSubtle : theme.colors.brand }]}>Resend</Text>
                 </Pressable>
               </View>
               <View style={styles.otpRow}>
@@ -379,7 +395,6 @@ export default function SignInScreen() {
                     onKeyPress={(e) => handleOtpKeyPress(e, i)}
                     keyboardType="number-pad"
                     autoCapitalize="none"
-                    maxLength={1}
                     style={[styles.otpBox, {
                       backgroundColor: theme.colors.surfaceMuted,
                       borderColor: digit ? theme.colors.brand : theme.colors.border,
@@ -390,6 +405,12 @@ export default function SignInScreen() {
                   />
                 ))}
               </View>
+              {message.error ? (
+                <View style={[styles.alertBox, { backgroundColor: "rgba(220,38,38,0.08)", borderColor: theme.colors.error, marginTop: -6 }]}>
+                  <AlertCircle size={15} color={theme.colors.error} />
+                  <Text style={[styles.alertText, { color: theme.colors.error }]}>{message.error}</Text>
+                </View>
+              ) : null}
               <PrimaryButton
                 label={loading ? "Verifying…" : "Verify & Sign In"}
                 onPress={handleOTPSubmit}
