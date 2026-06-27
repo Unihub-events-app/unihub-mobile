@@ -170,24 +170,6 @@ export default function ForgotPasswordScreen() {
             </Text>
           </View>
 
-          {message.error ? (
-            <View
-              style={{
-                backgroundColor: theme.colors.mode === 'dark' ? 'rgba(220, 38, 38, 0.15)' : '#fff1f2',
-                borderWidth: 1,
-                borderColor: theme.colors.error,
-                borderRadius: 16,
-                padding: 16,
-                marginBottom: 24,
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 12,
-              }}
-            >
-              <AlertCircle size={20} color={theme.colors.error} />
-              <Text style={{ fontFamily: "PlusJakartaSans_500Medium", fontSize: 14, color: theme.colors.error }}>{message.error}</Text>
-            </View>
-          ) : null}
           {message.success ? (
             <View
               style={{
@@ -218,6 +200,12 @@ export default function ForgotPasswordScreen() {
                 keyboardType="email-address"
                 leftIcon={<Mail size={20} color={theme.colors.textSubtle} />}
               />
+              {message.error ? (
+                <View style={{ backgroundColor: theme.colors.mode === 'dark' ? 'rgba(220, 38, 38, 0.15)' : '#fff1f2', borderWidth: 1, borderColor: theme.colors.error, borderRadius: 12, padding: 12, flexDirection: "row", alignItems: "center", gap: 10, marginTop: -8 }}>
+                  <AlertCircle size={16} color={theme.colors.error} />
+                  <Text style={{ fontFamily: "PlusJakartaSans_500Medium", fontSize: 13, color: theme.colors.error, flex: 1 }}>{message.error}</Text>
+                </View>
+              ) : null}
               <PrimaryButton
                 label={loading ? "Sending..." : "Send Code"}
                 onPress={sendOtp}
@@ -238,7 +226,7 @@ export default function ForgotPasswordScreen() {
                 <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
                   <Text style={{ fontFamily: "PlusJakartaSans_600SemiBold", fontSize: 14, color: theme.colors.text }}>Verification Code</Text>
                   <Pressable onPress={sendOtp} disabled={loading}>
-                    <Text style={{ fontFamily: "PlusJakartaSans_700Bold", fontSize: 12, color: theme.colors.brand }}>Resend Code</Text>
+                    <Text style={{ fontFamily: "PlusJakartaSans_700Bold", fontSize: 12, color: loading ? theme.colors.textSubtle : theme.colors.brand }}>Resend Code</Text>
                   </Pressable>
                 </View>
                 <TextField
@@ -249,6 +237,12 @@ export default function ForgotPasswordScreen() {
                   maxLength={6}
                 />
                 <Text style={{ fontSize: 12, color: theme.colors.textSubtle, textAlign: "center", marginTop: 8 }}>Code sent to {email}</Text>
+                {message.error ? (
+                  <View style={{ backgroundColor: theme.colors.mode === 'dark' ? 'rgba(220, 38, 38, 0.15)' : '#fff1f2', borderWidth: 1, borderColor: theme.colors.error, borderRadius: 12, padding: 12, flexDirection: "row", alignItems: "center", gap: 10, marginTop: 10 }}>
+                    <AlertCircle size={16} color={theme.colors.error} />
+                    <Text style={{ fontFamily: "PlusJakartaSans_500Medium", fontSize: 13, color: theme.colors.error, flex: 1 }}>{message.error}</Text>
+                  </View>
+                ) : null}
               </View>
               <PrimaryButton
                 label={loading ? "Verifying..." : "Verify Code"}
@@ -281,19 +275,27 @@ export default function ForgotPasswordScreen() {
                 />
                 <PasswordStrength password={password} />
               </View>
-              <TextField
-                label="Confirm Password"
-                value={confirmPassword}
-                onChangeText={setConfirmPassword}
-                placeholder="Re-enter your password"
-                secureTextEntry={!showConfirmPassword}
-                leftIcon={<Lock size={20} color={theme.colors.textSubtle} />}
-                rightIcon={
-                  <Pressable onPress={() => setShowConfirmPassword((v) => !v)}>
-                    {showConfirmPassword ? <EyeOff size={20} color={theme.colors.textSubtle} /> : <Eye size={20} color={theme.colors.textSubtle} />}
-                  </Pressable>
-                }
-              />
+              <View>
+                <TextField
+                  label="Confirm Password"
+                  value={confirmPassword}
+                  onChangeText={setConfirmPassword}
+                  placeholder="Re-enter your password"
+                  secureTextEntry={!showConfirmPassword}
+                  leftIcon={<Lock size={20} color={theme.colors.textSubtle} />}
+                  rightIcon={
+                    <Pressable onPress={() => setShowConfirmPassword((v) => !v)}>
+                      {showConfirmPassword ? <EyeOff size={20} color={theme.colors.textSubtle} /> : <Eye size={20} color={theme.colors.textSubtle} />}
+                    </Pressable>
+                  }
+                />
+                {message.error ? (
+                  <View style={{ backgroundColor: theme.colors.mode === 'dark' ? 'rgba(220, 38, 38, 0.15)' : '#fff1f2', borderWidth: 1, borderColor: theme.colors.error, borderRadius: 12, padding: 12, flexDirection: "row", alignItems: "center", gap: 10, marginTop: 10 }}>
+                    <AlertCircle size={16} color={theme.colors.error} />
+                    <Text style={{ fontFamily: "PlusJakartaSans_500Medium", fontSize: 13, color: theme.colors.error, flex: 1 }}>{message.error}</Text>
+                  </View>
+                ) : null}
+              </View>
               <PrimaryButton
                 label={loading ? "Resetting..." : "Reset Password"}
                 onPress={resetPassword}

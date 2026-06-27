@@ -47,6 +47,7 @@ export default function SignupScreen() {
   const [isOrganization, setIsOrganization] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [error, setError] = useState("");
+  const [errorField, setErrorField] = useState("");
   const [success, setSuccess] = useState("");
   const [cooldown, setCooldown] = useState(0);
   const [activeSlide, setActiveSlide] = useState(0);
@@ -94,14 +95,26 @@ export default function SignupScreen() {
     return () => clearInterval(t);
   }, [cooldown]);
 
-  const clearMessages = () => { setError(""); setSuccess(""); };
+  const clearMessages = () => { setError(""); setErrorField(""); setSuccess(""); };
 
   const handleOtpChange = (val, idx) => {
-    const next = [...otpDigits];
-    next[idx] = val.slice(-1).toUpperCase();
-    setOtpDigits(next);
-    setOtp(next.join(""));
-    if (val && idx < 5) otpRefs.current[idx + 1]?.focus();
+    const digits = val.replace(/\D/g, "");
+    if (digits.length > 1) {
+      const next = [...otpDigits];
+      for (let i = 0; i < digits.length && idx + i < 6; i++) {
+        next[idx + i] = digits[i];
+      }
+      setOtpDigits(next);
+      setOtp(next.join(""));
+      otpRefs.current[Math.min(idx + digits.length - 1, 5)]?.focus();
+    } else {
+      const digit = digits.slice(0, 1);
+      const next = [...otpDigits];
+      next[idx] = digit;
+      setOtpDigits(next);
+      setOtp(next.join(""));
+      if (digit && idx < 5) otpRefs.current[idx + 1]?.focus();
+    }
   };
 
   const handleOtpKeyPress = (e, idx) => {
@@ -113,7 +126,7 @@ export default function SignupScreen() {
   const handleSendOtp = async () => {
     clearMessages();
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setError("Please enter a valid email address."); return;
+      setError("Please enter a valid email address."); setErrorField("email"); return;
     }
     setLoading(true);
     try {
@@ -127,25 +140,25 @@ export default function SignupScreen() {
         setSuccess(data.msg || "Verification code sent!"); setStep(2); setCooldown(60);
         setOtpDigits(["", "", "", "", "", ""]); setOtp("");
       } else if (res.status === 400 && data.msg?.includes("already registered")) {
-        setError(data.msg);
-        setTimeout(() => { setError("Redirecting to sign in…"); setTimeout(() => router.push("/(auth)/signin"), 2000); }, 2000);
+        setError(data.msg); setErrorField("email");
+        setTimeout(() => { setError("Redirecting to sign in…"); setErrorField("email"); setTimeout(() => router.push("/(auth)/signin"), 2000); }, 2000);
       } else {
-        setError(data.msg || "Failed to send code");
+        setError(data.msg || "Failed to send code"); setErrorField("email");
       }
-    } catch { setError("Network error. Please try again."); } finally { setLoading(false); }
+    } catch { setError("Network error. Please try again."); setErrorField("email"); } finally { setLoading(false); }
   };
 
   const handleVerifyAndSignup = async () => {
     clearMessages();
-    if (!name.trim()) { setError("Please enter your name."); return; }
-    if (!username.trim() || username.length < 3) { setError("Username must be at least 3 characters."); return; }
-    if (usernameAvailable === false) { setError("Username is taken. Please choose another."); return; }
-    if (!otp.trim()) { setError("Please enter the verification code."); return; }
-    if (!password.trim()) { setError("Please enter a password."); return; }
+    if (!name.trim()) { setError("Please enter your name."); setErrorField("name"); return; }
+    if (!username.trim() || username.length < 3) { setError("Username must be at least 3 characters."); setErrorField("username"); return; }
+    if (usernameAvailable === false) { setError("Username is taken. Please choose another."); setErrorField("username"); return; }
+    if (!otp.trim()) { setError("Please enter the verification code."); setErrorField("otp"); return; }
+    if (!password.trim()) { setError("Please enter a password."); setErrorField("password"); return; }
     const v = validatePassword(password);
-    if (!v.isValid) { setError(v.message); return; }
-    if (password !== confirmPassword) { setError("Passwords do not match."); return; }
-    if (!acceptedTerms) { setError("Please accept the Terms of Service and Privacy Policy."); return; }
+    if (!v.isValid) { setError(v.message); setErrorField("password"); return; }
+    if (password !== confirmPassword) { setError("Passwords do not match."); setErrorField("confirmPassword"); return; }
+    if (!acceptedTerms) { setError("Please accept the Terms of Service and Privacy Policy."); setErrorField("terms"); return; }
 
     setLoading(true);
     try {
@@ -157,13 +170,12 @@ export default function SignupScreen() {
       const data = await res.json();
       if (res.ok) {
         setSuccess(data.msg || "Account created!"); setStep(3);
-        const token = data.user?.user_token || data.accessToken;
+        const token = data.accessToken || data.user?.user_token;
         await setUserToken(token);
-        setTimeout(() => router.push("/onboarding/interests"), 2500);
       } else {
-        setError(data.msg || "Verification failed. Please check your code.");
+        setError(data.msg || "Verification failed. Please check your code."); setErrorField("otp");
       }
-    } catch { setError("Something went wrong. Please try again."); } finally { setLoading(false); }
+    } catch { setError("Something went wrong. Please try again."); setErrorField("otp"); } finally { setLoading(false); }
   };
 
   const CurrentSlideIcon = SLIDES[activeSlide].icon;
@@ -173,7 +185,7 @@ export default function SignupScreen() {
   return (
     <KeyboardAvoidingView
       style={{ flex: 1, backgroundColor: theme.colors.brand }}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       {/* Brand top section */}
       <View style={[styles.topSection, { height: topH }]}>
@@ -257,12 +269,6 @@ export default function SignupScreen() {
               : "Your account is ready. Heading to your dashboard…"}
           </Text>
 
-          {error ? (
-            <View style={[styles.alertBox, { backgroundColor: "rgba(220,38,38,0.08)", borderColor: theme.colors.error }]}>
-              <AlertCircle size={15} color={theme.colors.error} />
-              <Text style={[styles.alertText, { color: theme.colors.error }]}>{error}</Text>
-            </View>
-          ) : null}
           {success ? (
             <View style={[styles.alertBox, { backgroundColor: "rgba(61,158,74,0.08)", borderColor: theme.colors.success }]}>
               <CheckCircle2 size={15} color={theme.colors.success} />
@@ -281,6 +287,12 @@ export default function SignupScreen() {
                 keyboardType="email-address"
                 leftIcon={<Mail size={18} color={theme.colors.textSubtle} />}
               />
+              {error && errorField === "email" ? (
+                <View style={[styles.alertBox, { backgroundColor: "rgba(220,38,38,0.08)", borderColor: theme.colors.error, marginTop: -6 }]}>
+                  <AlertCircle size={15} color={theme.colors.error} />
+                  <Text style={[styles.alertText, { color: theme.colors.error }]}>{error}</Text>
+                </View>
+              ) : null}
               <PrimaryButton
                 label={loading ? "Sending code…" : "Continue"}
                 onPress={handleSendOtp}
@@ -305,6 +317,12 @@ export default function SignupScreen() {
                 placeholder="What should we call you?"
                 leftIcon={<User size={18} color={theme.colors.textSubtle} />}
               />
+              {error && errorField === "name" ? (
+                <View style={[styles.alertBox, { backgroundColor: "rgba(220,38,38,0.08)", borderColor: theme.colors.error, marginTop: -4 }]}>
+                  <AlertCircle size={15} color={theme.colors.error} />
+                  <Text style={[styles.alertText, { color: theme.colors.error }]}>{error}</Text>
+                </View>
+              ) : null}
               <View>
                 <TextField
                   label="Username"
@@ -318,6 +336,12 @@ export default function SignupScreen() {
                     {usernameAvailable ? "✓ Available" : "✗ Already taken"}
                   </Text>
                 )}
+                {error && errorField === "username" ? (
+                  <View style={[styles.alertBox, { backgroundColor: "rgba(220,38,38,0.08)", borderColor: theme.colors.error, marginTop: 6 }]}>
+                    <AlertCircle size={15} color={theme.colors.error} />
+                    <Text style={[styles.alertText, { color: theme.colors.error }]}>{error}</Text>
+                  </View>
+                ) : null}
               </View>
 
               {/* OTP */}
@@ -327,8 +351,8 @@ export default function SignupScreen() {
                   {cooldown > 0 ? (
                     <Text style={[styles.cooldownText, { color: theme.colors.textSubtle }]}>Resend in {cooldown}s</Text>
                   ) : (
-                    <Pressable onPress={handleSendOtp}>
-                      <Text style={[styles.linkText, { color: theme.colors.brand }]}>Resend code</Text>
+                    <Pressable onPress={handleSendOtp} disabled={loading}>
+                      <Text style={[styles.linkText, { color: loading ? theme.colors.textSubtle : theme.colors.brand }]}>Resend code</Text>
                     </Pressable>
                   )}
                 </View>
@@ -340,9 +364,8 @@ export default function SignupScreen() {
                       value={digit}
                       onChangeText={(v) => handleOtpChange(v, i)}
                       onKeyPress={(e) => handleOtpKeyPress(e, i)}
-                      keyboardType="default"
-                      autoCapitalize="characters"
-                      maxLength={1}
+                      keyboardType="number-pad"
+                      autoCapitalize="none"
                       style={[styles.otpBox, {
                         backgroundColor: theme.colors.surfaceMuted,
                         borderColor: digit ? theme.colors.brand : theme.colors.border,
@@ -353,6 +376,12 @@ export default function SignupScreen() {
                     />
                   ))}
                 </View>
+                {error && errorField === "otp" ? (
+                  <View style={[styles.alertBox, { backgroundColor: "rgba(220,38,38,0.08)", borderColor: theme.colors.error, marginTop: 8 }]}>
+                    <AlertCircle size={15} color={theme.colors.error} />
+                    <Text style={[styles.alertText, { color: theme.colors.error }]}>{error}</Text>
+                  </View>
+                ) : null}
               </View>
 
               <View>
@@ -370,21 +399,35 @@ export default function SignupScreen() {
                   }
                 />
                 <PasswordStrength password={password} />
+                {error && errorField === "password" ? (
+                  <View style={[styles.alertBox, { backgroundColor: "rgba(220,38,38,0.08)", borderColor: theme.colors.error, marginTop: 6 }]}>
+                    <AlertCircle size={15} color={theme.colors.error} />
+                    <Text style={[styles.alertText, { color: theme.colors.error }]}>{error}</Text>
+                  </View>
+                ) : null}
               </View>
 
-              <TextField
-                label="Confirm Password"
-                value={confirmPassword}
-                onChangeText={setConfirmPassword}
-                placeholder="Re-enter your password"
-                secureTextEntry={!showConfirmPw}
-                leftIcon={<Lock size={18} color={theme.colors.textSubtle} />}
-                rightIcon={
-                  <Pressable onPress={() => setShowConfirmPw((v) => !v)}>
-                    {showConfirmPw ? <EyeOff size={18} color={theme.colors.textSubtle} /> : <Eye size={18} color={theme.colors.textSubtle} />}
-                  </Pressable>
-                }
-              />
+              <View>
+                <TextField
+                  label="Confirm Password"
+                  value={confirmPassword}
+                  onChangeText={setConfirmPassword}
+                  placeholder="Re-enter your password"
+                  secureTextEntry={!showConfirmPw}
+                  leftIcon={<Lock size={18} color={theme.colors.textSubtle} />}
+                  rightIcon={
+                    <Pressable onPress={() => setShowConfirmPw((v) => !v)}>
+                      {showConfirmPw ? <EyeOff size={18} color={theme.colors.textSubtle} /> : <Eye size={18} color={theme.colors.textSubtle} />}
+                    </Pressable>
+                  }
+                />
+                {error && errorField === "confirmPassword" ? (
+                  <View style={[styles.alertBox, { backgroundColor: "rgba(220,38,38,0.08)", borderColor: theme.colors.error, marginTop: 6 }]}>
+                    <AlertCircle size={15} color={theme.colors.error} />
+                    <Text style={[styles.alertText, { color: theme.colors.error }]}>{error}</Text>
+                  </View>
+                ) : null}
+              </View>
 
               {/* Organizer toggle */}
               <Pressable
@@ -422,6 +465,12 @@ export default function SignupScreen() {
                   I agree to the Terms of Service and Privacy Policy
                 </Text>
               </Pressable>
+              {error && errorField === "terms" ? (
+                <View style={[styles.alertBox, { backgroundColor: "rgba(220,38,38,0.08)", borderColor: theme.colors.error }]}>
+                  <AlertCircle size={15} color={theme.colors.error} />
+                  <Text style={[styles.alertText, { color: theme.colors.error }]}>{error}</Text>
+                </View>
+              ) : null}
 
               <PrimaryButton
                 label={loading ? "Creating account…" : "Complete Signup"}

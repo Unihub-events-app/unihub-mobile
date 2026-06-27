@@ -12,16 +12,19 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Camera, Check } from "lucide-react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "../../theme/ThemeProvider.js";
 import { getUserToken } from "../../lib/auth.js";
 import { API_URL } from "../../lib/config.js";
 import * as ImagePicker from "expo-image-picker";
+import * as FileSystem from "expo-file-system/legacy";
 
 const STATUS_BAR_HEIGHT = Platform.OS === "android" ? StatusBar.currentHeight || 24 : 44;
 
 export default function OnboardingPhoto() {
   const router = useRouter();
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
   const [photo, setPhoto] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
@@ -30,7 +33,7 @@ export default function OnboardingPhoto() {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") { Alert.alert("Permission required", "Please allow photo access."); return; }
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ['images'],
       allowsEditing: true,
       aspect: [1, 1],
       quality: 0.8,
@@ -39,40 +42,48 @@ export default function OnboardingPhoto() {
   };
 
   const handleFinish = async () => {
-    if (!photo) { router.replace("/users/dashboard"); return; }
+    if (!photo) { router.replace("/(app)/dashboard"); return; }
     setError("");
     setUploading(true);
     try {
       const token = await getUserToken();
-      const formData = new FormData();
-      formData.append("file", {
-        uri: photo.uri,
-        name: "avatar.jpg",
-        type: photo.mimeType || "image/jpeg",
-      });
-      const uploadRes = await fetch(`${API_URL}/upload/image`, {
-        method: "POST",
+      const uploadRes = await FileSystem.uploadAsync(`${API_URL}/upload/image`, photo.uri, {
+        httpMethod: "POST",
+        uploadType: 1,
+        fieldName: "file",
+        mimeType: photo.mimeType || "image/jpeg",
         headers: token ? { Authorization: `Bearer ${token}` } : {},
-        body: formData,
       });
-      if (uploadRes.ok) {
-        const uploadData = await uploadRes.json();
-        if (uploadData.url) {
-          await fetch(`${API_URL}/user/update`, {
+      if (uploadRes.status >= 200 && uploadRes.status < 300) {
+        const uploadData = JSON.parse(uploadRes.body);
+        const avatarUrl = uploadData.url || uploadData.secure_url || uploadData.imageUrl;
+        if (avatarUrl) {
+          const updateRes = await fetch(`${API_URL}/user/update`, {
             method: "POST",
             headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-            body: JSON.stringify({ avatar: uploadData.url, user_token: token }),
+            body: JSON.stringify({ avatar: avatarUrl, user_token: token }),
           });
+          if (!updateRes.ok) {
+            setError("Photo saved but profile update failed. You can set it from settings.");
+          }
+        } else {
+          setError("Upload succeeded but no URL returned. Try again from settings.");
         }
       } else {
-        setError("Upload failed. You can always add a photo later.");
+        const errData = JSON.parse(uploadRes.body || "{}");
+        setError(errData.msg || "Upload failed. You can add a photo from settings.");
+        setUploading(false);
+        return;
       }
-    } catch {
-      setError("Upload failed. You can always add a photo later.");
+    } catch (err) {
+      console.error("[photo-upload] threw:", err?.message, err);
+      setError("Upload failed. You can add a photo from settings.");
+      setUploading(false);
+      return;
     } finally {
       setUploading(false);
     }
-    router.replace("/users/dashboard");
+    router.replace("/(app)/dashboard");
   };
 
   return (
@@ -121,7 +132,7 @@ export default function OnboardingPhoto() {
 
       <View style={{ flex: 1 }} />
 
-      <View style={[styles.footer, { paddingBottom: Platform.OS === "ios" ? 40 : 24, borderTopColor: theme.colors.border }]}>
+      <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 16) + 8, borderTopColor: theme.colors.border }]}>
         {error ? <Text style={[styles.error, { color: "#f59e0b" }]}>{error}</Text> : null}
         <Pressable
           onPress={handleFinish}

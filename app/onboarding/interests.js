@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Sparkles, ChevronRight } from "lucide-react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "../../theme/ThemeProvider.js";
 import { getUserToken } from "../../lib/auth.js";
 import { API_URL } from "../../lib/config.js";
@@ -28,6 +29,7 @@ export default function OnboardingInterests() {
   const router = useRouter();
   const { theme } = useTheme();
   const [selected, setSelected] = useState([]);
+  const insets = useSafeAreaInsets();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -94,7 +96,7 @@ export default function OnboardingInterests() {
         </View>
       </ScrollView>
 
-      <View style={[styles.footer, { paddingBottom: Platform.OS === "ios" ? 40 : 24, borderTopColor: theme.colors.border }]}>
+      <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 16) + 8, borderTopColor: theme.colors.border }]}>
         {error ? <Text style={[styles.error, { color: "#DC2626" }]}>{error}</Text> : null}
         <Text style={[styles.countNote, { color: theme.colors.textSubtle }]}>
           {selected.length} selected{selected.length < 3 ? ` — ${3 - selected.length} more required` : " ✓"}

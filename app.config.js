@@ -10,11 +10,12 @@ module.exports = ({ config }) => ({
   orientation: "default",
   userInterfaceStyle: "automatic",
   android: {
-    package: "click.tryunihub.mobile",
+    package: IS_DEV ? "click.tryunihub.mobile.dev" : "click.tryunihub.mobile",
     adaptiveIcon: {
       foregroundImage: "./assets/images/mobile-logo.png",
       backgroundColor: "#ffffff",
     },
+    softwareKeyboardLayoutMode: "resize",
   },
   extra: {
     githubRepo: "Unihub-events-app/unihub-mobile",
@@ -46,6 +47,14 @@ module.exports = ({ config }) => ({
       {
         locationAlwaysAndWhenInUsePermission:
           "Allow UniHub to show nearby events.",
+      },
+    ],
+    [
+      "expo-build-properties",
+      {
+        android: {
+          kotlinVersion: "1.9.25",
+        },
       },
     ],
   ],

@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { GraduationCap, ChevronRight, Search, Check } from "lucide-react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "../../theme/ThemeProvider.js";
 import { getUserToken } from "../../lib/auth.js";
 import { API_URL } from "../../lib/config.js";
@@ -21,6 +22,7 @@ const STATUS_BAR_HEIGHT = Platform.OS === "android" ? StatusBar.currentHeight ||
 export default function OnboardingUniversity() {
   const router = useRouter();
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
   const [query, setQuery] = useState("");
   const [universities, setUniversities] = useState([]);
   const [filtered, setFiltered] = useState([]);
@@ -57,7 +59,7 @@ export default function OnboardingUniversity() {
     }).slice(0, 40));
   }, [query, universities]);
 
-  const getName = (u) => (typeof u === "string" ? u : u.name || u.university || "");
+  const getName = (u) => (!u ? "" : typeof u === "string" ? u : u.name || u.university || "");
 
   const handleContinue = async () => {
     if (!selected) { setError("Please select your university."); return; }
@@ -134,7 +136,7 @@ export default function OnboardingUniversity() {
         </ScrollView>
       )}
 
-      <View style={[styles.footer, { paddingBottom: Platform.OS === "ios" ? 40 : 24, borderTopColor: theme.colors.border }]}>
+      <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 16) + 8, borderTopColor: theme.colors.border }]}>
         {error ? <Text style={[styles.error, { color: "#DC2626" }]}>{error}</Text> : null}
         {selected && (
           <Text style={[styles.selectedNote, { color: theme.colors.brand }]}>Selected: {getName(selected)}</Text>

@@ -43,6 +43,7 @@ import {
 } from "lucide-react-native";
 import { API_URL } from "../lib/config";
 import { getUserToken, getAdminToken } from "../lib/auth";
+import * as FileSystem from "expo-file-system/legacy";
 import { authenticatedFetch } from "../lib/api";
 import { NeuCard, NeuInset } from "./index";
 import { useTheme } from "../theme/ThemeProvider";
@@ -157,7 +158,7 @@ export default function CreateEventForm() {
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ['images'],
       allowsEditing: true,
       aspect: field === "profile" ? [1, 1] : [16, 9],
       quality: 0.8,
@@ -170,21 +171,15 @@ export default function CreateEventForm() {
 
     try {
       const token = await getUserToken();
-      const formData = new FormData();
-      formData.append("file", {
-        uri: asset.uri,
-        name: `${field}_${Date.now()}.jpg`,
-        type: asset.mimeType || "image/jpeg",
-      });
-
-      const res = await fetch(`${API_URL}/upload/image`, {
-        method: "POST",
+      const res = await FileSystem.uploadAsync(`${API_URL}/upload/image`, asset.uri, {
+        httpMethod: "POST",
+        uploadType: 1,
+        fieldName: "file",
+        mimeType: asset.mimeType || "image/jpeg",
         headers: token ? { Authorization: `Bearer ${token}` } : {},
-        body: formData,
       });
-
-      if (res.ok) {
-        const data = await res.json();
+      if (res.status >= 200 && res.status < 300) {
+        const data = JSON.parse(res.body);
         const url = data.url || data.secure_url || data.imageUrl;
         if (url) {
           setFormData((prev) => ({ ...prev, [field]: url }));
@@ -195,7 +190,7 @@ export default function CreateEventForm() {
         alert("Image upload failed. Please try again.");
       }
     } catch (e) {
-      console.error("Upload error:", e);
+      console.error("[event-upload] threw:", e?.message);
       alert("Upload error. Check your connection.");
     } finally {
       setUploading((prev) => ({ ...prev, [field]: false }));
