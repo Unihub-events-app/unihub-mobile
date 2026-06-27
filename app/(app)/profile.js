@@ -1,6 +1,7 @@
 import { useTheme } from "../../theme/ThemeProvider.js";
 import React, { useState, useEffect, useRef } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, TextInput, Alert, KeyboardAvoidingView, Platform } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, TextInput, Alert, Platform } from "react-native";
+import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 import { router } from "expo-router";
 import { User, MapPin, Edit, Calendar, Users, Bookmark, Zap, Send, Trash2 } from "lucide-react-native";
 import { Screen, InterestsModal, SkeletonLoader, EmptyState } from "../../components/index.js";
@@ -312,7 +313,7 @@ export default function ProfileScreen() {
           )}
 
           {activeTab === "updates" && (
-            <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined}>
+            <KeyboardAvoidingView behavior="padding">
               {/* Compose box */}
               <View style={[styles.composeBox, { backgroundColor: theme.colors.surfaceElevated, borderColor: theme.colors.border }]}>
                 <View style={[styles.composeAvatar, { backgroundColor: theme.colors.brandTint }]}>

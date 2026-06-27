@@ -1,5 +1,6 @@
 import "react-native-reanimated";
 import "../global.css";
+import { KeyboardProvider } from "react-native-keyboard-controller";
 
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -78,7 +79,9 @@ export default function RootLayout() {
   return (
     <ThemeProvider>
       <SafeAreaProvider>
-        <RootLayoutContent />
+        <KeyboardProvider>
+          <RootLayoutContent />
+        </KeyboardProvider>
       </SafeAreaProvider>
     </ThemeProvider>
   );

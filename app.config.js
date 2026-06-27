@@ -5,7 +5,7 @@ module.exports = ({ config }) => ({
   name: IS_DEV ? "UniHub Dev" : "UniHub",
   slug: "unihub-mobile",
   scheme: "UniHub Events",
-  version: "1.4.0",
+  version: "1.4.1",
   icon: "./assets/images/mobile-logo.png",
   orientation: "default",
   userInterfaceStyle: "automatic",
@@ -15,7 +15,6 @@ module.exports = ({ config }) => ({
       foregroundImage: "./assets/images/mobile-logo.png",
       backgroundColor: "#ffffff",
     },
-    softwareKeyboardLayoutMode: "resize",
   },
   extra: {
     githubRepo: "Unihub-events-app/unihub-mobile",
@@ -57,5 +56,6 @@ module.exports = ({ config }) => ({
         },
       },
     ],
+    "react-native-keyboard-controller",
   ],
 });

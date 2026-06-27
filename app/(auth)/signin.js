@@ -8,10 +8,10 @@ import {
   StyleSheet,
   Image,
   ScrollView,
-  KeyboardAvoidingView,
   Platform,
   useWindowDimensions,
 } from "react-native";
+import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 import Animated, { FadeInUp } from "react-native-reanimated";
 import {
   Mail, Lock, Eye, EyeOff, ArrowRight, CheckCircle2, AlertCircle,
@@ -223,7 +223,7 @@ export default function SignInScreen() {
   return (
     <KeyboardAvoidingView
       style={{ flex: 1, backgroundColor: theme.colors.brand }}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      behavior="padding"
     >
       {/* Brand top section */}
       <View style={[styles.topSection, { height: topH }]}>
