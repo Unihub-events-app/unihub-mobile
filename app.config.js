@@ -5,7 +5,7 @@ module.exports = ({ config }) => ({
   name: IS_DEV ? "UniHub Dev" : "UniHub",
   slug: "unihub-mobile",
   scheme: "UniHub Events",
-  version: "1.4.1",
+  version: "1.4.2",
   icon: "./assets/images/mobile-logo.png",
   orientation: "default",
   userInterfaceStyle: "automatic",
