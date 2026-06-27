@@ -32,6 +32,8 @@ import {
   Megaphone,
   Download,
   Copy,
+  Ticket,
+  Plus,
 } from "lucide-react-native";
 import { useTheme } from "../../../theme/ThemeProvider.js";
 import { radius, spacing } from "../../../theme/tokens.js";
@@ -40,7 +42,7 @@ import { API_URL } from "../../../lib/config.js";
 import { getUserToken } from "../../../lib/auth.js";
 
 const STATUS_BAR_HEIGHT = Platform.OS === "android" ? StatusBar.currentHeight || 24 : 44;
-const TABS = ["Overview", "Attendees", "Check-in", "Pending", "Analytics", "Settings"];
+const TABS = ["Overview", "Attendees", "Check-in", "Pending", "Tickets", "Analytics", "Settings"];
 
 export default function ManageEventScreen() {
   const { eventId } = useLocalSearchParams();
@@ -53,6 +55,10 @@ export default function ManageEventScreen() {
   const [processingId, setProcessingId] = useState(null);
   const [checkingInId, setCheckingInId] = useState(null);
   const [message, setMessage] = useState({ type: "", text: "" });
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [bulkProcessing, setBulkProcessing] = useState(false);
+  const [editForm, setEditForm] = useState(null);
+  const [editSaving, setEditSaving] = useState(false);
 
   const fetchEvent = useCallback(async () => {
     try {
@@ -65,6 +71,15 @@ export default function ManageEventScreen() {
       if (res.ok) {
         const data = await res.json();
         setEvent(data);
+        setEditForm({
+          name: data.name || "",
+          venue: data.venue || "",
+          date: data.date || "",
+          time: data.time || "",
+          description: data.description || "",
+          capacity: data.capacity ? String(data.capacity) : "",
+          ticketTypes: data.ticketTypes ? data.ticketTypes.map((t) => ({ ...t })) : [],
+        });
       }
     } catch (e) {
       console.error(e);
@@ -443,9 +458,6 @@ export default function ManageEventScreen() {
   );
 
   const renderPending = () => {
-    const [selectedIds, setSelectedIds] = React.useState([]);
-    const [bulkProcessing, setBulkProcessing] = React.useState(false);
-
     const toggleSelect = (uid) => setSelectedIds((prev) =>
       prev.includes(uid) ? prev.filter((x) => x !== uid) : [...prev, uid]
     );
@@ -598,25 +610,101 @@ export default function ManageEventScreen() {
     );
   };
 
+  const handleSaveEdit = async () => {
+    if (!editForm) return;
+    setEditSaving(true);
+    try {
+      const token = await getUserToken();
+      const res = await fetch(`${API_URL}/event/update`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ event_id: eventId, user_token: token, update: editForm }),
+      });
+      if (res.ok) {
+        showMessage("success", "Event updated!");
+        setEvent((prev) => ({ ...prev, ...editForm, capacity: editForm.capacity ? Number(editForm.capacity) : prev.capacity }));
+      } else {
+        const d = await res.json();
+        showMessage("error", d.msg || "Update failed.");
+      }
+    } catch {
+      showMessage("error", "Network error.");
+    } finally {
+      setEditSaving(false);
+    }
+  };
+
   const renderSettings = () => (
     <View style={styles.tabContent}>
-      {/* Duplicate Event */}
-      <View style={[styles.dangerCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
-        <Text style={[styles.dangerTitle, { color: theme.colors.text }]}>Event Actions</Text>
-        <Pressable
-          style={[styles.dangerBtn, { borderColor: "#6366f1", backgroundColor: "rgba(99,102,241,0.08)" }]}
-          onPress={handleDuplicateEvent}
-        >
-          <Copy size={18} color="#6366f1" />
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.dangerBtnTitle, { color: "#6366f1" }]}>Duplicate Event</Text>
-            <Text style={[styles.dangerBtnSub, { color: theme.colors.textMuted }]}>
-              Create a copy with the same details
-            </Text>
-          </View>
-        </Pressable>
-      </View>
+      {/* Edit Event */}
+      {editForm && (
+        <View style={[styles.dangerCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+          <Text style={[styles.dangerTitle, { color: theme.colors.text }]}>Edit Event Details</Text>
 
+          <Text style={[styles.fieldLabel, { color: theme.colors.textSubtle }]}>Event Name</Text>
+          <TextInput
+            style={[styles.fieldInput, { color: theme.colors.text, backgroundColor: theme.colors.surfaceMuted, borderColor: theme.colors.border }]}
+            value={editForm.name}
+            onChangeText={(v) => setEditForm((f) => ({ ...f, name: v }))}
+            placeholder="Event name"
+            placeholderTextColor={theme.colors.textSubtle}
+          />
+
+          <Text style={[styles.fieldLabel, { color: theme.colors.textSubtle }]}>Venue</Text>
+          <TextInput
+            style={[styles.fieldInput, { color: theme.colors.text, backgroundColor: theme.colors.surfaceMuted, borderColor: theme.colors.border }]}
+            value={editForm.venue}
+            onChangeText={(v) => setEditForm((f) => ({ ...f, venue: v }))}
+            placeholder="Venue"
+            placeholderTextColor={theme.colors.textSubtle}
+          />
+
+          <View style={{ flexDirection: "row", gap: 10 }}>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.fieldLabel, { color: theme.colors.textSubtle }]}>Date (DD/MM/YYYY)</Text>
+              <TextInput
+                style={[styles.fieldInput, { color: theme.colors.text, backgroundColor: theme.colors.surfaceMuted, borderColor: theme.colors.border }]}
+                value={editForm.date}
+                onChangeText={(v) => setEditForm((f) => ({ ...f, date: v }))}
+                placeholder="DD/MM/YYYY"
+                placeholderTextColor={theme.colors.textSubtle}
+              />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.fieldLabel, { color: theme.colors.textSubtle }]}>Time</Text>
+              <TextInput
+                style={[styles.fieldInput, { color: theme.colors.text, backgroundColor: theme.colors.surfaceMuted, borderColor: theme.colors.border }]}
+                value={editForm.time}
+                onChangeText={(v) => setEditForm((f) => ({ ...f, time: v }))}
+                placeholder="HH:MM"
+                placeholderTextColor={theme.colors.textSubtle}
+              />
+            </View>
+          </View>
+
+          <Text style={[styles.fieldLabel, { color: theme.colors.textSubtle }]}>Description</Text>
+          <TextInput
+            style={[styles.fieldInput, { color: theme.colors.text, backgroundColor: theme.colors.surfaceMuted, borderColor: theme.colors.border, minHeight: 80, textAlignVertical: "top" }]}
+            value={editForm.description}
+            onChangeText={(v) => setEditForm((f) => ({ ...f, description: v }))}
+            placeholder="Event description"
+            placeholderTextColor={theme.colors.textSubtle}
+            multiline
+          />
+
+          <Pressable
+            style={[styles.saveBtn, { backgroundColor: editSaving ? theme.colors.surfaceMuted : theme.colors.brand }]}
+            onPress={handleSaveEdit}
+            disabled={editSaving}
+          >
+            {editSaving
+              ? <ActivityIndicator size="small" color={theme.colors.text} />
+              : <Text style={[styles.saveBtnText, { color: theme.colors.textOnBrand }]}>Save Changes</Text>}
+          </Pressable>
+        </View>
+      )}
+
+      {/* Danger Zone */}
       <View style={[styles.dangerCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
         <Text style={[styles.dangerTitle, { color: theme.colors.text }]}>Danger Zone</Text>
         <Text style={[styles.dangerSub, { color: theme.colors.textMuted }]}>
@@ -800,11 +888,159 @@ export default function ManageEventScreen() {
     );
   };
 
+  const renderTickets = () => {
+    const tickets = editForm?.ticketTypes || event?.ticketTypes || [];
+    const totalSold = attendees.length;
+    const totalRevenue = attendees.reduce((s, a) => s + (Number(a.amountPaid) || 0), 0);
+
+    const updateTicket = (idx, key, val) =>
+      setEditForm((f) => ({
+        ...f,
+        ticketTypes: f.ticketTypes.map((t, i) => (i === idx ? { ...t, [key]: val } : t)),
+      }));
+
+    const removeTicket = (idx) => {
+      if ((editForm?.ticketTypes?.length || 0) <= 1) {
+        showMessage("error", "Every event must have at least one ticket.");
+        return;
+      }
+      setEditForm((f) => ({ ...f, ticketTypes: f.ticketTypes.filter((_, i) => i !== idx) }));
+    };
+
+    const addTicket = () =>
+      setEditForm((f) => ({
+        ...f,
+        ticketTypes: [...(f.ticketTypes || []), { name: "", price: "0", capacity: "", description: "" }],
+      }));
+
+    return (
+      <View style={styles.tabContent}>
+        {/* Summary row */}
+        <View style={styles.statsGrid}>
+          <View style={[styles.statCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+            <Ticket size={20} color={theme.colors.brand} />
+            <Text style={[styles.statVal, { color: theme.colors.text }]}>{tickets.length}</Text>
+            <Text style={[styles.statLabel, { color: theme.colors.textSubtle }]}>Ticket Types</Text>
+          </View>
+          <View style={[styles.statCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+            <Users size={20} color="#6366f1" />
+            <Text style={[styles.statVal, { color: theme.colors.text }]}>{totalSold}</Text>
+            <Text style={[styles.statLabel, { color: theme.colors.textSubtle }]}>Tickets Sold</Text>
+          </View>
+          <View style={[styles.statCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+            <Banknote size={20} color="#f59e0b" />
+            <Text style={[styles.statVal, { color: theme.colors.text }]}>₦{totalRevenue.toLocaleString()}</Text>
+            <Text style={[styles.statLabel, { color: theme.colors.textSubtle }]}>Total Revenue</Text>
+          </View>
+        </View>
+
+        {/* Ticket type cards (editable) */}
+        {editForm && (editForm.ticketTypes || []).map((ticket, idx) => {
+          const sold = attendees.filter((a) => a.ticketType === ticket.name).length;
+          const cap = Number(ticket.capacity) || 0;
+          const pct = cap > 0 ? Math.min(100, Math.round((sold / cap) * 100)) : 0;
+          const isFree = !ticket.price || Number(ticket.price) === 0;
+          return (
+            <View key={idx} style={[styles.infoCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                <View style={[styles.ticketTypeBadge, { backgroundColor: isFree ? theme.colors.successTint : theme.colors.brandTint }]}>
+                  <Text style={[styles.ticketTypeBadgeText, { color: isFree ? theme.colors.success : theme.colors.brand }]}>
+                    {isFree ? "Free" : `₦${Number(ticket.price).toLocaleString()}`}
+                  </Text>
+                </View>
+                <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
+                  <Text style={[styles.dangerBtnSub, { color: theme.colors.textSubtle }]}>{sold} sold</Text>
+                  <Pressable onPress={() => removeTicket(idx)} hitSlop={8}>
+                    <Trash2 size={16} color={theme.colors.error} />
+                  </Pressable>
+                </View>
+              </View>
+
+              <Text style={[styles.fieldLabel, { color: theme.colors.textSubtle }]}>Ticket Name</Text>
+              <TextInput
+                style={[styles.fieldInput, { color: theme.colors.text, backgroundColor: theme.colors.surfaceMuted, borderColor: theme.colors.border }]}
+                value={ticket.name}
+                onChangeText={(v) => updateTicket(idx, "name", v)}
+                placeholder="e.g. Regular, VIP"
+                placeholderTextColor={theme.colors.textSubtle}
+              />
+
+              <View style={{ flexDirection: "row", gap: 10 }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.fieldLabel, { color: theme.colors.textSubtle }]}>Price (₦)</Text>
+                  <TextInput
+                    style={[styles.fieldInput, { color: theme.colors.text, backgroundColor: theme.colors.surfaceMuted, borderColor: theme.colors.border }]}
+                    value={String(ticket.price || "0")}
+                    onChangeText={(v) => updateTicket(idx, "price", v)}
+                    placeholder="0"
+                    keyboardType="numeric"
+                    placeholderTextColor={theme.colors.textSubtle}
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.fieldLabel, { color: theme.colors.textSubtle }]}>Capacity</Text>
+                  <TextInput
+                    style={[styles.fieldInput, { color: theme.colors.text, backgroundColor: theme.colors.surfaceMuted, borderColor: theme.colors.border }]}
+                    value={String(ticket.capacity || "")}
+                    onChangeText={(v) => updateTicket(idx, "capacity", v)}
+                    placeholder="Unlimited"
+                    keyboardType="numeric"
+                    placeholderTextColor={theme.colors.textSubtle}
+                  />
+                </View>
+              </View>
+
+              {cap > 0 && (
+                <View style={{ marginTop: 8 }}>
+                  <View style={styles.capacityRow}>
+                    <Text style={[styles.capacityLabel, { color: theme.colors.textSubtle }]}>SOLD</Text>
+                    <Text style={[styles.capacityFraction, { color: theme.colors.text }]}>{sold}/{cap}</Text>
+                  </View>
+                  <View style={[styles.progressBg, { backgroundColor: theme.colors.surfaceMuted }]}>
+                    <View style={[styles.progressFill, { width: `${pct}%`, backgroundColor: pct >= 90 ? theme.colors.error : theme.colors.brand }]} />
+                  </View>
+                </View>
+              )}
+            </View>
+          );
+        })}
+
+        {/* Add ticket type */}
+        {editForm && (
+          <Pressable
+            style={[styles.dangerBtn, { borderColor: theme.colors.brand, backgroundColor: theme.colors.brandTint, marginBottom: 4 }]}
+            onPress={addTicket}
+          >
+            <Plus size={18} color={theme.colors.brand} />
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.dangerBtnTitle, { color: theme.colors.brand }]}>Add Ticket Type</Text>
+              <Text style={[styles.dangerBtnSub, { color: theme.colors.textMuted }]}>Add a new pricing tier or category</Text>
+            </View>
+          </Pressable>
+        )}
+
+        {/* Save button */}
+        {editForm && (
+          <Pressable
+            style={[styles.saveBtn, { backgroundColor: editSaving ? theme.colors.surfaceMuted : theme.colors.brand }]}
+            onPress={handleSaveEdit}
+            disabled={editSaving}
+          >
+            {editSaving
+              ? <ActivityIndicator size="small" color={theme.colors.text} />
+              : <Text style={[styles.saveBtnText, { color: theme.colors.textOnBrand }]}>Save Tickets</Text>}
+          </Pressable>
+        )}
+      </View>
+    );
+  };
+
   const tabContent = {
     Overview: renderOverview,
     Attendees: renderAttendees,
     "Check-in": renderCheckIn,
     Pending: renderPending,
+    Tickets: renderTickets,
     Analytics: renderAnalytics,
     Settings: renderSettings,
   };
@@ -821,18 +1057,12 @@ export default function ManageEventScreen() {
         </View>
       </View>
 
-      <Toast
-        visible={!!message.text}
-        message={message.text}
-        type={message.type || "info"}
-        onDismiss={() => setMessage({ type: "", text: "" })}
-      />
-
-      {/* Tab bar */}
+      {/* Tab bar — locked below header, never shifts */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.tabBar}
+        style={styles.tabBarWrap}
       >
         {TABS.map((tab) => (
           <Pressable
@@ -857,9 +1087,18 @@ export default function ManageEventScreen() {
       <ScrollView
         contentContainerStyle={{ paddingBottom: 60 }}
         showsVerticalScrollIndicator={false}
+        style={{ flex: 1 }}
       >
         {tabContent[activeTab]?.()}
       </ScrollView>
+
+      {/* Toast as overlay — never shifts layout */}
+      <Toast
+        visible={!!message.text}
+        message={message.text}
+        type={message.type || "info"}
+        onDismiss={() => setMessage({ type: "", text: "" })}
+      />
     </View>
   );
 }
@@ -899,10 +1138,15 @@ const getStyles = (theme) => StyleSheet.create({
     fontFamily: "PlusJakartaSans_400Regular",
     marginTop: 1,
   },
+  tabBarWrap: {
+    flexGrow: 0,
+    flexShrink: 0,
+  },
   tabBar: {
     paddingHorizontal: 16,
     paddingVertical: 12,
     gap: 8,
+    alignItems: "center",
   },
   tab: {
     paddingHorizontal: 16,
@@ -1258,5 +1502,45 @@ const getStyles = (theme) => StyleSheet.create({
     borderRadius: radius.md,
     alignItems: "center",
     justifyContent: "center",
+  },
+  fieldLabel: {
+    fontSize: 11,
+    fontWeight: "600",
+    fontFamily: "PlusJakartaSans_600SemiBold",
+    textTransform: "uppercase",
+    letterSpacing: 0.6,
+    marginTop: 12,
+    marginBottom: 4,
+  },
+  fieldInput: {
+    borderWidth: 1,
+    borderRadius: radius.md,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+    fontFamily: "PlusJakartaSans_400Regular",
+  },
+  saveBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 14,
+    borderRadius: radius.xxl,
+    marginTop: 16,
+  },
+  saveBtnText: {
+    fontSize: 15,
+    fontWeight: "700",
+    fontFamily: "PlusJakartaSans_700Bold",
+  },
+  ticketTypeBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: radius.md,
+  },
+  ticketTypeBadgeText: {
+    fontSize: 12,
+    fontWeight: "700",
+    fontFamily: "PlusJakartaSans_700Bold",
   },
 });

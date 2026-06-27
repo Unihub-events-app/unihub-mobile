@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useRef } from "react";
 import {
   View,
   Text,
@@ -11,14 +11,7 @@ import {
   Vibration,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-
-let CameraView = null;
-let Camera = null;
-try {
-  const expoCamera = require("expo-camera");
-  CameraView = expoCamera.CameraView;
-  Camera = expoCamera.Camera;
-} catch {}
+import { CameraView, useCameraPermissions } from "expo-camera";
 import {
   ArrowLeft,
   CheckCircle,
@@ -37,21 +30,13 @@ export default function ScanEventScreen() {
   const router = useRouter();
   const { theme } = useTheme();
 
-  const [hasPermission, setHasPermission] = useState(null);
+  const [permission, requestPermission] = useCameraPermissions();
   const [scanning, setScanning] = useState(true);
-  const [result, setResult] = useState(null); // { success, name, message }
+  const [result, setResult] = useState(null);
   const [processing, setProcessing] = useState(false);
+  const [cameraReady, setCameraReady] = useState(false);
   const lastScanned = useRef(null);
-
   const resultOpacity = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    if (!Camera) return;
-    (async () => {
-      const { status } = await Camera.requestCameraPermissionsAsync();
-      setHasPermission(status === "granted");
-    })();
-  }, []);
 
   const showResult = (data) => {
     setResult(data);
@@ -74,7 +59,6 @@ export default function ScanEventScreen() {
     lastScanned.current = data;
     setProcessing(true);
     setScanning(false);
-
     try {
       const token = await getUserToken();
       const res = await fetch(`${API_URL}/event/checkin-qr`, {
@@ -95,22 +79,8 @@ export default function ScanEventScreen() {
     }
   };
 
-  if (!CameraView || !Camera) {
-    return (
-      <View style={[styles.centered, { backgroundColor: theme.colors.background }]}>
-        <QrCode size={48} color={theme.colors.textSubtle} />
-        <Text style={[styles.permTitle, { color: theme.colors.text }]}>Camera Not Available</Text>
-        <Text style={[styles.permText, { color: theme.colors.textMuted }]}>
-          QR scanning requires a development build. Run{"\n"}`npx expo run:android` to enable it.
-        </Text>
-        <Pressable onPress={() => router.back()} style={[styles.backBtn2, { backgroundColor: theme.colors.brand }]}>
-          <Text style={styles.backBtn2Text}>Go Back</Text>
-        </Pressable>
-      </View>
-    );
-  }
-
-  if (hasPermission === null) {
+  // Permission not yet determined
+  if (!permission) {
     return (
       <View style={[styles.centered, { backgroundColor: theme.colors.background }]}>
         <ActivityIndicator color={theme.colors.brand} size="large" />
@@ -119,16 +89,24 @@ export default function ScanEventScreen() {
     );
   }
 
-  if (hasPermission === false) {
+  // Permission denied
+  if (!permission.granted) {
     return (
       <View style={[styles.centered, { backgroundColor: theme.colors.background }]}>
         <QrCode size={48} color={theme.colors.textSubtle} />
         <Text style={[styles.permTitle, { color: theme.colors.text }]}>Camera Permission Needed</Text>
         <Text style={[styles.permText, { color: theme.colors.textMuted }]}>
-          Allow camera access in your device settings to scan QR codes.
+          {permission.canAskAgain
+            ? "Allow camera access to scan QR codes."
+            : "Enable camera access in your device settings."}
         </Text>
-        <Pressable onPress={() => router.back()} style={[styles.backBtn2, { backgroundColor: theme.colors.brand }]}>
-          <Text style={styles.backBtn2Text}>Go Back</Text>
+        {permission.canAskAgain && (
+          <Pressable onPress={requestPermission} style={[styles.backBtn2, { backgroundColor: theme.colors.brand }]}>
+            <Text style={styles.backBtn2Text}>Grant Permission</Text>
+          </Pressable>
+        )}
+        <Pressable onPress={() => router.back()} style={[styles.backBtn2, { backgroundColor: theme.colors.surfaceMuted, marginTop: 8 }]}>
+          <Text style={[styles.backBtn2Text, { color: theme.colors.text }]}>Go Back</Text>
         </Pressable>
       </View>
     );
@@ -136,80 +114,84 @@ export default function ScanEventScreen() {
 
   return (
     <View style={styles.root}>
-      {/* Camera */}
       <CameraView
         style={StyleSheet.absoluteFillObject}
         facing="back"
-        onBarcodeScanned={scanning ? handleBarCodeScanned : undefined}
+        onCameraReady={() => setCameraReady(true)}
+        onBarcodeScanned={scanning && cameraReady ? handleBarCodeScanned : undefined}
         barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
       />
 
-      {/* Dark overlay with cut-out */}
-      <View style={styles.overlay}>
-        <View style={[styles.overlayTop, { backgroundColor: "rgba(0,0,0,0.6)" }]} />
-        <View style={styles.overlayMiddle}>
-          <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.6)" }} />
-          <View style={styles.viewfinder}>
-            {/* Corner brackets */}
-            <View style={[styles.corner, styles.cornerTL, { borderColor: theme.colors.brand }]} />
-            <View style={[styles.corner, styles.cornerTR, { borderColor: theme.colors.brand }]} />
-            <View style={[styles.corner, styles.cornerBL, { borderColor: theme.colors.brand }]} />
-            <View style={[styles.corner, styles.cornerBR, { borderColor: theme.colors.brand }]} />
-          </View>
-          <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.6)" }} />
-        </View>
-        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.6)" }} />
-      </View>
-
-      {/* Header */}
-      <View style={[styles.header, { paddingTop: STATUS_BAR_HEIGHT + 8 }]}>
-        <Pressable onPress={() => router.back()} style={styles.heroPill} hitSlop={8}>
-          <ArrowLeft size={18} color="white" />
-          <Text style={styles.heroPillText}>Back</Text>
-        </Pressable>
-        <Text style={styles.headerTitle}>Scan Ticket</Text>
-        <View style={{ width: 80 }} />
-      </View>
-
-      {/* Hint text */}
-      {!result && !processing && (
-        <View style={styles.hintRow}>
-          <Text style={styles.hintText}>Point camera at a QR code</Text>
+      {/* Loading indicator until camera is ready */}
+      {!cameraReady && (
+        <View style={[StyleSheet.absoluteFillObject, styles.centered]}>
+          <ActivityIndicator color="white" size="large" />
+          <Text style={[styles.permText, { color: "rgba(255,255,255,0.7)", marginTop: 12 }]}>Starting camera…</Text>
         </View>
       )}
 
-      {/* Processing */}
-      {processing && (
-        <View style={styles.hintRow}>
-          <ActivityIndicator size="small" color={theme.colors.brand} />
-          <Text style={[styles.hintText, { marginLeft: 8 }]}>Verifying…</Text>
-        </View>
-      )}
-
-      {/* Result overlay */}
-      {result && (
-        <Animated.View style={[styles.resultSheet, { backgroundColor: theme.colors.surface, opacity: resultOpacity }]}>
-          <View style={[styles.resultIconWrap, { backgroundColor: result.success ? "rgba(61,158,74,0.14)" : "rgba(220,38,38,0.12)" }]}>
-            {result.success
-              ? <CheckCircle size={40} color="#3D9E4A" />
-              : <XCircle size={40} color="#DC2626" />}
+      {/* Overlay UI */}
+      <View style={[StyleSheet.absoluteFillObject, { zIndex: 1 }]} pointerEvents="box-none">
+        {/* Dark overlay with cut-out */}
+        <View style={styles.overlay} pointerEvents="none">
+          <View style={[styles.overlayTop, { backgroundColor: "rgba(0,0,0,0.6)" }]} />
+          <View style={styles.overlayMiddle}>
+            <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.6)" }} />
+            <View style={styles.viewfinder}>
+              <View style={[styles.corner, styles.cornerTL, { borderColor: theme.colors.brand }]} />
+              <View style={[styles.corner, styles.cornerTR, { borderColor: theme.colors.brand }]} />
+              <View style={[styles.corner, styles.cornerBL, { borderColor: theme.colors.brand }]} />
+              <View style={[styles.corner, styles.cornerBR, { borderColor: theme.colors.brand }]} />
+            </View>
+            <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.6)" }} />
           </View>
-          <Text style={[styles.resultTitle, { color: result.success ? "#3D9E4A" : "#DC2626" }]}>
-            {result.success ? "Check-in Successful!" : "Check-in Failed"}
-          </Text>
-          {result.name && (
-            <Text style={[styles.resultName, { color: theme.colors.text }]}>{result.name}</Text>
-          )}
-          <Text style={[styles.resultMessage, { color: theme.colors.textMuted }]}>{result.message}</Text>
-          <Pressable
-            onPress={reset}
-            style={[styles.scanNextBtn, { backgroundColor: theme.colors.brand }]}
-          >
-            <RefreshCcw size={16} color="#1A1A14" />
-            <Text style={styles.scanNextText}>Scan Next</Text>
+          <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.6)" }} />
+        </View>
+
+        {/* Header */}
+        <View style={[styles.header, { paddingTop: STATUS_BAR_HEIGHT + 8 }]}>
+          <Pressable onPress={() => router.back()} style={styles.heroPill} hitSlop={8}>
+            <ArrowLeft size={18} color="white" />
+            <Text style={styles.heroPillText}>Back</Text>
           </Pressable>
-        </Animated.View>
-      )}
+          <Text style={styles.headerTitle}>Scan Ticket</Text>
+          <View style={{ width: 80 }} />
+        </View>
+
+        {!result && !processing && cameraReady && (
+          <View style={styles.hintRow}>
+            <Text style={styles.hintText}>Point camera at a QR code</Text>
+          </View>
+        )}
+
+        {processing && (
+          <View style={styles.hintRow}>
+            <ActivityIndicator size="small" color={theme.colors.brand} />
+            <Text style={[styles.hintText, { marginLeft: 8 }]}>Verifying…</Text>
+          </View>
+        )}
+
+        {result && (
+          <Animated.View style={[styles.resultSheet, { backgroundColor: theme.colors.surface, opacity: resultOpacity }]}>
+            <View style={[styles.resultIconWrap, { backgroundColor: result.success ? "rgba(61,158,74,0.14)" : "rgba(220,38,38,0.12)" }]}>
+              {result.success
+                ? <CheckCircle size={40} color="#3D9E4A" />
+                : <XCircle size={40} color="#DC2626" />}
+            </View>
+            <Text style={[styles.resultTitle, { color: result.success ? "#3D9E4A" : "#DC2626" }]}>
+              {result.success ? "Check-in Successful!" : "Check-in Failed"}
+            </Text>
+            {result.name && (
+              <Text style={[styles.resultName, { color: theme.colors.text }]}>{result.name}</Text>
+            )}
+            <Text style={[styles.resultMessage, { color: theme.colors.textMuted }]}>{result.message}</Text>
+            <Pressable onPress={reset} style={[styles.scanNextBtn, { backgroundColor: theme.colors.brand }]}>
+              <RefreshCcw size={16} color="#1A1A14" />
+              <Text style={styles.scanNextText}>Scan Next</Text>
+            </Pressable>
+          </Animated.View>
+        )}
+      </View>
     </View>
   );
 }
@@ -255,7 +237,7 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
   },
   overlayTop: {
-    height: "25%",
+    height: "35%",
   },
   overlayMiddle: {
     flexDirection: "row",
@@ -270,31 +252,13 @@ const styles = StyleSheet.create({
     width: CORNER_SIZE,
     height: CORNER_SIZE,
   },
-  cornerTL: {
-    top: 0, left: 0,
-    borderTopWidth: CORNER_WIDTH, borderLeftWidth: CORNER_WIDTH,
-    borderTopLeftRadius: 6,
-  },
-  cornerTR: {
-    top: 0, right: 0,
-    borderTopWidth: CORNER_WIDTH, borderRightWidth: CORNER_WIDTH,
-    borderTopRightRadius: 6,
-  },
-  cornerBL: {
-    bottom: 0, left: 0,
-    borderBottomWidth: CORNER_WIDTH, borderLeftWidth: CORNER_WIDTH,
-    borderBottomLeftRadius: 6,
-  },
-  cornerBR: {
-    bottom: 0, right: 0,
-    borderBottomWidth: CORNER_WIDTH, borderRightWidth: CORNER_WIDTH,
-    borderBottomRightRadius: 6,
-  },
+  cornerTL: { top: 0, left: 0, borderTopWidth: CORNER_WIDTH, borderLeftWidth: CORNER_WIDTH, borderTopLeftRadius: 6 },
+  cornerTR: { top: 0, right: 0, borderTopWidth: CORNER_WIDTH, borderRightWidth: CORNER_WIDTH, borderTopRightRadius: 6 },
+  cornerBL: { bottom: 0, left: 0, borderBottomWidth: CORNER_WIDTH, borderLeftWidth: CORNER_WIDTH, borderBottomLeftRadius: 6 },
+  cornerBR: { bottom: 0, right: 0, borderBottomWidth: CORNER_WIDTH, borderRightWidth: CORNER_WIDTH, borderBottomRightRadius: 6 },
   header: {
     position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
+    top: 0, left: 0, right: 0,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
@@ -327,8 +291,7 @@ const styles = StyleSheet.create({
   hintRow: {
     position: "absolute",
     bottom: "18%",
-    left: 0,
-    right: 0,
+    left: 0, right: 0,
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
@@ -341,9 +304,7 @@ const styles = StyleSheet.create({
   },
   resultSheet: {
     position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
+    bottom: 0, left: 0, right: 0,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     padding: 28,

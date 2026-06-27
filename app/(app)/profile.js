@@ -184,7 +184,7 @@ export default function ProfileScreen() {
 
   return (
     <Screen padded={false}>
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView showsVerticalScrollIndicator={false} stickyHeaderIndices={[1]}>
 
         {/* ── HERO HEADER ─────────────────────────────────── */}
         <View style={styles.hero}>
@@ -671,6 +671,7 @@ const getStyles = (theme) =>
       flexDirection: "row",
       borderBottomWidth: 1.5,
       borderBottomColor: theme.colors.border,
+      backgroundColor: theme.colors.background,
     },
     tab: {
       flex: 1,

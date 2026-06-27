@@ -116,7 +116,7 @@ export default function PaymentScreen() {
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
-            user: { user_id: token },
+            user_token: token,
             event: { event_id: eventId },
             product: selectedTicket,
             provider: "wallet",
@@ -195,7 +195,7 @@ export default function PaymentScreen() {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          user: { user_id: token },
+          user_token: token,
           event: { event_id: eventId },
           product: selectedTicket,
           provider: "paystack",

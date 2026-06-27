@@ -15,6 +15,7 @@ module.exports = ({ config }) => ({
       foregroundImage: "./assets/images/mobile-logo.png",
       backgroundColor: "#ffffff",
     },
+    softwareKeyboardLayoutMode: "resize",
   },
   extra: {
     githubRepo: "Unihub-events-app/unihub-mobile",

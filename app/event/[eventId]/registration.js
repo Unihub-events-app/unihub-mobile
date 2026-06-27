@@ -79,7 +79,7 @@ export default function RegistrationScreen() {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          user: { user_id: token },
+          user_token: token,
           event: { event_id: eventId },
           answers: answersArray,
         }),

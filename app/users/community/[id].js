@@ -683,7 +683,7 @@ export default function CommunityChatScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
       {/* Header */}
-      <View style={[styles.header, { backgroundColor: theme.colors.navSurface }]}>
+      <View style={[styles.header, { backgroundColor: theme.colors.navSurface, paddingTop: insets.top + 10 }]}>
         <TouchableOpacity style={styles.headerBack} onPress={() => router.back()}>
           <ChevronLeft size={22} color="#fff" />
         </TouchableOpacity>
@@ -751,7 +751,7 @@ export default function CommunityChatScreen() {
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior="padding"
-        keyboardVerticalOffset={Platform.OS === "ios" ? STATUS_BAR_HEIGHT + 76 : STATUS_BAR_HEIGHT + 63}
+        keyboardVerticalOffset={Platform.OS === "ios" ? insets.top + 76 : 0}
       >
         <FlatList
           ref={flatListRef}
@@ -889,7 +889,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 14,
-    paddingTop: STATUS_BAR_HEIGHT + (Platform.OS === "ios" ? 10 : 10),
     paddingBottom: 14,
     gap: 10,
   },
