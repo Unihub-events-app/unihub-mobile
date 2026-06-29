@@ -5,7 +5,7 @@ module.exports = ({ config }) => ({
   name: IS_DEV ? "UniHub Dev" : "UniHub",
   slug: "unihub-mobile",
   scheme: "UniHub Events",
-  version: "1.4.2",
+  version: "1.4.3",
   runtimeVersion: {
     policy: "appVersion",
   },
