@@ -6,6 +6,15 @@ module.exports = ({ config }) => ({
   slug: "unihub-mobile",
   scheme: "UniHub Events",
   version: "1.4.2",
+  runtimeVersion: {
+    policy: "appVersion",
+  },
+  updates: {
+    url: "https://u.expo.dev/5e978b89-736e-45ec-89d6-f42b3c53b922",
+    enabled: !IS_DEV,
+    checkAutomatically: "ON_LOAD",
+    fallbackToCacheTimeout: 0,
+  },
   icon: "./assets/images/mobile-logo.png",
   orientation: "default",
   userInterfaceStyle: "automatic",
@@ -25,9 +34,10 @@ module.exports = ({ config }) => ({
     API_URL:
       process.env.EXPO_PUBLIC_API_URL ||
       process.env.NEXT_PUBLIC_API_URL ||
-      "https://try-unihub-server.pxxl.click",
+      "https://try-unihub-production-8a88.up.railway.app/",
   },
   plugins: [
+    "expo-updates",
     "expo-router",
     "expo-image",
     "expo-status-bar",
