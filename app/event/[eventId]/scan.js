@@ -68,7 +68,15 @@ export default function ScanEventScreen() {
       });
       const json = await res.json();
       if (res.ok) {
-        showResult({ success: true, name: json.name || "Attendee", message: json.msg || "Checked in successfully!" });
+        const attendeeName = json.participant?.name || json.name || "Attendee";
+        const ticketType = json.participant?.ticketType;
+        showResult({
+          success: true,
+          name: attendeeName,
+          message: ticketType
+            ? `${ticketType} · ${json.msg || "Checked in successfully!"}`
+            : (json.msg || "Checked in successfully!"),
+        });
       } else {
         showResult({ success: false, name: null, message: json.msg || "Invalid ticket or already checked in." });
       }

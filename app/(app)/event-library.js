@@ -146,6 +146,7 @@ export default function EventLibrary() {
         const res = await fetch(`${API_URL}/event/user-events`, {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ tzOffset: new Date().getTimezoneOffset() }),
         });
         if (res.ok) {
           const data = await res.json();

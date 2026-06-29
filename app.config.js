@@ -34,7 +34,7 @@ module.exports = ({ config }) => ({
     API_URL:
       process.env.EXPO_PUBLIC_API_URL ||
       process.env.NEXT_PUBLIC_API_URL ||
-      "https://try-unihub-production-8a88.up.railway.app/",
+      "https://try-unihub-server.pxxl.click",
   },
   plugins: [
     "expo-updates",

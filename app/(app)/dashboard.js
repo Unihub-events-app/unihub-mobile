@@ -432,6 +432,7 @@ export default function DashboardScreen() {
   const token = useSessionStore((state) => state.userToken);
   const [loading, setLoading] = useState(true);
   const [allEvents, setAllEvents] = useState([]);
+  const [now, setNow] = useState(() => new Date());
   const [userName, setUserName] = useState("Explorer");
   const [userInterests, setUserInterests] = useState([]);
   const [keyword, setKeyword] = useState("");
@@ -448,6 +449,11 @@ export default function DashboardScreen() {
   const codeSearchTimeout = useRef(null);
   const userSearchTimeout = useRef(null);
   const USER_SEARCH_REGEX = /^@/;
+
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 60000);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -540,7 +546,6 @@ export default function DashboardScreen() {
     return () => clearTimeout(userSearchTimeout.current);
   }, [keyword]);
 
-  const now = new Date();
   const isCodeMode = PRIVATE_CODE_REGEX.test(keyword.trim().toUpperCase());
   const isUserSearchMode =
     USER_SEARCH_REGEX.test(keyword.trim()) && keyword.trim().length >= 2;
@@ -678,7 +683,10 @@ export default function DashboardScreen() {
   const liveEvents = filteredEvents.filter((e) => {
     const s = parseEventDateTime(e.date, e.time);
     if (!s) return false;
-    return now >= s && now <= new Date(s.getTime() + 3 * 3600000);
+    const end = (e.endDate && e.endTime)
+      ? parseEventDateTime(e.endDate, e.endTime)
+      : new Date(s.getTime() + 3 * 3600000);
+    return now >= s && now <= end;
   });
   const upcomingEvents = filteredEvents.filter((e) => {
     const s = parseEventDateTime(e.date, e.time);
